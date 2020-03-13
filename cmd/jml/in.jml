@@ -1,0 +1,50 @@
+title Code, data and markup
+
+head Code, data and markup
+
+Typically we have syntax for: code, markup or data.
+For example programming language syntax (C or Java).
+For markup examples are HTML or Markdown.
+Data it is typically either tabular, such as CSV or TSV or nested like XML, Json or YAML; with nested Scalars, Lists/Arrays or Maps.
+
+Lisp has a syntax that work for code or for data, everything is a list in Lisp.   Data can be either lists or maps.
+
+
+Python, Java and C are just for programming.
+XML can be used for Data or for Markup, there are some programming type languages that use XML syntax (XSL) but these are not easy to use.
+XML generalizes of HTML.
+
+HTML and Markdown is just for markup not for code or data.
+
+Scala has a programming language syntax but one can insert blocks of XML, though is XML is less used than it was, people now use JSON and YAML.
+
+TCL actually is very gener
+
+
+Shell like bash and TCL can just be typed without lots of brackets or quotes.
+
+
+SQL has syntax executable statements and allows one to enter data.
+
+
+head A review of various syntaxes
+
+
+para This is a paragraph
+
+This is also treated a paragraph since it starts with a capital letter.
+
+
+Each line like this is actually treated as a list.
+
+One can also add tags which lang=en
+
+person= { forename=Alice surname=Bravo address={ cn=nl city=adam }}
+
+a=2
+
+One can embed expressions =a*2 == 4
+
+
+Please enter a value: {input len=32 type=text}
+
