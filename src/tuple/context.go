@@ -15,31 +15,30 @@ func NewParserContext(sourceName string, scanner io.RuneScanner) ParserContext {
 	return ParserContext{sourceName, 1, 0, scanner}
 }
 
-func (parser * ParserContext) ReadRune() (rune, error) {
-	ch, _, err := parser.scanner.ReadRune()
+func (context * ParserContext) ReadRune() (rune, error) {
+	ch, _, err := context.scanner.ReadRune()
 	switch {
 	case err != nil: return ch, err
 	case ch == '\n':
-		parser.line ++
-		parser.column = 0
+		context.line ++
+		context.column = 0
 	default:
-		parser.column ++
+		context.column ++
 	}
 	return ch, nil
 }
 
-func (parser * ParserContext) UnreadRune() {
-	parser.scanner.UnreadRune()
-	if parser.column == 0 {
-		parser.line --
+func (context * ParserContext) UnreadRune() {
+	context.scanner.UnreadRune()
+	if context.column == 0 {
+		context.line --
 	} else {
-		parser.column --
+		context.column --
 	}
 }
 
-func (parser * ParserContext) Error(format string, args ...interface{}) {
-
-	prefix := fmt.Sprintf("ERROR at %d, %d in '%s': ", parser.line, parser.column, parser.sourceName)
+func (context * ParserContext) Error(format string, args ...interface{}) {
+	prefix := fmt.Sprintf("ERROR at %d, %d in '%s': ", context.line, context.column, context.sourceName)
 	suffix := fmt.Sprintf(format, args)
 	log.Print(prefix + suffix)
 }
