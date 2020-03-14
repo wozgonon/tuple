@@ -11,13 +11,13 @@ import (
 	"unicode"
 )
 
-type Parser {
+type Parser struct {
 	//	Open rune
 	//	Close rune
 }
 
 
-func (parser Parser) parnext(context * tuple.ParserContext) (interface{}, error) {
+func (parser Parser) next(context * tuple.ParserContext) (interface{}, error) {
 
 	for {
 		ch, err := context.ReadRune()
@@ -33,7 +33,7 @@ func (parser Parser) parnext(context * tuple.ParserContext) (interface{}, error)
 		case unicode.IsLetter(ch):  return tuple.ReadAtom(context, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
 		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
 		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
-		default: parser.Error("Error character not recognised '%d'", ch)
+		default: context.Error("Error character not recognised '%d'", ch)
 		}
 	}
 }
@@ -42,14 +42,14 @@ func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
 
 	tuple := tuple.NewTuple()
 	for {
-		token, err := next(parser)
+		token, err := parser.next(context)
 		switch {
 		case err != nil: return tuple, err
 		case token == ")": return tuple, nil
 		case token == "(":
 			subTuple, err := parser.parse(context)
 			if err == io.EOF {
-				parser.Error ("Missing close bracket")
+				context.Error ("Missing close bracket")
 			}
 			if err != nil {
 				return tuple, err
@@ -61,10 +61,10 @@ func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
 	}
 }
 
-func (parser Parser) Run(parser * tuple.ParserContext) {
+func (parser Parser) Run(context * tuple.ParserContext) {
 	tuple, err := parser.parse(context)
 	if err != io.EOF && err != nil {
-		parser.Error("Failed while parsing: %s", err)
+		context.Error("Failed while parsing: %s", err)
 	} else {
 		fmt.Printf ("%s\n", tuple.PrettyPrint(""))
 	}
@@ -77,8 +77,9 @@ func main() {
 	if len(os.Args) == 1 {
 
 		reader := bufio.NewReader(os.Stdin)
-		parser := tuple.NewParserContext("<stdin>", reader)
-		Run(&parser)
+		context := tuple.NewParserContext("<stdin>", reader)
+		parser := Parser{}
+		parser.Run(&context)
 	} else {
 		for _, fileName := range os.Args[1:] {
 			file, err := os.Open(fileName)
@@ -86,8 +87,9 @@ func main() {
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			parser := tuple.NewParserContext(fileName, reader)
-			Run(&parser)
+			context := tuple.NewParserContext(fileName, reader)
+			parser := Parser{}
+			parser.Run(&context)
 			file.Close()
 		}
 	}
