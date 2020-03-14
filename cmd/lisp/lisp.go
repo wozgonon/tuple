@@ -93,37 +93,71 @@ func next(r io.RuneScanner) (string, error) {
 	}
 }
 
-func parse(fileName string, file io.Reader) error {
-		
-	reader := bufio.NewReader(file)
+func parse(reader io.RuneScanner) ([]string, error) {
 
+	list := make([]string, 0)
+	
 	for {
 		token, err := next(reader)
-		
+		//fmt.Printf ("%s\n", token)
 		if err == io.EOF {
-			return nil
+			// TODO missing brackets?
+			return list, nil
 		}
 		if err != nil {
-			return err
+			return list, err
+		}
+		if token == ")" {
+			return list, nil
+		}
+		if token == "(" {
+			subList, err := parse(reader)
+			if err != nil {
+				return list, err
+			}
+			pretty := prettyPrintList (subList)
+			list = append(list, pretty)
 		} else {
-			fmt.Printf ("%s\n", token)
+			list = append(list, token)
 		}
 	}
+}
+
+func prettyPrintList(list []string) string {
+	space := ""
+	result := "("
+	for _, token := range list {
+		result = result + space + token
+		space = " "
+	}
+	result = result + ")"
+	return result
 }
 
 func main() {
 
 	if len(os.Args) == 1 {
-		parse("<stdin>", os.Stdin)
+		reader := bufio.NewReader(os.Stdin)
+		list, err := parse(reader)
+		if err != nil {
+			log.Print("Error after parsing: %s", err)
+		} else {
+			fmt.Printf("%s", prettyPrintList(list))
+		}
+		//parse("<stdin>", os.Stdin)
 	} else {
 		for _, fileName := range os.Args[1:] {
 			file, err := os.Open(fileName)
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = parse(fileName, file)
+			reader := bufio.NewReader(file)
+			list, err := parse(reader)
+			//err = parse(fileName, file)
 			if err != nil {
 				log.Print("Error after parsing: %s", err)
+			} else {
+				fmt.Printf ("%s\n", prettyPrintList(list))
 			}
 			file.Close()
 		}
