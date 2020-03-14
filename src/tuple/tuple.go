@@ -27,31 +27,14 @@ func (tuple Tuple) PrettyPrint(depth string) string {
 	result :=  depth + "(\n"
 	newDepth := depth + "  "
 	for _, token := range tuple.list {
-		subTuple, ok := token.(Tuple)
-		if ok {
-			value := subTuple.PrettyPrint (newDepth);
-			result = result + value + "\n"
-		} else {
-			atom, ok := token.(Atom)
-			if ok {
-				result = result + newDepth + atom.Name + "\n"
-			} else {
-				stringValue, ok := token.(string)
-				if !ok {
-					float, ok := token.(float64)
-					if !ok {
-						intValue, ok := token.(int64)
-						if !ok {
-							log.Printf("Type not recognised: %s", token);
-						}
-						result = result + newDepth + strconv.FormatInt(int64(intValue), 10) + "\n"
-					} else {
-						result = result + newDepth + fmt.Sprint(float) + "\n"
-					}
-				} else {
-					result = result + newDepth + "\"" + stringValue + "\"" + "\n"  // TODO Escape
-				}
-			}
+		switch token.(type) {
+		case Tuple: result = result + token.(Tuple).PrettyPrint (newDepth) + "\n"
+		case Atom:  result = result + newDepth + token.(Atom).Name + "\n"
+		case string: result = result + newDepth + "\"" + token.(string) + "\"" + "\n"  // TODO Escape
+		case int64: result = result + newDepth + strconv.FormatInt(int64(token.(int64)), 10) + "\n"
+		case float64: result = result + newDepth + fmt.Sprint(token.(float64)) + "\n"
+		default:
+			log.Printf("Type not recognised: %s", token);
 		}
 	}
 	result = result + depth + ")"

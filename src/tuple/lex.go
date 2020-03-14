@@ -62,7 +62,6 @@ func ReadNumber(r io.RuneScanner, token string) (interface{}, error) {
 		dots = 0
 	}
 	for {
-		log.Printf("Token %s dots %s", token, dots)
 		ch, _, err := r.ReadRune()
 		if err == io.EOF {
 			return token, nil
@@ -75,11 +74,10 @@ func ReadNumber(r io.RuneScanner, token string) (interface{}, error) {
 			// TODO ought to be much more efficient to build up a number dynamically
 			token = token + string(ch) // TODO not efficient
 		} else {
+			r.UnreadRune()
 			switch dots {
 			case 0: return strconv.ParseInt(token, 10, 0)
-			case 1:
-				r.UnreadRune()
-				return strconv.ParseFloat(token, 64)
+			case 1:	return strconv.ParseFloat(token, 64)
 			} 
 		}
 	}

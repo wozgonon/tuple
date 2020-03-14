@@ -15,24 +15,19 @@ func next(r io.RuneScanner) (interface{}, error) {
 
 	for {
 		ch, _, err := r.ReadRune()
-		if err != nil {
-			return "", err
-		}
-		if err == io.EOF {
-			return "", nil
-		}
-		if ! unicode.IsSpace(ch) {
-			switch {
-			case ch == '(' :  return "(", nil
-			case ch == ')' :  return ")", nil
-			case ch == '"' :  return tuple.ReadCLanguageString(r)
-			case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(r, string(ch))    // TODO minus
-			case tuple.IsArithmetic(ch): return tuple.ReadAtom(r, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
-			case unicode.IsLetter(ch):  return tuple.ReadAtom(r, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
-			case unicode.IsGraphic(ch): log.Printf("Error graphic character not recognised '%s'", string(ch))
-			case unicode.IsControl(ch): log.Printf("Error control character not recognised '%d'", ch)
-			default: log.Printf("Error character not recognised '%d'", ch)
-			}
+		switch {
+		case err != nil: return "", err
+		case err == io.EOF: return "", nil
+		case unicode.IsSpace(ch): break
+		case ch == '(' :  return "(", nil
+		case ch == ')' :  return ")", nil
+		case ch == '"' :  return tuple.ReadCLanguageString(r)
+		case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(r, string(ch))    // TODO minus
+		case tuple.IsArithmetic(ch): return tuple.ReadAtom(r, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
+		case unicode.IsLetter(ch):  return tuple.ReadAtom(r, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
+		case unicode.IsGraphic(ch): log.Printf("Error graphic character not recognised '%s'", string(ch))
+		case unicode.IsControl(ch): log.Printf("Error control character not recognised '%d'", ch)
+		default: log.Printf("Error character not recognised '%d'", ch)
 		}
 	}
 }
@@ -47,19 +42,16 @@ func parse(reader io.RuneScanner) (tuple.Tuple, error) {
 			// TODO missing brackets?
 			return tuple, nil
 		}
-		if err != nil {
-			return tuple, err
-		}
-		if token == ")" {
-			return tuple, nil
-		}
-		if token == "(" {
+		switch {
+		case err != nil: return tuple, err
+		case token == ")": return tuple, nil
+		case token == "(":
 			subTuple, err := parse(reader)
 			if err != nil {
 				return tuple, err
 			}
 			tuple.Append(subTuple)
-		} else {
+		default:
 			tuple.Append(token)
 		}
 	}
