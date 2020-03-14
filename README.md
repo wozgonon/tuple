@@ -20,5 +20,11 @@ go run main.go in.jml
 ```
 export GOBIN=`pwd`/bin
 go env -w GOBIN=`pwd`/bin
-go install cmd/jml/jml.go
+go install src/jml/jml.go
+
+
+go install src/tuple/tuple.go
+go install src/lisp/lisp.go
+
 ```
+

@@ -3,6 +3,7 @@ package main
 import "fmt"
 
 import (
+	"tuple"
 	"bufio"
 	"io"
 	//"io/ioutil"
@@ -12,11 +13,8 @@ import (
 	//"unicode/utf8"
 )
 
-func check(e error) {
-    if e != nil {
-        panic(e)
-    }
-}
+/////////////////////////////////////////////////////////////////////////////
+
 
 // "Code point" Go introduces a shorter term for the concept: rune and means exactly the same as "code point", with one interesting addition.
 //  Go language defines the word rune as an alias for the type int32, so programs can be clear when an integer value represents a code point.
@@ -76,8 +74,6 @@ func next(r io.RuneScanner) (string, error) {
 				return readString(r, string(ch), true, func(r rune) bool { return unicode.IsNumber(r) || r== '.' })  // TODO multiple . in number
 			} else if ch == '.' {
 				return readString(r, ".", true, func(r rune) bool { return unicode.IsNumber(r) })
-			//} else if unicode.IsPunct(ch) {
-			//	return readString(r, string(ch), func(r rune) bool { return unicode.IsPunct(r) })
 			} else if isArithmetic(ch) {
 				return readString(r, string(ch), true, func(r rune) bool { return unicode.IsSymbol(r) })
 			} else if unicode.IsLetter(ch) {
@@ -93,46 +89,12 @@ func next(r io.RuneScanner) (string, error) {
 	}
 }
 
-type Tuple struct {
-	list []interface{}
-}
+func parse(reader io.RuneScanner) (tuple.Tuple, error) {
 
-func (tuple Tuple) prettyPrintList(depth string) string {
-	//space := ""
-	result :=  depth + "(\n"
-	newDepth := depth + "  "
-	for _, token := range tuple.list {
-		subTuple, ok := token.(Tuple)
-		var value string
-		if ok {
-			value = subTuple.prettyPrintList (newDepth);
-			result = result + value + "\n"
-		} else {
-			value, ok = token.(string)
-			result = result + newDepth + value + "\n"
-		}
-	}
-	result = result + depth + ")"
-	return result
-}
-
-
-func (tuple *Tuple) Append(token interface{}) {
-	tuple.list = append(tuple.list, token)
-
-}
-
-func NewTuple() Tuple {
-	return Tuple{make([]interface{}, 0)}
-}
-
-func parse(reader io.RuneScanner) (Tuple, error) {
-
-	tuple := NewTuple()
+	tuple := tuple.NewTuple()
 	
 	for {
 		token, err := next(reader)
-		//fmt.Printf ("%s\n", token)
 		if err == io.EOF {
 			// TODO missing brackets?
 			return tuple, nil
@@ -163,7 +125,7 @@ func main() {
 		if err != nil {
 			log.Print("Error after parsing: %s", err)
 		} else {
-			fmt.Printf("%s", list.prettyPrintList(""))
+			fmt.Printf("%s", list.PrettyPrint(""))
 		}
 		//parse("<stdin>", os.Stdin)
 	} else {
@@ -178,7 +140,7 @@ func main() {
 			if err != nil {
 				log.Print("Error after parsing: %s", err)
 			} else {
-				fmt.Printf ("%s\n", list.prettyPrintList(""))
+				fmt.Printf ("%s\n", list.PrettyPrint(""))
 			}
 			file.Close()
 		}
