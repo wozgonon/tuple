@@ -11,32 +11,34 @@ import (
 	"unicode"
 )
 
-//	Open rune
-//	Close rune
-//	return ParserContext{sourceName, 0, 0, '{', '}'}
+type Parser {
+	//	Open rune
+	//	Close rune
+}
 
-func next(parser * tuple.ParserContext) (interface{}, error) {
+
+func (parser Parser) parnext(context * tuple.ParserContext) (interface{}, error) {
 
 	for {
-		ch, err := parser.ReadRune()
+		ch, err := context.ReadRune()
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case unicode.IsSpace(ch): break
 		case ch == '(' :  return "(", nil
 		case ch == ')' :  return ")", nil
-		case ch == '"' :  return tuple.ReadCLanguageString(parser)
-		case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(parser, string(ch))    // TODO minus
-		case tuple.IsArithmetic(ch): return tuple.ReadAtom(parser, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
-		case unicode.IsLetter(ch):  return tuple.ReadAtom(parser, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
-		case unicode.IsGraphic(ch): parser.Error("Error graphic character not recognised '%s'", string(ch))
-		case unicode.IsControl(ch): parser.Error("Error control character not recognised '%d'", ch)
+		case ch == '"' :  return tuple.ReadCLanguageString(context)
+		case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(context, string(ch))    // TODO minus
+		case tuple.IsArithmetic(ch): return tuple.ReadAtom(context, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
+		case unicode.IsLetter(ch):  return tuple.ReadAtom(context, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
+		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
+		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
 		default: parser.Error("Error character not recognised '%d'", ch)
 		}
 	}
 }
 
-func parse(parser * tuple.ParserContext) (tuple.Tuple, error) {
+func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
 
 	tuple := tuple.NewTuple()
 	for {
@@ -45,7 +47,7 @@ func parse(parser * tuple.ParserContext) (tuple.Tuple, error) {
 		case err != nil: return tuple, err
 		case token == ")": return tuple, nil
 		case token == "(":
-			subTuple, err := parse(parser)
+			subTuple, err := parser.parse(context)
 			if err == io.EOF {
 				parser.Error ("Missing close bracket")
 			}
@@ -59,8 +61,8 @@ func parse(parser * tuple.ParserContext) (tuple.Tuple, error) {
 	}
 }
 
-func Run(parser * tuple.ParserContext) {
-	tuple, err := parse(parser)
+func (parser Parser) Run(parser * tuple.ParserContext) {
+	tuple, err := parser.parse(context)
 	if err != io.EOF && err != nil {
 		parser.Error("Failed while parsing: %s", err)
 	} else {

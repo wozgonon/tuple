@@ -10,7 +10,7 @@ with with various
 ## Commonalities
 
 Observing that JSON (and YAML) is now 2020 used as the common configuration languages and consists of nothing but
-scalars, arrays (fixed length list) and maps.   Yet LISP from the 1950's supported the same concepts: scalars, lists and maps.
+nested scalars, arrays (fixed length list) and maps.   Yet LISP from the 1950's supported the same concepts: nested scalars, lists and maps.
 
 Of course one thinks of LISP as an executable programming language and JSON just as a file format LISP always was a file format
 with an eval function.  One could add an eval function to JSON (which one can with faceless).
