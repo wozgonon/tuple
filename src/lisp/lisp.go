@@ -38,11 +38,8 @@ func parse(reader io.RuneScanner) (tuple.Tuple, error) {
 	
 	for {
 		token, err := next(reader)
-		if err == io.EOF {
-			// TODO missing brackets?
-			return tuple, nil
-		}
 		switch {
+		case  err == io.EOF: return tuple, nil // TODO missing brackets?
 		case err != nil: return tuple, err
 		case token == ")": return tuple, nil
 		case token == "(":

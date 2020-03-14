@@ -87,21 +87,20 @@ func ReadCLanguageString(r io.RuneScanner) (string, error) {
 	token := ""
 	for {
 		ch, _, err := r.ReadRune()
-		if err == io.EOF {
+		switch {
+		case err == io.EOF:
 			log.Printf("ERROR missing lose \"")
 			return token, nil
-		} else if err != nil {
-			return "", err
-		} else if ch == '"' {
-			return token, nil
-		} else if ch == '\\' {
+		case err != nil: return "", err
+		case ch == '"': return token, nil
+		case ch == '\\':
 			ch, _, err := r.ReadRune()
 			if err == io.EOF {
 				log.Printf("ERROR missing lose \"")
 				return token, nil
 			}
 			token = token + string(cLanguageEscapeCharacters(ch))
-		} else {
+		default:
 			// TODO not efficient
 			token = token + string(ch)
 		}

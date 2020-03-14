@@ -23,19 +23,21 @@ type Tuple struct {
 }
 
 func (tuple Tuple) PrettyPrint(depth string) string {
-	//space := ""
 	result :=  depth + "(\n"
 	newDepth := depth + "  "
 	for _, token := range tuple.list {
+		var value string
 		switch token.(type) {
-		case Tuple: result = result + token.(Tuple).PrettyPrint (newDepth) + "\n"
-		case Atom:  result = result + newDepth + token.(Atom).Name + "\n"
-		case string: result = result + newDepth + "\"" + token.(string) + "\"" + "\n"  // TODO Escape
-		case int64: result = result + newDepth + strconv.FormatInt(int64(token.(int64)), 10) + "\n"
-		case float64: result = result + newDepth + fmt.Sprint(token.(float64)) + "\n"
+		case Tuple: value = token.(Tuple).PrettyPrint (newDepth)
+		case Atom:  value = newDepth + token.(Atom).Name
+		case string: value = newDepth + "\"" + token.(string) + "\""  // TODO Escape
+		case int64: value = newDepth + strconv.FormatInt(int64(token.(int64)), 10)
+		case float64: value = newDepth + fmt.Sprint(token.(float64))
 		default:
+			value = "???"
 			log.Printf("Type not recognised: %s", token);
 		}
+		result = result + value + "\n"
 	}
 	result = result + depth + ")"
 	return result
