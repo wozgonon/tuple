@@ -34,8 +34,16 @@ func ReadString (r io.RuneScanner, token string, keepLast bool, test func(r rune
 	}
 }
 
-func ReadAtom(r io.RuneScanner, prefix string) (interface{}, error) {
-	atom, err := ReadString(r, prefix, true, func(r rune) bool { return unicode.IsLetter(r) })
+func ReadAtomString(r io.RuneScanner, prefix string, test func(rune) bool) (interface{}, error) {
+	atom, err := ReadString(r, prefix, true, test)
+	if err != nil {
+		return Atom{""}, err
+	}
+	return atom, err
+}
+
+func ReadAtom(r io.RuneScanner, prefix string, test func(rune) bool) (interface{}, error) {
+	atom, err := ReadString(r, prefix, true, test)
 	if err != nil {
 		return Atom{""}, err
 	}

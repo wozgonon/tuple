@@ -22,30 +22,16 @@ func next(r io.RuneScanner) (interface{}, error) {
 			return "", nil
 		}
 		if ! unicode.IsSpace(ch) {
-			if ch == '(' {
-				return "(", nil
-			} else if ch == ')' {
-				return ")", nil
-			} else if ch == '"' {
-				return tuple.ReadCLanguageString(r)
-			} else if unicode.IsNumber(ch) || ch == '.' { // TODO minus
-				return tuple.ReadNumber(r, string(ch))
-
-			} else if tuple.IsArithmetic(ch) {
-				operator, err := tuple.ReadString(r, string(ch), true, func(r rune) bool { return unicode.IsSymbol(r) })
-				if err != nil {
-					return "", err
-				}
-				return tuple.Atom{operator}, err
-				
-			} else if unicode.IsLetter(ch) {
-				return tuple.ReadAtom(r, string(ch))
-			} else if unicode.IsGraphic(ch) {
-				log.Printf("Error graphic character not recognised '%s'", string(ch))
-			} else if unicode.IsControl(ch) {
-				log.Printf("Error control character not recognised '%d'", ch)
-			} else  {
-				log.Printf("Error character not recognised '%d'", ch)
+			switch {
+			case ch == '(' :  return "(", nil
+			case ch == ')' :  return ")", nil
+			case ch == '"' :  return tuple.ReadCLanguageString(r)
+			case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(r, string(ch))    // TODO minus
+			case tuple.IsArithmetic(ch): return tuple.ReadAtom(r, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
+			case unicode.IsLetter(ch):  return tuple.ReadAtom(r, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
+			case unicode.IsGraphic(ch): log.Printf("Error graphic character not recognised '%s'", string(ch))
+			case unicode.IsControl(ch): log.Printf("Error control character not recognised '%d'", ch)
+			default: log.Printf("Error character not recognised '%d'", ch)
 			}
 		}
 	}
