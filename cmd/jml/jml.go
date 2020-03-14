@@ -30,7 +30,7 @@ func emit(str rune) {
 /////////////////////////////////////////////////////////////////////////////
 
 type item struct {
-	args []string
+	args []interface{}
 }
 
 type parser struct {
@@ -79,7 +79,7 @@ func (p *parser) close() {
 	// Pop top item from stack
 	topItem := p.stack[l-1]
 	p.stack = p.stack[:l-1]
-
+	p.stack[l-2].args = append(p.stack[l-2].args, topItem)
 	log.Printf("topItem %d", len(topItem.args))
 	// do something with top.args
 	//p.stack.args = append(p.stack.args, "top")
@@ -97,6 +97,24 @@ func (p *parser) endline() {
 	//top = append(top, token)
 }
 
+func print(i item) {
+
+	fmt.Print("(")
+	for _, a := range i.args {
+		ii, ok := a.(item)
+		if !ok {
+			print(ii)
+		} else {
+			ss, ok2 := a.(string)
+			if ok2 {
+				fmt.Print("%s", ss)
+			}
+		}
+		fmt.Print("%s", a)
+	}
+	fmt.Print(")")
+}
+
 func (p *parser) end() {
 
 	if p.depth > 0 {
@@ -104,6 +122,8 @@ func (p *parser) end() {
 	}
 
 	log.Printf("Parsed %d lines, %d unclosed braces, %d errors", p.lines, p.depth, p.errors)
+
+	print(p.stack[0])
 }
 
 
@@ -118,7 +138,7 @@ func parse(fileName string) {
 	scanner := bufio.NewScanner(file)
 
 	p := parser{0, 0, 0, 0,  make([]item, 0)}
-
+	p.open()
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -144,6 +164,7 @@ func parse(fileName string) {
 		p.endline()
 		start = 0
 	}
+	p.close()
 	p.end()
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)

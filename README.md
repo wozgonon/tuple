@@ -8,3 +8,16 @@ Parsers for little languages, Written in golang:
 * TCL - for code and data
 * JSON - for data
 * jml - for data, code and markup
+* prolog - code, data and expressions
+
+```
+cd cmd/jml
+go run main.go in.jml
+```
+
+
+```
+export GOBIN=`pwd`/bin
+go env -w GOBIN=`pwd`/bin
+go install cmd/jml/jml.go
+```
