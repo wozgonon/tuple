@@ -22,7 +22,7 @@ jml: tuple src/jml/jml.go
 tuple: src/tuple/tuple.go
 	go install $@
 
-test:
+test: all
 	bin/lisp src/lisp/test.l
 
 clean:

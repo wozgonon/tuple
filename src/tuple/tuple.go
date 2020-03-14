@@ -1,9 +1,17 @@
 package tuple
 
+import "fmt"
+import "log"
+import "strconv"
+
 func check(e error) {
     if e != nil {
         panic(e)
     }
+}
+
+type Atom struct {
+	Name string
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -20,13 +28,30 @@ func (tuple Tuple) PrettyPrint(depth string) string {
 	newDepth := depth + "  "
 	for _, token := range tuple.list {
 		subTuple, ok := token.(Tuple)
-		var value string
 		if ok {
-			value = subTuple.PrettyPrint (newDepth);
+			value := subTuple.PrettyPrint (newDepth);
 			result = result + value + "\n"
 		} else {
-			value, ok = token.(string)
-			result = result + newDepth + value + "\n"
+			atom, ok := token.(Atom)
+			if ok {
+				result = result + newDepth + atom.Name + "\n"
+			} else {
+				stringValue, ok := token.(string)
+				if !ok {
+					float, ok := token.(float64)
+					if !ok {
+						intValue, ok := token.(int64)
+						if !ok {
+							log.Printf("Type not recognised: %s", token);
+						}
+						result = result + newDepth + strconv.FormatInt(int64(intValue), 10) + "\n"
+					} else {
+						result = result + newDepth + fmt.Sprint(float) + "\n"
+					}
+				} else {
+					result = result + newDepth + "\"" + stringValue + "\"" + "\n"  // TODO Escape
+				}
+			}
 		}
 	}
 	result = result + depth + ")"

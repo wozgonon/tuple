@@ -4,6 +4,7 @@ import "fmt"
 
 import (
 	"tuple"
+	"strconv"
 	"bufio"
 	"io"
 	//"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"unicode"
 	//"unicode/utf8"
+	"strings"
 )
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,7 +55,7 @@ func isArithmetic(ch rune) bool {
 	}
 }
 
-func next(r io.RuneScanner) (string, error) {
+func next(r io.RuneScanner) (interface{}, error) {
 
 	for {
 		ch, _, err := r.ReadRune()
@@ -69,15 +71,32 @@ func next(r io.RuneScanner) (string, error) {
 			} else if ch == ')' {
 				return ")", nil
 			} else if ch == '"' {
-				return readString(r, "", false, func(r rune) bool { return r != '"' })  // Handle escape character
-			} else if unicode.IsNumber(ch) {
-				return readString(r, string(ch), true, func(r rune) bool { return unicode.IsNumber(r) || r== '.' })  // TODO multiple . in number
-			} else if ch == '.' {
-				return readString(r, ".", true, func(r rune) bool { return unicode.IsNumber(r) })
+				return readString(r, "", false, func(r rune) bool { return r != '"' })  // TODO Handle escape character
+			} else if unicode.IsNumber(ch) || ch == '.'{
+				number, err := readString(r, string(ch), true, func(r rune) bool { return unicode.IsNumber(r) || r== '.' })  // TODO multiple . in number
+				if err != nil {
+					return "", err
+				}
+				if strings.Contains(number, ".") {
+					return strconv.ParseFloat(number, 64)
+				}
+				return strconv.ParseInt(number, 10, 0)
+				// TODO "NaN", "+Inf", and "-Inf" 
+
 			} else if isArithmetic(ch) {
-				return readString(r, string(ch), true, func(r rune) bool { return unicode.IsSymbol(r) })
+				operator, err := readString(r, string(ch), true, func(r rune) bool { return unicode.IsSymbol(r) })
+				if err != nil {
+					return "", err
+				}
+				return tuple.Atom{operator}, err
+				
 			} else if unicode.IsLetter(ch) {
-				return readString(r, string(ch), true, func(r rune) bool { return unicode.IsLetter(r) })
+				atom, err := readString(r, string(ch), true, func(r rune) bool { return unicode.IsLetter(r) })
+				if err != nil {
+					return "", err
+				}
+				return tuple.Atom{atom}, err
+				
 			} else if unicode.IsGraphic(ch) {
 				log.Printf("Error graphic character not recognised '%s'", string(ch))
 			} else if unicode.IsControl(ch) {
