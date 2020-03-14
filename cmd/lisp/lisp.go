@@ -93,14 +93,14 @@ func next(r io.RuneScanner) (string, error) {
 	}
 }
 
-type Tuple struct {
-	list []interface{}
+type tuple struct {
+	list []string
 }
 
-func (tuple Tuple) prettyPrintList() string {
+func (list tuple) prettyPrintList() string {
 	space := ""
 	result := "("
-	for _, token := range tuple.list {
+	for _, token := range list.list {
 		result = result + space + token
 		space = " "
 	}
@@ -109,7 +109,7 @@ func (tuple Tuple) prettyPrintList() string {
 }
 
 
-func (tuple *Tuple) Append(token string) {
+func (tuple *tuple) appendToTuple(token string) {
 	tuple.list = append(tuple.list, token)
 
 }
@@ -120,30 +120,30 @@ func NewTuple() tuple {
 
 func parse(reader io.RuneScanner) (tuple, error) {
 
-	tuple := NewTuple()
+	list := NewTuple()
 	
 	for {
 		token, err := next(reader)
 		//fmt.Printf ("%s\n", token)
 		if err == io.EOF {
 			// TODO missing brackets?
-			return tuple, nil
+			return list, nil
 		}
 		if err != nil {
-			return tuple, err
+			return list, err
 		}
 		if token == ")" {
-			return tuple, nil
+			return list, nil
 		}
 		if token == "(" {
-			subTuple, err := parse(reader)
+			subList, err := parse(reader)
 			if err != nil {
-				return tuple, err
+				return list, err
 			}
 			pretty := subList.prettyPrintList ()
-			tuple.Append(pretty)
+			list.appendToTuple(pretty)
 		} else {
-			tuple.Append(token)
+			list.appendToTuple(token)
 		}
 	}
 }
