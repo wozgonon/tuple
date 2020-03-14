@@ -3,6 +3,8 @@ package tuple
 import 	"io"
 import 	"log"
 import 	"fmt"
+import 	"bufio"
+import 	"os"
 
 type ParserContext struct {
 	sourceName string
@@ -41,5 +43,35 @@ func (context * ParserContext) Error(format string, args ...interface{}) {
 	prefix := fmt.Sprintf("ERROR at %d, %d in '%s': ", context.line, context.column, context.sourceName)
 	suffix := fmt.Sprintf(format, args)
 	log.Print(prefix + suffix)
+}
+
+func run(context * ParserContext, parse func (context * ParserContext) (Tuple, error)) {
+	tuple, err := parse(context)
+	if err != io.EOF && err != nil {
+		context.Error("Failed while parsing: %s", err)
+	} else {
+		fmt.Printf ("%s\n", tuple.PrettyPrint(""))
+	}
+
+}
+
+func RunParser(args []string, parse func (context * ParserContext) (Tuple, error))  {
+
+	if len(args) == 0 {
+		reader := bufio.NewReader(os.Stdin)
+		context := NewParserContext("<stdin>", reader)
+		run(&context, parse)
+	} else {
+		for _, fileName := range os.Args[1:] {
+			file, err := os.Open(fileName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			reader := bufio.NewReader(file)
+			context := NewParserContext(fileName, reader)
+			run(&context, parse)
+			file.Close()
+		}
+	}
 }
 

@@ -1,21 +1,17 @@
 package main
 
-import "fmt"
-
 import (
 	"tuple"
-	"bufio"
 	"io"
-	"log"
 	"os"
 	"unicode"
+	"errors"
 )
 
 type Parser struct {
-	//	Open rune
-	//	Close rune
+	Open rune
+	Close rune
 }
-
 
 func (parser Parser) next(context * tuple.ParserContext) (interface{}, error) {
 
@@ -45,7 +41,9 @@ func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
 		token, err := parser.next(context)
 		switch {
 		case err != nil: return tuple, err
-		case token == ")": return tuple, nil
+		case token == ")":
+			return tuple, nil
+			return tuple, errors.New("Unexpected ')'")
 		case token == "(":
 			subTuple, err := parser.parse(context)
 			if err == io.EOF {
@@ -61,36 +59,8 @@ func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
 	}
 }
 
-func (parser Parser) Run(context * tuple.ParserContext) {
-	tuple, err := parser.parse(context)
-	if err != io.EOF && err != nil {
-		context.Error("Failed while parsing: %s", err)
-	} else {
-		fmt.Printf ("%s\n", tuple.PrettyPrint(""))
-	}
-
-}
-
 func main() {
-
 	
-	if len(os.Args) == 1 {
-
-		reader := bufio.NewReader(os.Stdin)
-		context := tuple.NewParserContext("<stdin>", reader)
-		parser := Parser{}
-		parser.Run(&context)
-	} else {
-		for _, fileName := range os.Args[1:] {
-			file, err := os.Open(fileName)
-			if err != nil {
-				log.Fatal(err)
-			}
-			reader := bufio.NewReader(file)
-			context := tuple.NewParserContext(fileName, reader)
-			parser := Parser{}
-			parser.Run(&context)
-			file.Close()
-		}
-	}
+	parser := Parser{'(', ')'}
+	tuple.RunParser(os.Args[1:], func (context * tuple.ParserContext) (tuple.Tuple, error) { return parser.parse (context) })
 }
