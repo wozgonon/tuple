@@ -93,9 +93,34 @@ func next(r io.RuneScanner) (string, error) {
 	}
 }
 
-func parse(reader io.RuneScanner) ([]string, error) {
+type tuple struct {
+	list []string
+}
 
-	list := make([]string, 0)
+func (list tuple) prettyPrintList() string {
+	space := ""
+	result := "("
+	for _, token := range list.list {
+		result = result + space + token
+		space = " "
+	}
+	result = result + ")"
+	return result
+}
+
+
+func (tuple *tuple) appendToTuple(token string) {
+	tuple.list = append(tuple.list, token)
+
+}
+
+func NewTuple() tuple {
+	return tuple{make([]string, 0)}
+}
+
+func parse(reader io.RuneScanner) (tuple, error) {
+
+	list := NewTuple()
 	
 	for {
 		token, err := next(reader)
@@ -115,23 +140,12 @@ func parse(reader io.RuneScanner) ([]string, error) {
 			if err != nil {
 				return list, err
 			}
-			pretty := prettyPrintList (subList)
-			list = append(list, pretty)
+			pretty := subList.prettyPrintList ()
+			list.appendToTuple(pretty)
 		} else {
-			list = append(list, token)
+			list.appendToTuple(token)
 		}
 	}
-}
-
-func prettyPrintList(list []string) string {
-	space := ""
-	result := "("
-	for _, token := range list {
-		result = result + space + token
-		space = " "
-	}
-	result = result + ")"
-	return result
 }
 
 func main() {
@@ -142,7 +156,7 @@ func main() {
 		if err != nil {
 			log.Print("Error after parsing: %s", err)
 		} else {
-			fmt.Printf("%s", prettyPrintList(list))
+			fmt.Printf("%s", list.prettyPrintList())
 		}
 		//parse("<stdin>", os.Stdin)
 	} else {
@@ -157,7 +171,7 @@ func main() {
 			if err != nil {
 				log.Print("Error after parsing: %s", err)
 			} else {
-				fmt.Printf ("%s\n", prettyPrintList(list))
+				fmt.Printf ("%s\n", list.prettyPrintList())
 			}
 			file.Close()
 		}
