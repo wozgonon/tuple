@@ -13,9 +13,9 @@ import "math"
 //  Go language defines the word rune as an alias for the type int32, so programs can be clear when an integer value represents a code point.
 //  Moreover, what you might think of as a character constant is called a rune constant in Go. 
 
-func ReadString (r io.RuneScanner, token string, keepLast bool, test func(r rune) bool) (string, error) {
+func ReadString (context * ParserContext, token string, keepLast bool, test func(r rune) bool) (string, error) {
 	for {
-		ch, _, err := r.ReadRune()
+		ch, err := context.ReadRune()
 		if err == io.EOF {
 			log.Printf("ERROR missing close \"")
 			return token, nil
@@ -24,7 +24,7 @@ func ReadString (r io.RuneScanner, token string, keepLast bool, test func(r rune
 			//return ""
 		} else if ! test(ch) {
 			if keepLast {
-				r.UnreadRune()
+				context.UnreadRune()
 			}
 			return token, nil
 		} else {
@@ -34,16 +34,8 @@ func ReadString (r io.RuneScanner, token string, keepLast bool, test func(r rune
 	}
 }
 
-func ReadAtomString(r io.RuneScanner, prefix string, test func(rune) bool) (interface{}, error) {
-	atom, err := ReadString(r, prefix, true, test)
-	if err != nil {
-		return Atom{""}, err
-	}
-	return atom, err
-}
-
-func ReadAtom(r io.RuneScanner, prefix string, test func(rune) bool) (interface{}, error) {
-	atom, err := ReadString(r, prefix, true, test)
+func ReadAtom(context * ParserContext, prefix string, test func(rune) bool) (interface{}, error) {
+	atom, err := ReadString(context, prefix, true, test)
 	if err != nil {
 		return Atom{""}, err
 	}
@@ -54,7 +46,7 @@ func ReadAtom(r io.RuneScanner, prefix string, test func(rune) bool) (interface{
 	}
 }
 
-func ReadNumber(r io.RuneScanner, token string) (interface{}, error) {
+func ReadNumber(context * ParserContext, token string) (interface{}, error) {
 	var dots int
 	if token == "." {
 		dots = 1
@@ -62,7 +54,7 @@ func ReadNumber(r io.RuneScanner, token string) (interface{}, error) {
 		dots = 0
 	}
 	for {
-		ch, _, err := r.ReadRune()
+		ch, err := context.ReadRune()
 		if err == io.EOF {
 			return token, nil
 		} else if err != nil {
@@ -74,7 +66,7 @@ func ReadNumber(r io.RuneScanner, token string) (interface{}, error) {
 			// TODO ought to be much more efficient to build up a number dynamically
 			token = token + string(ch) // TODO not efficient
 		} else {
-			r.UnreadRune()
+			context.UnreadRune()
 			switch dots {
 			case 0: return strconv.ParseInt(token, 10, 0)
 			case 1:	return strconv.ParseFloat(token, 64)
@@ -83,10 +75,10 @@ func ReadNumber(r io.RuneScanner, token string) (interface{}, error) {
 	}
 }
 
-func ReadCLanguageString(r io.RuneScanner) (string, error) {
+func ReadCLanguageString(context * ParserContext) (string, error) {
 	token := ""
 	for {
-		ch, _, err := r.ReadRune()
+		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
 			log.Printf("ERROR missing lose \"")
@@ -94,7 +86,7 @@ func ReadCLanguageString(r io.RuneScanner) (string, error) {
 		case err != nil: return "", err
 		case ch == '"': return token, nil
 		case ch == '\\':
-			ch, _, err := r.ReadRune()
+			ch, err := context.ReadRune()
 			if err == io.EOF {
 				log.Printf("ERROR missing lose \"")
 				return token, nil

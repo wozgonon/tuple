@@ -11,39 +11,44 @@ import (
 	"unicode"
 )
 
-func next(r io.RuneScanner) (interface{}, error) {
+//	Open rune
+//	Close rune
+//	return ParserContext{sourceName, 0, 0, '{', '}'}
+
+func next(parser * tuple.ParserContext) (interface{}, error) {
 
 	for {
-		ch, _, err := r.ReadRune()
+		ch, err := parser.ReadRune()
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case unicode.IsSpace(ch): break
 		case ch == '(' :  return "(", nil
 		case ch == ')' :  return ")", nil
-		case ch == '"' :  return tuple.ReadCLanguageString(r)
-		case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(r, string(ch))    // TODO minus
-		case tuple.IsArithmetic(ch): return tuple.ReadAtom(r, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
-		case unicode.IsLetter(ch):  return tuple.ReadAtom(r, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
-		case unicode.IsGraphic(ch): log.Printf("Error graphic character not recognised '%s'", string(ch))
-		case unicode.IsControl(ch): log.Printf("Error control character not recognised '%d'", ch)
-		default: log.Printf("Error character not recognised '%d'", ch)
+		case ch == '"' :  return tuple.ReadCLanguageString(parser)
+		case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(parser, string(ch))    // TODO minus
+		case tuple.IsArithmetic(ch): return tuple.ReadAtom(parser, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
+		case unicode.IsLetter(ch):  return tuple.ReadAtom(parser, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
+		case unicode.IsGraphic(ch): parser.Error("Error graphic character not recognised '%s'", string(ch))
+		case unicode.IsControl(ch): parser.Error("Error control character not recognised '%d'", ch)
+		default: parser.Error("Error character not recognised '%d'", ch)
 		}
 	}
 }
 
-func parse(reader io.RuneScanner) (tuple.Tuple, error) {
+func parse(parser * tuple.ParserContext) (tuple.Tuple, error) {
 
 	tuple := tuple.NewTuple()
-	
 	for {
-		token, err := next(reader)
+		token, err := next(parser)
 		switch {
-		case  err == io.EOF: return tuple, nil // TODO missing brackets?
 		case err != nil: return tuple, err
 		case token == ")": return tuple, nil
 		case token == "(":
-			subTuple, err := parse(reader)
+			subTuple, err := parse(parser)
+			if err == io.EOF {
+				parser.Error ("Missing close bracket")
+			}
 			if err != nil {
 				return tuple, err
 			}
@@ -54,17 +59,24 @@ func parse(reader io.RuneScanner) (tuple.Tuple, error) {
 	}
 }
 
+func Run(parser * tuple.ParserContext) {
+	tuple, err := parse(parser)
+	if err != io.EOF && err != nil {
+		parser.Error("Failed while parsing: %s", err)
+	} else {
+		fmt.Printf ("%s\n", tuple.PrettyPrint(""))
+	}
+
+}
+
 func main() {
 
+	
 	if len(os.Args) == 1 {
+
 		reader := bufio.NewReader(os.Stdin)
-		list, err := parse(reader)
-		if err != nil {
-			log.Print("Error after parsing: %s", err)
-		} else {
-			fmt.Printf("%s", list.PrettyPrint(""))
-		}
-		//parse("<stdin>", os.Stdin)
+		parser := tuple.NewParserContext("<stdin>", reader)
+		Run(&parser)
 	} else {
 		for _, fileName := range os.Args[1:] {
 			file, err := os.Open(fileName)
@@ -72,13 +84,8 @@ func main() {
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			list, err := parse(reader)
-			//err = parse(fileName, file)
-			if err != nil {
-				log.Print("Error after parsing: %s", err)
-			} else {
-				fmt.Printf ("%s\n", list.PrettyPrint(""))
-			}
+			parser := tuple.NewParserContext(fileName, reader)
+			Run(&parser)
 			file.Close()
 		}
 	}
