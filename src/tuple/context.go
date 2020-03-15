@@ -9,13 +9,14 @@ import 	"path"
 
 type ParserContext struct {
 	SourceName string
-	line int
-	column int
+	line int64
+	column int64
 	scanner io.RuneScanner
+	logStyle Style
 }
 
-func NewParserContext(sourceName string, scanner io.RuneScanner) ParserContext {
-	return ParserContext{sourceName, 1, 0, scanner}
+func NewParserContext(sourceName string, scanner io.RuneScanner, logStyle Style) ParserContext {
+	return ParserContext{sourceName, 1, 0, scanner, logStyle}
 }
 
 func (context * ParserContext) Suffix() string {
@@ -48,13 +49,22 @@ func (context * ParserContext) Error(format string, args ...interface{}) {
 	prefix := fmt.Sprintf("ERROR at %d, %d in '%s': ", context.line, context.column, context.SourceName)
 	suffix := fmt.Sprintf(format, args)
 	log.Print(prefix + suffix)
+
+	tuple := NewTuple()
+	tuple.Append("ERROR")
+	tuple.Append(context.line)
+	tuple.Append(context.column)
+	tuple.Append(context.SourceName)
+	tuple.Append(suffix)
+	context.logStyle.PrettyPrint(tuple, func (value string) { fmt.Print(value) })
+
 }
 
-func RunParser(args []string, parse func (context * ParserContext)) {
+func RunParser(args []string, logStyle Style, parse func (context * ParserContext)) {
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
-		context := NewParserContext("<stdin>", reader)
+		context := NewParserContext("<stdin>.l", reader, logStyle)
 		parse(&context)
 	} else {
 		for _, fileName := range args {
@@ -63,7 +73,7 @@ func RunParser(args []string, parse func (context * ParserContext)) {
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader)
+			context := NewParserContext(fileName, reader, logStyle)
 			parse(&context)
 			file.Close()
 		}

@@ -21,11 +21,11 @@ type Atom struct {
 /////////////////////////////////////////////////////////////////////////////
 
 type Tuple struct {
-	list []interface{}
+	List []interface{}
 }
 
 func (tuple *Tuple) Append(token interface{}) {
-	tuple.list = append(tuple.list, token)
+	tuple.List = append(tuple.List, token)
 }
 
 func NewTuple() Tuple {
@@ -77,8 +77,8 @@ func (style Style) printTuple(depth string, tuple Tuple, out func(value string))
 	out(style.Open)
 	out(style.LineBreak)
 	newDepth := depth + style.Indent
-	len := len(tuple.list)
-	for k, token := range tuple.list {
+	len := len(tuple.List)
+	for k, token := range tuple.List {
 		style.printToken(newDepth, token, out)
 		if k < len-1 {
 			out(style.Separator)

@@ -8,11 +8,22 @@ import (
 	//"errors"
 	"fmt"
 	"log"
+	"unicode/utf8"
+	//"reflect"
 )
 
 type Parser struct {
 	style tuple.Style
 	outputStyle tuple.Style
+	openChar rune
+	closeChar rune
+}
+
+func NewParser(style tuple.Style, outputStyle tuple.Style) Parser {
+
+	openChar, _ := utf8.DecodeRuneInString(style.Open)
+	closeChar, _ := utf8.DecodeRuneInString(style.Close)
+	return Parser{style,outputStyle,openChar,closeChar}
 }
 
 func (parser Parser) getNext(context * tuple.ParserContext) (interface{}, error) {
@@ -23,8 +34,8 @@ func (parser Parser) getNext(context * tuple.ParserContext) (interface{}, error)
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case unicode.IsSpace(ch): break
-		case ch == '(' :  return "(", nil
-		case ch == ')' :  return ")", nil
+		case ch == parser.openChar :  return parser.style.Open, nil
+		case ch == parser.closeChar : return parser.style.Close, nil
 		case ch == '"' :  return tuple.ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(context, string(ch))    // TODO minus
 		case tuple.IsArithmetic(ch): return tuple.ReadAtom(context, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
@@ -50,9 +61,9 @@ func (parser Parser) parseTuple(context * tuple.ParserContext) (tuple.Tuple, err
 		case err != nil:
 			context.Error("parsing %s", err);
 			return tuple, err /// ??? Any need to return
-		case token == ")":
+		case token == parser.style.Close:
 			return tuple, nil
-		case token == "(":
+		case token == parser.style.Open:
 			subTuple, err := parser.parseTuple(context)
 			if err == io.EOF {
 				context.Error ("Missing close bracket")
@@ -69,7 +80,7 @@ func (parser Parser) parseTuple(context * tuple.ParserContext) (tuple.Tuple, err
 
 }
 
-func (parser Parser) parse(context * tuple.ParserContext) {
+func (parser Parser) parseSExpression(context * tuple.ParserContext) {
 
 	for {
 		token, err := parser.getNext(context)
@@ -79,14 +90,51 @@ func (parser Parser) parse(context * tuple.ParserContext) {
 		case err != nil:
 			context.Error ("'%s'", err)
 			return
-		case token == ")":
-			context.Error ("Unexpected close bracket '%s'", ")")
-		case token == "(":
+		case token == parser.style.Close:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+		case token == parser.style.Open:
 			tuple, err := parser.parseTuple(context)
 			if err != nil {
 				return // tuple, err
 			}
 			parser.next(tuple)
+		default:
+			parser.next(token)
+		}
+	}
+}
+
+func (parser Parser) parseTCL(context * tuple.ParserContext) {
+
+	resultTuple := tuple.NewTuple()
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			context.Error ("'%s'", err)
+			return
+		case token == "\n":
+			l := len(resultTuple.List)
+			if l == 1 {
+				first := resultTuple.List[0]
+				if _, ok := first.(tuple.Atom); ok {
+					parser.next(resultTuple)
+				} else {
+					parser.next(token)
+				}
+			} else {
+				parser.next(resultTuple)
+			}
+		case token == parser.style.Close:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+		case token == parser.style.Open:
+			resultTuple, err := parser.parseTuple(context)
+			if err != nil {
+				return // tuple, err
+			}
+			parser.next(resultTuple)
 		default:
 			parser.next(token)
 		}
@@ -103,22 +151,27 @@ func help() {
 
 func main() {
 
-	if len(os.Args) == 1 {
-		help()
-		return
-	}
+	//if len(os.Args) == 1 {
+	//	help()
+	//	return
+	//}
 
 	tclStyle := tuple.Style{"  ", "{", "}", "", "\n"}
 	jmlStyle := tuple.Style{"  ", "{", "}", "", "\n"}
 	tupleStyle := tuple.Style{"  ", "(", ")", ",", "\n"} // prolog, sql
 	lispStyle := tuple.Style{"  ", "(", ")", "", "\n"}
 
+	logStyle := lispStyle
 	outputStyle := lispStyle
 
 	files := make([]string, 0)
-	for _, v := range os.Args[1:] {
+	l := len(os.Args[1:])
+	for k, v := range os.Args[1:] {
 		switch v {
 		case "-o", "--output":
+			if k < l-1 {
+				
+			}
 		case "-p", "--pretty":
 			outputStyle = lispStyle
 		case "--jml":
@@ -127,6 +180,8 @@ func main() {
 			outputStyle= tclStyle
 		case "--tuple":
 			outputStyle= tupleStyle
+		case "--l_tcl":
+			logStyle= tclStyle
 		case "-h", "--help":
 			help()
 			return
@@ -138,19 +193,19 @@ func main() {
 			files = append(files, v)
 		}
 	}
-	tuple.RunParser(files,
+	tuple.RunParser(files, logStyle,
 		func (context * tuple.ParserContext) {
 			suffix := context.Suffix()
 			switch suffix {
 			case ".l":
-				parser := Parser{lispStyle, outputStyle}
-				parser.parse (context)
+				parser := NewParser(lispStyle, outputStyle)
+				parser.parseSExpression (context)
 			case ".jml":
-				parser := Parser{jmlStyle, outputStyle}
-				parser.parse (context)
+				parser := NewParser(jmlStyle, outputStyle)
+				parser.parseSExpression (context)
 			case ".tcl": 
-				parser := Parser{tclStyle, outputStyle}
-				parser.parse (context)
+				parser := NewParser(tclStyle, outputStyle)
+				parser.parseTCL (context)
 			case ".yaml": fallthrough
 			case ".json": fallthrough
 			case ".xml": fallthrough

@@ -93,4 +93,4 @@ Place a githook to format into project standard format on commit and into person
 
 TODO Comments
 TODO Errors in any format - eat own shit
-
+TODO github git remote - so in code commit and github

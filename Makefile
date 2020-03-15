@@ -41,6 +41,9 @@ test: all
 	diff -w /tmp/test.out.l /tmp/test.out2.l  # Ignore whitespace
 	diff -y /tmp/test.out.l /tmp/test.out2.l
 
+test_tcl: all
+	bin/lisp --tcl src/lisp/test.tcl
+
 smoke: test
 	bin/lisp --tuple src/lisp/test.l
 
