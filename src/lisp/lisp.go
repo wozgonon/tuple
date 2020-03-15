@@ -6,6 +6,7 @@ import (
 	"os"
 	"unicode"
 	"errors"
+	"fmt"
 )
 
 type Parser struct {
@@ -59,8 +60,65 @@ func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
 	}
 }
 
+func help() {
+	fmt.Printf("%s <options> <files...>\n", os.Args[0])
+	fmt.Printf("-o|--output <...>\n")
+	fmt.Printf("-p|--pretty\n")
+	fmt.Printf("-h|--help - prints this message\n")
+	fmt.Printf("-v|--version\n")
+}
+
 func main() {
-	
+
+	if len(os.Args) == 1 {
+		help()
+		return
+	}
+
+	prettyPrint := func (tuple tuple.Tuple) {
+		fmt.Printf ("%s\n", tuple.PrettyPrint(""))
+	}
+	processTuple := prettyPrint
+
+	files := make([]string, 0)
+	for _, v := range os.Args {
+		switch v {
+		case "-o", "--output":
+		case "=p", "--pretty":
+			processTuple = prettyPrint 
+		case "-h", "--help":
+			help()
+			return
+		case "-v", "--version":
+			fmt.Print("%s\n", 0.1)
+			return
+		default:
+			files = append(files, v)
+		}
+	}
 	parser := Parser{'(', ')'}
-	tuple.RunParser(os.Args[1:], func (context * tuple.ParserContext) (tuple.Tuple, error) { return parser.parse (context) })
+	tuple.RunParser(files,
+		func (context * tuple.ParserContext) (tuple.Tuple, error) {
+			suffix := context.Suffix()
+			switch suffix {
+			case ".l":
+				return parser.parse (context)
+			case ".jml":
+				return parser.parse (context)
+			case ".yaml": fallthrough
+			case ".json": fallthrough
+			case ".tcl": fallthrough
+			case ".xml": fallthrough
+			case ".jpost": fallthrough
+			case ".tsv": fallthrough
+			case ".csv":
+				context.Error("Not implemented file suffix: '%s'", suffix)
+				return tuple.NewTuple(), errors.New("Not implemented file suffix: " + suffix)
+			default:
+				context.Error("Unsupported file suffix: '%s'", suffix)
+				return tuple.NewTuple(), errors.New("Unsupported file suffix: " + suffix)
+			}
+			
+		},
+		processTuple)
 }

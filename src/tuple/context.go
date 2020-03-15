@@ -5,6 +5,7 @@ import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
+import 	"path"
 
 type ParserContext struct {
 	sourceName string
@@ -15,6 +16,10 @@ type ParserContext struct {
 
 func NewParserContext(sourceName string, scanner io.RuneScanner) ParserContext {
 	return ParserContext{sourceName, 1, 0, scanner}
+}
+
+func (context * ParserContext) Suffix() string {
+	return path.Ext(context.sourceName)
 }
 
 func (context * ParserContext) ReadRune() (rune, error) {
@@ -45,22 +50,22 @@ func (context * ParserContext) Error(format string, args ...interface{}) {
 	log.Print(prefix + suffix)
 }
 
-func run(context * ParserContext, parse func (context * ParserContext) (Tuple, error)) {
+func run(context * ParserContext, parse func (context * ParserContext) (Tuple, error), processTuple func(tuple Tuple)) {
 	tuple, err := parse(context)
 	if err != io.EOF && err != nil {
 		context.Error("Failed while parsing: %s", err)
 	} else {
-		fmt.Printf ("%s\n", tuple.PrettyPrint(""))
+		processTuple(tuple)
 	}
 
 }
 
-func RunParser(args []string, parse func (context * ParserContext) (Tuple, error))  {
+func RunParser(args []string, parse func (context * ParserContext) (Tuple, error), processTuple func(tuple Tuple))  {
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
 		context := NewParserContext("<stdin>", reader)
-		run(&context, parse)
+		run(&context, parse, processTuple)
 	} else {
 		for _, fileName := range os.Args[1:] {
 			file, err := os.Open(fileName)
@@ -69,7 +74,7 @@ func RunParser(args []string, parse func (context * ParserContext) (Tuple, error
 			}
 			reader := bufio.NewReader(file)
 			context := NewParserContext(fileName, reader)
-			run(&context, parse)
+			run(&context, parse, processTuple)
 			file.Close()
 		}
 	}

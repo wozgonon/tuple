@@ -7,7 +7,20 @@ configuration.   Querying and converting JSON and YAML.
 The name faceless lang comes from the Game of Thrones faceless men
 with with various 
 
+
+* Conversion
+* COde generators
+* DSL
+* Pretty printing
+* Query
+* Sccripts
+
+S-Expression
+
 ## Commonalities
+
+A [Homoiconic](https://en.wikipedia.org/wiki/Homoiconicity) language treats "code as data".
+All code can be accessed and treated as if it is data,
 
 Observing that JSON (and YAML) is now 2020 used as the common configuration languages and consists of nothing but
 nested scalars, arrays (fixed length list) and maps.   Yet LISP from the 1950's supported the same concepts: nested scalars, lists and maps.
