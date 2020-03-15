@@ -5,16 +5,17 @@ import (
 	"io"
 	"os"
 	"unicode"
-	"errors"
+	//"errors"
 	"fmt"
+	"log"
 )
 
 type Parser struct {
-	Open rune
-	Close rune
+	style tuple.Style
+	outputStyle tuple.Style
 }
 
-func (parser Parser) next(context * tuple.ParserContext) (interface{}, error) {
+func (parser Parser) getNext(context * tuple.ParserContext) (interface{}, error) {
 
 	for {
 		ch, err := context.ReadRune()
@@ -35,20 +36,27 @@ func (parser Parser) next(context * tuple.ParserContext) (interface{}, error) {
 	}
 }
 
-func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
+func (parser Parser) next(tuple interface{}) {
+	result := ""
+	parser.outputStyle.PrettyPrint(tuple, func(value string) { result = result + value })
+	fmt.Printf ("%s\n", result)
+}
 
+func (parser Parser) parseTuple(context * tuple.ParserContext) (tuple.Tuple, error) {
 	tuple := tuple.NewTuple()
 	for {
-		token, err := parser.next(context)
+		token, err := parser.getNext(context)
 		switch {
-		case err != nil: return tuple, err
+		case err != nil:
+			context.Error("parsing %s", err);
+			return tuple, err /// ??? Any need to return
 		case token == ")":
 			return tuple, nil
-			return tuple, errors.New("Unexpected ')'")
 		case token == "(":
-			subTuple, err := parser.parse(context)
+			subTuple, err := parser.parseTuple(context)
 			if err == io.EOF {
 				context.Error ("Missing close bracket")
+				return tuple, err
 			}
 			if err != nil {
 				return tuple, err
@@ -56,6 +64,31 @@ func (parser Parser) parse(context * tuple.ParserContext) (tuple.Tuple, error) {
 			tuple.Append(subTuple)
 		default:
 			tuple.Append(token)
+		}
+	}
+
+}
+
+func (parser Parser) parse(context * tuple.ParserContext) {
+
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			context.Error ("'%s'", err)
+			return
+		case token == ")":
+			context.Error ("Unexpected close bracket '%s'", ")")
+		case token == "(":
+			tuple, err := parser.parseTuple(context)
+			if err != nil {
+				return // tuple, err
+			}
+			parser.next(tuple)
+		default:
+			parser.next(token)
 		}
 	}
 }
@@ -75,17 +108,25 @@ func main() {
 		return
 	}
 
-	prettyPrint := func (tuple tuple.Tuple) {
-		fmt.Printf ("%s\n", tuple.PrettyPrint(""))
-	}
-	processTuple := prettyPrint
+	tclStyle := tuple.Style{"  ", "{", "}", "", "\n"}
+	jmlStyle := tuple.Style{"  ", "{", "}", "", "\n"}
+	tupleStyle := tuple.Style{"  ", "(", ")", ",", "\n"} // prolog, sql
+	lispStyle := tuple.Style{"  ", "(", ")", "", "\n"}
+
+	outputStyle := lispStyle
 
 	files := make([]string, 0)
-	for _, v := range os.Args {
+	for _, v := range os.Args[1:] {
 		switch v {
 		case "-o", "--output":
-		case "=p", "--pretty":
-			processTuple = prettyPrint 
+		case "-p", "--pretty":
+			outputStyle = lispStyle
+		case "--jml":
+			outputStyle= jmlStyle
+		case "--tcl":
+			outputStyle= tclStyle
+		case "--tuple":
+			outputStyle= tupleStyle
 		case "-h", "--help":
 			help()
 			return
@@ -93,32 +134,32 @@ func main() {
 			fmt.Print("%s\n", 0.1)
 			return
 		default:
+			log.Print(v)
 			files = append(files, v)
 		}
 	}
-	parser := Parser{'(', ')'}
 	tuple.RunParser(files,
-		func (context * tuple.ParserContext) (tuple.Tuple, error) {
+		func (context * tuple.ParserContext) {
 			suffix := context.Suffix()
 			switch suffix {
 			case ".l":
-				return parser.parse (context)
+				parser := Parser{lispStyle, outputStyle}
+				parser.parse (context)
 			case ".jml":
-				return parser.parse (context)
+				parser := Parser{jmlStyle, outputStyle}
+				parser.parse (context)
+			case ".tcl": 
+				parser := Parser{tclStyle, outputStyle}
+				parser.parse (context)
 			case ".yaml": fallthrough
 			case ".json": fallthrough
-			case ".tcl": fallthrough
 			case ".xml": fallthrough
 			case ".jpost": fallthrough
 			case ".tsv": fallthrough
 			case ".csv":
 				context.Error("Not implemented file suffix: '%s'", suffix)
-				return tuple.NewTuple(), errors.New("Not implemented file suffix: " + suffix)
 			default:
-				context.Error("Unsupported file suffix: '%s'", suffix)
-				return tuple.NewTuple(), errors.New("Unsupported file suffix: " + suffix)
+				context.Error("Unsupported file suffix: '%s', source: '%s'", suffix, context.SourceName)
 			}
-			
-		},
-		processTuple)
+		})
 }

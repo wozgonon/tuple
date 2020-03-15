@@ -1,10 +1,14 @@
 package tuple
 
 import "io"
-import "log"
+//import "log"
 import "unicode"
 import "strconv"
 import "math"
+
+const DOUBLE_QUOTE = "\""
+const UNKNOWN = "<???>"
+const WORLD = "世界"
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -17,7 +21,7 @@ func ReadString (context * ParserContext, token string, keepLast bool, test func
 	for {
 		ch, err := context.ReadRune()
 		if err == io.EOF {
-			log.Printf("ERROR missing close \"")
+			context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 			return token, nil
 		} else if err != nil {
 			//log.Printf("ERROR nil")
@@ -81,14 +85,14 @@ func ReadCLanguageString(context * ParserContext) (string, error) {
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
-			log.Printf("ERROR missing lose \"")
+			context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 			return token, nil
 		case err != nil: return "", err
 		case ch == '"': return token, nil
 		case ch == '\\':
 			ch, err := context.ReadRune()
 			if err == io.EOF {
-				log.Printf("ERROR missing lose \"")
+				context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 				return token, nil
 			}
 			token = token + string(cLanguageEscapeCharacters(ch))
