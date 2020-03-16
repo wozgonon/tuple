@@ -14,11 +14,15 @@ ff () {
 
 run_test() {
     local suffix=$1
-    local suffix2=$1
+    local suffix2=$2
     local file="src/lisp/testdata/test.${suffix2}"
     cat ${file}
     echo "----"
     bin/lisp --in .${suffix} --out .${suffix} ${file}
+}
+
+rl () {
+    run_test l l
 }
 
 rtcl () {
