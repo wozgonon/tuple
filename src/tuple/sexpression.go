@@ -8,18 +8,15 @@ package tuple
 import (
 	"io"
 	"unicode"
-	//"errors"
 	"fmt"
 	"unicode/utf8"
-	//"reflect"
 )
 
-//func check(e error) {
-//    if e != nil {
-//        panic(e)
-//    }
-//}
 
+// A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
+// A nested structure of scalars (atoms and numbers), lists and key-values pairs (called cons cells).
+// These are used for the syntax of LISP but also any other language can typically be converted to an S-Expression,
+// it is in particular a very useful format for debugging a parser by printing out the Abstract Syntaxt Tree (AST) created by parsing.
 type SExpressionParser struct {
 	style Style
 	outputStyle Style
@@ -43,9 +40,7 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case unicode.IsSpace(ch): break
-		// TODO case ch == parser.style.OneLineComment:
-			//comment := make(
-			// TODO return 
+		case ch == parser.style.OneLineComment: return ReadUntilEndOfLine(context)
 		case ch == parser.openChar :  return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
 		case ch == '"' :  return ReadCLanguageString(context)
@@ -60,32 +55,75 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 	}
 }
 
-func (parser SExpressionParser) parseTuple(context * ParserContext) (Tuple, error) {
-	tuple := NewTuple()
+func (parser SExpressionParser) parseTuple(context * ParserContext, tuple *Tuple) (error) {
 	for {
 		token, err := parser.getNext(context)
 		switch {
 		case err != nil:
 			context.Error("parsing %s", err);
-			return tuple, err /// ??? Any need to return
+			return err /// ??? Any need to return
 		case token == parser.style.Close:
-			return tuple, nil
+			return nil
 		case token == parser.style.Open:
-			subTuple, err := parser.parseTuple(context)
+			subTuple := NewTuple()
+			err := parser.parseTuple(context, &subTuple)
 			if err == io.EOF {
 				context.Error ("Missing close bracket")
-				return tuple, err
+				return err
 			}
 			if err != nil {
-				return tuple, err
+				return err
 			}
 			tuple.Append(subTuple)
 		default:
-			tuple.Append(token)
+			if _,ok := token.(Comment); ok {
+				// TODO Ignore ???
+			} else {
+				tuple.Append(token)
+			}
 		}
 	}
 
 }
+
+func (parser SExpressionParser) ParseTuple(context * ParserContext) {
+
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			context.Error ("'%s'", err)
+			return
+		case token == parser.style.Close:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+		default:
+			if atom,ok := token.(Atom); ok {
+				bracket, err := parser.getNext(context)
+				if err != nil {
+					context.Error ("'%s'", err)
+					return
+				}
+				if bracket != parser.style.Open {
+					context.Error ("Expected open bracket '%s' after '%s', not '%s'", parser.style.Open, token, bracket)
+				} else {
+					subTuple := NewTuple()
+					subTuple.Append(atom)
+					err := parser.parseTuple(context, &subTuple)
+					if err != nil {
+						return
+					}
+					parser.next(subTuple)
+				}
+			} else {
+				parser.next(token)
+			}
+		}
+		fmt.Print("\n")
+	}
+}
+
 
 func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 
@@ -100,23 +138,43 @@ func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 		case token == parser.style.Close:
 			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
 		case token == parser.style.Open:
-			tuple, err := parser.parseTuple(context)
+			subTuple := NewTuple()
+			err := parser.parseTuple(context, &subTuple)
 			if err != nil {
-				return // tuple, err
+				return
 			}
-			parser.next(tuple)
+			parser.next(subTuple)
 		default:
 			parser.next(token)
 		}
-		fmt.Print(" ")
+		fmt.Print("\n")
 	}
 }
 
-func (parser SExpressionParser) ParseTCL(context * ParserContext) {
+func (parser SExpressionParser) getNextCommandShell(context * ParserContext) (interface{}, error) {
+	for {
+		ch, err := context.ReadRune()
+		switch {
+		case err != nil: return "", err
+		case err == io.EOF: return "", nil
+		case unicode.IsSpace(ch): break
+		case ch == parser.style.OneLineComment: return string(ch), nil
+		case ch == parser.openChar :  return parser.style.Open, nil
+		case ch == parser.closeChar : return parser.style.Close, nil
+		case ch == '"' :  return ReadCLanguageString(context)
+		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
+		case unicode.IsGraphic(ch): ReadUntilSpace(context)
+		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
+		default: context.Error("Error character not recognised '%d'", ch)
+		}
+	}
+}
+
+func (parser SExpressionParser) ParseCommandShell(context * ParserContext) {
 
 	resultTuple := NewTuple()
 	for {
-		token, err := parser.getNext(context)
+		token, err := parser.getNextCommandShell(context)
 		switch {
 		case err == io.EOF:
 			return
@@ -135,14 +193,21 @@ func (parser SExpressionParser) ParseTCL(context * ParserContext) {
 			} else {
 				parser.next(resultTuple)
 			}
+		case token == parser.style.OneLineComment:
+			comment, err := ReadUntilEndOfLine(context)
+			if err != nil {
+				return
+			}
+			parser.next(comment)
 		case token == parser.style.Close:
 			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
 		case token == parser.style.Open:
-			resultTuple, err := parser.parseTuple(context)
+			subTuple := NewTuple()
+			err := parser.parseTuple(context, &subTuple)
 			if err != nil {
 				return // tuple, err
 			}
-			parser.next(resultTuple)
+			parser.next(subTuple)
 		default:
 			parser.next(token)
 		}

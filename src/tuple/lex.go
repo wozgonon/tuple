@@ -6,6 +6,7 @@ import "unicode"
 import "strconv"
 import "math"
 
+const NEWLINE = '\n'
 const DOUBLE_QUOTE = "\""
 const UNKNOWN = "<???>"
 const WORLD = "世界"
@@ -79,6 +80,42 @@ func ReadNumber(context * ParserContext, token string) (interface{}, error) {
 	}
 }
 
+func ReadUntilEndOfLine(context * ParserContext) (Comment, error) {
+	token := ""
+	for {
+		ch, err := context.ReadRune()
+		switch {
+		case err == io.EOF:
+			return NewComment(*context, token), nil
+		case err != nil:
+			return NewComment(*context, token), err
+		case ch == NEWLINE:
+			context.UnreadRune()
+			return NewComment(*context, token), err
+		default:
+			token = token + string(ch)
+		}
+	}
+}
+
+func ReadUntilSpace(context * ParserContext) (string, error) {
+	token := ""
+	for {
+		ch, err := context.ReadRune()
+		switch {
+		case err == io.EOF:
+			return token, nil
+		case err != nil:
+			return token, err
+		case unicode.IsSpace(ch), ch == NEWLINE:
+			context.UnreadRune()
+			return token, nil
+		default:
+			token = token + string(ch)
+		}
+	}
+}
+
 func ReadCLanguageString(context * ParserContext) (string, error) {
 	token := ""
 	for {
@@ -105,7 +142,7 @@ func ReadCLanguageString(context * ParserContext) (string, error) {
 
 func cLanguageEscapeCharacters(ch rune) rune {
 	switch ch {
-	case 'n': return '\n'
+	case 'n': return NEWLINE
 	case 'r': return '\r'
 	case 't': return '\t'
 	// TODO 

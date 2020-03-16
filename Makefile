@@ -34,25 +34,43 @@ tuple: src/tuple/tuple.go
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: test_basic test_arithmetic
+test: test_basic test_arithmetic test_tcl # test_infix
 
-test_basic: src/lisp/test.l all
-	@mkdir -p /tmp/1/src/lisp /tmp/2/src/lisp
-	@bin/lisp $<  > /tmp/1/$<
-	@bin/lisp /tmp/1/$<  > /tmp/2/$<
-	@diff /tmp/1/$< /tmp/2/$<
+TDIR=src/lisp/testdata/
+T1DIR=/tmp/1/
+T2DIR=/tmp/2/
 
-test_arithmetic: src/lisp/arithmetic.l all
-	@mkdir -p /tmp/1/src/lisp /tmp/2/src/lisp
-	@bin/lisp --eval $<  > /tmp/1/$<
-	@bin/lisp --eval /tmp/1/$<  > /tmp/2/$<
-	@diff /tmp/1/$< /tmp/2/$<
+test_dirs: 
+	mkdir -p ${T1DIR}/${TDIR} ${T2DIR}/${TDIR}
 
-test_tcl: src/lisp/test.tcl all
-	bin/lisp --tcl $<
+test_basic: ${TDIR}test.l test_dirs all
+	bin/lisp $<  > ${T1DIR}$<
+	@bin/lisp ${T1DIR}$<  > ${T2DIR}$<
+	@diff ${T1DIR}$< ${T2DIR}$<
+	@diff ${T2DIR}$< $<.golden
 
-smoke: test
-	bin/lisp --tuple src/lisp/test.l
+test_arithmetic: ${TDIR}arithmetic.l test_dirs all
+	bin/lisp --eval $<  > ${T1DIR}$<
+	@bin/lisp --eval ${T1DIR}$<  > ${T2DIR}$<
+	@diff ${T1DIR}$< ${T2DIR}$<
+
+test_tcl: ${TDIR}test.fl.tcl test_dirs all
+	bin/lisp --out tcl $<  > ${T1DIR}$<
+	@bin/lisp --out tcl ${T1DIR}$<  > ${T2DIR}$<
+	@diff ${T1DIR}$< ${T2DIR}$<
+
+test_tuple: ${TDIR}test.tuple test_dirs all
+	bin/lisp --out tuple $<  > ${T1DIR}$<
+	@bin/lisp --out tuple ${T1DIR}$<  > ${T2DIR}$<
+	@diff ${T1DIR}$< ${T2DIR}$<
+
+test_infix: ${TDIR}infix.l test_dirs  all
+	bin/lisp $<  > ${T1DIR}$<
+	@bin/lisp ${T1DIR}$<  > ${T2DIR}$<
+	@diff ${T1DIR}$< ${T2DIR}$<
+
+smoke: test test_dirs 
+	bin/lisp --out tcl ${TDIR}test.fl.tcl
 
 #############################################################################
 #  Clean up

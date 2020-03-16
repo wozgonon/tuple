@@ -39,6 +39,9 @@ func (style Style) printToken(depth string, token interface{}, out func(value st
 			} else {
 				out(style.False)
 			}				
+		case Comment:
+			out(string(style.OneLineComment))
+			out(token.(Comment).Comment)
 		case int64:
 			out(strconv.FormatInt(int64(token.(int64)), 10))
 		case float64:
