@@ -34,15 +34,22 @@ tuple: src/tuple/tuple.go
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: all
-	bin/lisp src/lisp/test.l  > /tmp/test.out.l
-	bin/lisp /tmp/test.out.l  > /tmp/test.out2.l
-	wc -l /tmp/test.out.l /tmp/test.out2.l
-	diff -w /tmp/test.out.l /tmp/test.out2.l  # Ignore whitespace
-	diff -y /tmp/test.out.l /tmp/test.out2.l
+test: test_basic test_arithmetic
 
-test_tcl: all
-	bin/lisp --tcl src/lisp/test.tcl
+test_basic: src/lisp/test.l all
+	@mkdir -p /tmp/1/src/lisp /tmp/2/src/lisp
+	@bin/lisp $<  > /tmp/1/$<
+	@bin/lisp /tmp/1/$<  > /tmp/2/$<
+	@diff /tmp/1/$< /tmp/2/$<
+
+test_arithmetic: src/lisp/arithmetic.l all
+	@mkdir -p /tmp/1/src/lisp /tmp/2/src/lisp
+	@bin/lisp --eval $<  > /tmp/1/$<
+	@bin/lisp --eval /tmp/1/$<  > /tmp/2/$<
+	@diff /tmp/1/$< /tmp/2/$<
+
+test_tcl: src/lisp/test.tcl all
+	bin/lisp --tcl $<
 
 smoke: test
 	bin/lisp --tuple src/lisp/test.l

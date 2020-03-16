@@ -12,18 +12,25 @@ import (
 	//"reflect"
 )
 
+//func check(e error) {
+//    if e != nil {
+//        panic(e)
+//    }
+//}
+
 type Parser struct {
 	style tuple.Style
 	outputStyle tuple.Style
 	openChar rune
 	closeChar rune
+	next tuple.Next
 }
 
-func NewParser(style tuple.Style, outputStyle tuple.Style) Parser {
+func NewParser(style tuple.Style, outputStyle tuple.Style, next tuple.Next) Parser {
 
 	openChar, _ := utf8.DecodeRuneInString(style.Open)
 	closeChar, _ := utf8.DecodeRuneInString(style.Close)
-	return Parser{style,outputStyle,openChar,closeChar}
+	return Parser{style,outputStyle,openChar,closeChar,next}
 }
 
 func (parser Parser) getNext(context * tuple.ParserContext) (interface{}, error) {
@@ -34,23 +41,21 @@ func (parser Parser) getNext(context * tuple.ParserContext) (interface{}, error)
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case unicode.IsSpace(ch): break
+		// TODO case ch == parser.style.OneLineComment:
+			//comment := make(
+			// TODO return 
 		case ch == parser.openChar :  return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
 		case ch == '"' :  return tuple.ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return tuple.ReadNumber(context, string(ch))    // TODO minus
 		case tuple.IsArithmetic(ch): return tuple.ReadAtom(context, string(ch), func(r rune) bool { return tuple.IsArithmetic(r) })
+		case tuple.IsCompare(ch): return tuple.ReadAtom(context, string(ch), func(r rune) bool { return tuple.IsCompare(r) })
 		case unicode.IsLetter(ch):  return tuple.ReadAtom(context, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
 		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
 		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
 		default: context.Error("Error character not recognised '%d'", ch)
 		}
 	}
-}
-
-func (parser Parser) next(tuple interface{}) {
-	result := ""
-	parser.outputStyle.PrettyPrint(tuple, func(value string) { result = result + value })
-	fmt.Printf ("%s\n", result)
 }
 
 func (parser Parser) parseTuple(context * tuple.ParserContext) (tuple.Tuple, error) {
@@ -101,6 +106,7 @@ func (parser Parser) parseSExpression(context * tuple.ParserContext) {
 		default:
 			parser.next(token)
 		}
+		fmt.Print(" ")
 	}
 }
 
@@ -138,6 +144,7 @@ func (parser Parser) parseTCL(context * tuple.ParserContext) {
 		default:
 			parser.next(token)
 		}
+		fmt.Print(" ")
 	}
 }
 
@@ -156,14 +163,15 @@ func main() {
 	//	return
 	//}
 
-	tclStyle := tuple.Style{"  ", "{", "}", "", "\n"}
-	jmlStyle := tuple.Style{"  ", "{", "}", "", "\n"}
-	tupleStyle := tuple.Style{"  ", "(", ")", ",", "\n"} // prolog, sql
-	lispStyle := tuple.Style{"  ", "(", ")", "", "\n"}
+	tclStyle := tuple.Style{"  ", "{", "}", "", "\n", "true", "false", '#'}
+	jmlStyle := tuple.Style{"  ", "{", "}", "", "\n", "true", "false", '#'}
+	tupleStyle := tuple.Style{"  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
+	lispStyle := tuple.Style{"  ", "(", ")", "", "\n", "true", "false", ';'}
 
 	logStyle := lispStyle
 	outputStyle := lispStyle
 
+	var eval bool
 	files := make([]string, 0)
 	l := len(os.Args[1:])
 	for k, v := range os.Args[1:] {
@@ -172,6 +180,8 @@ func main() {
 			if k < l-1 {
 				
 			}
+		case "-e", "--eval":
+			eval = true
 		case "-p", "--pretty":
 			outputStyle = lispStyle
 		case "--jml":
@@ -193,19 +203,37 @@ func main() {
 			files = append(files, v)
 		}
 	}
+
+	nextFunction := func(outputStyle tuple.Style) tuple.Next {
+		pretty := func(tuple interface{}) {
+			outputStyle.PrettyPrint(tuple, func(value string) {
+				fmt.Printf ("%s", value)
+			})
+		}
+		if eval {
+			return func(value interface{}) {
+				tuple.SimpleEval(value, pretty)
+			}
+		} else {
+			return pretty
+		}
+	}
 	tuple.RunParser(files, logStyle,
 		func (context * tuple.ParserContext) {
 			suffix := context.Suffix()
 			switch suffix {
 			case ".l":
-				parser := NewParser(lispStyle, outputStyle)
+				parser := NewParser(lispStyle, outputStyle, nextFunction(outputStyle))
 				parser.parseSExpression (context)
+				fmt.Printf("\n")
 			case ".jml":
-				parser := NewParser(jmlStyle, outputStyle)
+				parser := NewParser(jmlStyle, outputStyle, nextFunction(outputStyle))
 				parser.parseSExpression (context)
+				fmt.Printf("\n")
 			case ".tcl": 
-				parser := NewParser(tclStyle, outputStyle)
+				parser := NewParser(tclStyle, outputStyle, nextFunction(outputStyle))
 				parser.parseTCL (context)
+				fmt.Printf("\n")
 			case ".yaml": fallthrough
 			case ".json": fallthrough
 			case ".xml": fallthrough

@@ -124,3 +124,13 @@ func IsArithmetic(ch rune) bool {
 		default: return false
 	}
 }
+
+func IsCompare(ch rune) bool {
+	switch ch {
+		case '=': return true
+		case '!': return true
+		case '<': return true
+		case '>': return true
+		default: return false
+	}
+}

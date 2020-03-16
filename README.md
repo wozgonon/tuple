@@ -94,3 +94,50 @@ Place a githook to format into project standard format on commit and into person
 TODO Comments
 TODO Errors in any format - eat own shit
 TODO github git remote - so in code commit and github
+
+
+## Tabluar Conversions
+
+TSV,CSV, SQL Insert statements
+
+
+## Language translators stages
+
+Faceless might be useful to those interested in understanding to in teaching others how compilers and interpreters work.
+It provides implementations of each of the stages which you can tweak or completely replace with your own.
+
+### Lexer
+
+Recognises:
+* C language strings with C Language escapes
+* alphabetic and operator atoms
+* integers and floating point numbers
+* braces and brackets
+
+### Parser
+
+Recognises:
+* Recursive and nested brackets
+* Arithmetic expressions  (Quite useful)
+* TODO SQL select
+
+### Resolver
+
+Validates:
+* Basic resolver
+* Strict resolver does exact matches with no coercions
+* Add your own...
+
+### Evaluator
+
+* Interpretter
+
+### Code generation
+
+* Pretty printer in various formats ...
+* ...
+
+#### Data generation
+
+For debuggers and reflection
+Includes error context and location.
