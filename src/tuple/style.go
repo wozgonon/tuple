@@ -21,9 +21,9 @@ type Style struct {
 	OneLineComment rune
 }
 
-func (style Style) printToken(depth string, token interface{}, out func(value string)) {
+func (style Style) printToken(ignoreOuterBrackets bool, depth string, token interface{}, out func(value string)) {
 	if tuple, ok := token.(Tuple); ok {
-		style.printTuple(depth, tuple, out)
+		style.printTuple(ignoreOuterBrackets, depth, tuple, out)
 	} else {
 		out(depth)
 		switch token.(type) {
@@ -58,24 +58,49 @@ func (style Style) printToken(depth string, token interface{}, out func(value st
 	}
 }
 
-func (style Style) printTuple(depth string, tuple Tuple, out func(value string)) {
-	out(depth)
-	out(style.Open)
-	out(style.LineBreak)
-	newDepth := depth + style.Indent
-	len := len(tuple.List)
-	for k, token := range tuple.List {
-		style.printToken(newDepth, token, out)
-		if k < len-1 {
-			out(style.Separator)
-		}
-		out(style.LineBreak)
+func (style Style) printTuple(ignoreOuterBrackets bool, depth string, tuple Tuple, out func(value string)) {
+
+	if ! ignoreOuterBrackets {
+		out(depth)
+		out(style.Open)
 	}
-	out(depth)
-	out(style.Close)
+
+	len := len(tuple.List)
+	if len > 0 {
+		if ! ignoreOuterBrackets {
+			out(style.LineBreak)
+		}
+		var newDepth string
+		if ! ignoreOuterBrackets {
+			newDepth = depth + style.Indent
+		} else {
+			newDepth = depth
+		}
+		for k, token := range tuple.List {
+			style.printToken(false, newDepth, token, out)
+			if k < len-1 {
+				if ignoreOuterBrackets {
+					out(" ")
+				}
+				out(style.Separator)
+			}
+			if ! ignoreOuterBrackets {
+				out(style.LineBreak)
+			}
+		}
+		out(depth)
+	}
+
+	if ignoreOuterBrackets {
+		out (string(NEWLINE))
+	} else {
+		out(style.Close)
+	}
 }
 
 func (style Style) PrettyPrint(token interface{}, out func(value string)) {
-	style.printToken("", token, out)
+	// TODO set this as a parameter
+	ignoreOuterBrackets := style.Open == string('{')
+	style.printToken(ignoreOuterBrackets, "", token, out)
 }
 

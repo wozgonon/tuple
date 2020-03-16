@@ -36,6 +36,10 @@ func (tuple *Tuple) Append(token interface{}) {
 	tuple.List = append(tuple.List, token)
 }
 
+func (tuple *Tuple) Length() int {
+	return len(tuple.List)
+}
+
 func NewTuple() Tuple {
 	return Tuple{make([]interface{}, 0)}
 }

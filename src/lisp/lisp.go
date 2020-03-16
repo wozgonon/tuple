@@ -14,14 +14,6 @@ import "flag"
 //    }
 //}
 
-func help() {
-	fmt.Printf("%s <options> <files...>\n", os.Args[0])
-	fmt.Printf("-o|--output <...>\n")
-	fmt.Printf("-p|--pretty\n")
-	fmt.Printf("-h|--help - prints this message\n")
-	fmt.Printf("-v|--version\n")
-}
-
 /*
 	lisp := func (context * tuple.ParserContext) {
 		parser := tuple.NewSExpressionParser(lispStyle, outputStyle, nextFunction(outputStyle))
@@ -53,6 +45,7 @@ func style (value string) (tuple.Style) {
 	case ".l": return lispStyle
 	case ".jml": return jmlStyle
 	case ".tuple": return tupleStyle
+	case ".fl.tcl": return tclStyle
 	case ".tcl": return tclStyle
 	//case ".yaml": fallthrough
 	//case ".json": fallthrough
@@ -85,7 +78,7 @@ func main() {
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
 	var eval = flag.Bool("eval", false, "Run 'eval' interpretter.")
 	var version = flag.Bool("version", false, "Print version of this software.")
-	var interactive = flag.Bool("interactive", false, "Runs in interactive code, as a CLI or REPL.  Set -in")
+	//var interactive = flag.Bool("interactive", false, "Runs in interactive code, as a CLI or REPL.  Set -in")
 
 	flag.Parse()
 
@@ -98,9 +91,9 @@ func main() {
 	numberOfFiles := flag.NArg()
 	files := os.Args[args-numberOfFiles:]
 
-	if len(files) == 0 && !*interactive {
-		return
-	}
+	//if len(files) == 0 && !*interactive {
+	//	return
+	//}
 	
 	outputStyle := style(*out)
 	logStyle := style(*logger)
@@ -125,6 +118,7 @@ func main() {
 			if suffix == "" {
 				suffix = *in
 			}
+			context.Verbose("source [%s] suffix [%s]", context.SourceName, suffix)
 			inputStyle := style(*in)
 			parser := tuple.NewSExpressionParser(inputStyle, outputStyle, nextFunction(outputStyle))
 			switch suffix {
@@ -132,6 +126,7 @@ func main() {
 				parser.ParseSExpression (context)
 			case ".jml":
 				parser.ParseSExpression (context)
+			case ".fl.tcl": 
 			case ".tcl": 
 				parser.ParseCommandShell (context)
 			case ".tuple": 

@@ -39,7 +39,7 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
-		case unicode.IsSpace(ch): break
+		case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
 		case ch == parser.style.OneLineComment: return ReadUntilEndOfLine(context)
 		case ch == parser.openChar :  return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
@@ -55,7 +55,9 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 	}
 }
 
-func (parser SExpressionParser) parseTuple(context * ParserContext, tuple *Tuple) (error) {
+func (parser SExpressionParser) parseCommaTuple(context * ParserContext, tuple *Tuple) (error) {
+
+	// TODO comma and semi-colon
 	for {
 		token, err := parser.getNext(context)
 		switch {
@@ -66,7 +68,7 @@ func (parser SExpressionParser) parseTuple(context * ParserContext, tuple *Tuple
 			return nil
 		case token == parser.style.Open:
 			subTuple := NewTuple()
-			err := parser.parseTuple(context, &subTuple)
+			err := parser.parseCommaTuple(context, &subTuple)
 			if err == io.EOF {
 				context.Error ("Missing close bracket")
 				return err
@@ -110,7 +112,7 @@ func (parser SExpressionParser) ParseTuple(context * ParserContext) {
 				} else {
 					subTuple := NewTuple()
 					subTuple.Append(atom)
-					err := parser.parseTuple(context, &subTuple)
+					err := parser.parseCommaTuple(context, &subTuple)
 					if err != nil {
 						return
 					}
@@ -124,6 +126,36 @@ func (parser SExpressionParser) ParseTuple(context * ParserContext) {
 	}
 }
 
+func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, tuple *Tuple) (error) {
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err != nil:
+			context.Error("parsing %s", err);
+			return err /// ??? Any need to return
+		case token == parser.style.Close:
+			return nil
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := parser.parseSExpressionTuple(context, &subTuple)
+			if err == io.EOF {
+				context.Error ("Missing close bracket")
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			tuple.Append(subTuple)
+		default:
+			if _,ok := token.(Comment); ok {
+				// TODO Ignore ???
+			} else {
+				tuple.Append(token)
+			}
+		}
+	}
+
+}
 
 func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 
@@ -139,7 +171,7 @@ func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
 		case token == parser.style.Open:
 			subTuple := NewTuple()
-			err := parser.parseTuple(context, &subTuple)
+			err := parser.parseSExpressionTuple(context, &subTuple)
 			if err != nil {
 				return
 			}
@@ -151,21 +183,64 @@ func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 	}
 }
 
+func (parser SExpressionParser) readCommandString(context * ParserContext, token string) (string, error) {
+	return ReadString(context, token, true, func (ch rune) bool {
+		return ! unicode.IsSpace(ch) && string(ch) != parser.style.Close && string(ch) != parser.style.Open && ch != '$'
+	})
+
+}
+
 func (parser SExpressionParser) getNextCommandShell(context * ParserContext) (interface{}, error) {
 	for {
 		ch, err := context.ReadRune()
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
+		case ch == NEWLINE: return string(NEWLINE), nil
 		case unicode.IsSpace(ch): break
-		case ch == parser.style.OneLineComment: return string(ch), nil
+		case ch == parser.style.OneLineComment:
+			// TODO ignore for now
+			//return string(ch), nil
 		case ch == parser.openChar :  return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
-		case unicode.IsGraphic(ch): ReadUntilSpace(context)
+		case ch == '$':
+			value, err := parser.readCommandString(context, "")
+			if err != nil {
+				return nil, err
+			}
+			return Atom{value}, nil
+		case unicode.IsGraphic(ch): return parser.readCommandString(context, string(ch))
 		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
 		default: context.Error("Error character not recognised '%d'", ch)
+		}
+	}
+}
+
+func (parser SExpressionParser) parseCommandShellTuple(context * ParserContext, tuple *Tuple) (error) {
+	for {
+		token, err := parser.getNextCommandShell(context)
+		switch {
+		case err != nil:
+			context.Error("parsing %s", err);
+			return err /// ??? Any need to return
+		case token == parser.style.Close:
+			return nil
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := parser.parseCommandShellTuple(context, &subTuple)
+			if err == io.EOF {
+				context.Error ("Missing close bracket")
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			tuple.Append(subTuple)
+		case token == string(NEWLINE):
+		default:
+			tuple.Append(token)
 		}
 	}
 }
@@ -181,18 +256,22 @@ func (parser SExpressionParser) ParseCommandShell(context * ParserContext) {
 		case err != nil:
 			context.Error ("'%s'", err)
 			return
-		case token == "\n":
-			l := len(resultTuple.List)
-			if l == 1 {
+		case token == string(NEWLINE):
+			l := resultTuple.Length()
+			context.Verbose ("Newline length of tuple=%d", l)
+			switch l {
+			case 0: // Ignore
+			case 1:
 				first := resultTuple.List[0]
 				if _, ok := first.(Atom); ok {
 					parser.next(resultTuple)
 				} else {
 					parser.next(token)
 				}
-			} else {
+			default:
 				parser.next(resultTuple)
 			}
+			resultTuple = NewTuple()
 		case token == parser.style.OneLineComment:
 			comment, err := ReadUntilEndOfLine(context)
 			if err != nil {
@@ -203,14 +282,15 @@ func (parser SExpressionParser) ParseCommandShell(context * ParserContext) {
 			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
 		case token == parser.style.Open:
 			subTuple := NewTuple()
-			err := parser.parseTuple(context, &subTuple)
+			err := parser.parseCommandShellTuple(context, &subTuple)
 			if err != nil {
 				return // tuple, err
 			}
-			parser.next(subTuple)
+			resultTuple.Append(subTuple)
 		default:
-			parser.next(token)
+			context.Verbose("Add token: '%s'", token)
+			resultTuple.Append(token)
 		}
-		fmt.Print(" ")
+		//fmt.Print("% ")
 	}
 }

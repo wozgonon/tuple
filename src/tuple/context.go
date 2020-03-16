@@ -21,7 +21,7 @@ type ParserContext struct {
 
 func NewParserContext(sourceName string, scanner io.RuneScanner, logStyle Style, verbose bool) ParserContext {
 	context :=  ParserContext{sourceName, 1, 0, scanner, logStyle, verbose}
-	context.Verbose("Parsing file [%s]", sourceName)
+	context.Verbose("Parsing file [%s] suffix [%s]", sourceName, context.Suffix())
 	return context
 }
 
@@ -33,6 +33,13 @@ func (context * ParserContext) Suffix() string {
 	return path.Ext(context.SourceName)
 }
 
+func (context * ParserContext) prompt() {
+	if context.IsInteractive() {
+		fmt.Print (context.SourceName)
+		fmt.Print (PROMPT)
+	}
+}
+
 func (context * ParserContext) ReadRune() (rune, error) {
 	ch, _, err := context.scanner.ReadRune()
 	switch {
@@ -41,9 +48,7 @@ func (context * ParserContext) ReadRune() (rune, error) {
 		context.line ++
 		context.column = 0
 		context.Verbose("New line")
-		if context.IsInteractive() {
-			fmt.Print (PROMPT)
-		}
+		context.prompt()
 	default:
 		context.column ++
 	}
@@ -61,7 +66,7 @@ func (context * ParserContext) UnreadRune() {
 
 func (context * ParserContext) log(format string, level string, args ...interface{}) {
 	prefix := fmt.Sprintf("%s at %d, %d in '%s': ", level, context.line, context.column, context.SourceName)
-	suffix := fmt.Sprintf(format, args)
+	suffix := fmt.Sprintf(format, args...)
 	log.Print(prefix + suffix)
 
 	tuple := NewTuple()
@@ -75,12 +80,12 @@ func (context * ParserContext) log(format string, level string, args ...interfac
 }
 
 func (context * ParserContext) Error(format string, args ...interface{}) {
-	context.log(format, "ERROR", args)
+	context.log(format, "ERROR", args...)
 }
 
 func (context * ParserContext) Verbose(format string, args ...interface{}) {
 	if context.verbose {
-		context.log(format, "VERBOSE", args)
+		context.log(format, "VERBOSE", args...)
 	}
 }
 
@@ -89,7 +94,7 @@ func RunParser(args []string, logStyle Style, verbose bool, parse func (context 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
 		context := NewParserContext(STDIN, reader, logStyle, verbose)
-		fmt.Print(PROMPT)
+		context.prompt()
 		parse(&context)
 	} else {
 		for _, fileName := range args {

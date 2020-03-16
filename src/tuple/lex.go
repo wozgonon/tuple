@@ -18,7 +18,7 @@ const WORLD = "世界"
 //  Go language defines the word rune as an alias for the type int32, so programs can be clear when an integer value represents a code point.
 //  Moreover, what you might think of as a character constant is called a rune constant in Go. 
 
-func ReadString (context * ParserContext, token string, keepLast bool, test func(r rune) bool) (string, error) {
+func ReadString (context * ParserContext, token string, unReadLast bool, test func(r rune) bool) (string, error) {
 	for {
 		ch, err := context.ReadRune()
 		if err == io.EOF {
@@ -28,7 +28,7 @@ func ReadString (context * ParserContext, token string, keepLast bool, test func
 			//log.Printf("ERROR nil")
 			//return ""
 		} else if ! test(ch) {
-			if keepLast {
+			if unReadLast {
 				context.UnreadRune()
 			}
 			return token, nil
@@ -72,6 +72,10 @@ func ReadNumber(context * ParserContext, token string) (interface{}, error) {
 			token = token + string(ch) // TODO not efficient
 		} else {
 			context.UnreadRune()
+			if token == "." {
+				context.UnreadRune()
+				return token, nil
+			}
 			switch dots {
 			case 0: return strconv.ParseInt(token, 10, 0)
 			case 1:	return strconv.ParseFloat(token, 64)
@@ -98,8 +102,7 @@ func ReadUntilEndOfLine(context * ParserContext) (Comment, error) {
 	}
 }
 
-func ReadUntilSpace(context * ParserContext) (string, error) {
-	token := ""
+func ReadUntilSpace(context * ParserContext, token string) (string, error) {
 	for {
 		ch, err := context.ReadRune()
 		switch {
