@@ -16,11 +16,11 @@ run_test() {
     local suffix=$1
     local outSuffix=$2
     local suffix2=$3
-    local file="src/lisp/testdata/test.${suffix2}"
+    local file="src/wozg/testdata/test.${suffix2}"
     echo "-- In:"
     cat ${file}
     echo "-- Out:"
-    bin/lisp --in .${suffix} --out .${outSuffix} ${file}
+    bin/wozg --in .${suffix} --out .${outSuffix} ${file}
 }
 
 rl () {

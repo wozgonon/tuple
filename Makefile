@@ -7,19 +7,15 @@
 #
 #############################################################################
 
-VERSION_FILE=src/lisp/version.go
+VERSION_FILE=src/wozg/version.go
 VERSION="0.1"
 
-all: bin/lisp pkg/linux_amd64/tuple.a bin/jml # forth json
+all: bin/wozg pkg/linux_amd64/tuple.a
 
-bin/lisp: lisp
-bin/jml: jml
+bin/wozg: wozg
 pkg/linux_amd64/tuple.a: tuple
 
-lisp: tuple src/lisp/lisp.go ${VERSION_FILE}
-	go install $@
-
-jml: tuple src/jml/jml.go
+wozg: tuple src/wozg/wozg.go ${VERSION_FILE}
 	go install $@
 
 tuple: src/tuple/tuple.go
@@ -51,46 +47,46 @@ ${VERSION_FILE}:
 
 test: version test_basic test_arithmetic test_tcl # test_infix
 
-TDIR=src/lisp/testdata/
+TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
 T2DIR=target/test/2/
 
 DIFF=" -y --suppress-common-lines "
 
-version: lisp
-	bin/lisp --version
+version: wozg
+	bin/wozg --version
 
 test_dirs: 
 	mkdir -p ${T1DIR}${TDIR} ${T2DIR}${TDIR}
 
 test_basic: ${TDIR}test.l test_dirs all
-	bin/lisp $<  > ${T1DIR}$<
-	@bin/lisp ${T1DIR}$<  > ${T2DIR}$<
+	bin/wozg $<  > ${T1DIR}$<
+	@bin/wozg ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T2DIR}$< $<.golden
 
 test_arithmetic: ${TDIR}arithmetic.l test_dirs all
-	bin/lisp --eval $<  > ${T1DIR}$<
-	@bin/lisp --eval ${T1DIR}$<  > ${T2DIR}$<
+	bin/wozg --eval $<  > ${T1DIR}$<
+	@bin/wozg --eval ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
 test_tcl: ${TDIR}test.fl.tcl test_dirs all
-	bin/lisp --in .tcl --out .tcl $<  > ${T1DIR}$<
-	@bin/lisp --in .tcl --out .tcl ${T1DIR}$<  > ${T2DIR}$<
+	bin/wozg --in .tcl --out .tcl $<  > ${T1DIR}$<
+	@bin/wozg --in .tcl --out .tcl ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
 test_tuple: ${TDIR}test.tuple test_dirs all
-	bin/lisp --out .tuple $<  > ${T1DIR}$<
-	@bin/lisp --out .tuple ${T1DIR}$<  > ${T2DIR}$<
+	bin/wozg --out .tuple $<  > ${T1DIR}$<
+	@bin/wozg --out .tuple ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
 test_infix: ${TDIR}infix.l test_dirs  all
-	bin/lisp $<  > ${T1DIR}$<
-	@bin/lisp ${T1DIR}$<  > ${T2DIR}$<
+	bin/wozg $<  > ${T1DIR}$<
+	@bin/wozg ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
 smoke: test test_dirs 
-	bin/lisp --out tcl ${TDIR}test.fl.tcl
+	bin/wozg --out tcl ${TDIR}test.fl.tcl
 
 #############################################################################
 #  Clean up

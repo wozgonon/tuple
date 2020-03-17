@@ -1,4 +1,4 @@
 *~
 bin
 pkg
-src/lisp/version.go
+src/wozg/version.go
