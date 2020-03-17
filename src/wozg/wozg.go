@@ -52,11 +52,18 @@ import "flag"
 
 func style (value string) (tuple.Style) {
 
+
 	tclStyle := tuple.Style{"", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
 	jmlStyle := tuple.Style{"\n", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
 	tupleStyle := tuple.Style{"", "", "  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
 	lispStyle := tuple.Style{"", "", "  ", "(", ")", "", "\n", "true", "false", ';'}
+
 	yamlStyle := tuple.Style{"---\n", "...\n", "  ", ":", "", "", "\n", "true", "false", '#'}
+
+	// https://en.wikipedia.org/wiki/INI_file
+	iniStyle := tuple.Style{"", "", "", ": ", "", "", "\n", "true", "false", '#'}
+	// https://en.wikipedia.org/wiki/.properties
+	propertiesStyle := tuple.Style{"", "", "", " = ", "", "", "\n", "true", "false", '#'}
 
 	switch value {
 	case ".l": return lispStyle
@@ -64,17 +71,21 @@ func style (value string) (tuple.Style) {
 	case ".tuple": return tupleStyle
 	case ".fl.tcl": return tclStyle
 	case ".tcl": return tclStyle
-	case ".yaml":
-		return yamlStyle
+	case ".yaml": return yamlStyle
+	case ".ini": return iniStyle
+	case ".properties": return propertiesStyle
 	case ".json": fallthrough
 	case ".xml": fallthrough
 	case ".jpost": fallthrough
 	case ".tsv": fallthrough
 	case ".csv":
+	case ".init":
+	case ".sql":
 		return lispStyle
 	default:
 		return lispStyle
 	}
+		return lispStyle
 }
 
 func main() {
