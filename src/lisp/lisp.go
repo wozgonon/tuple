@@ -8,6 +8,7 @@ import (
 
 import "flag"
 
+
 //func check(e error) {
 //    if e != nil {
 //        panic(e)
@@ -35,11 +36,11 @@ import "flag"
 
 func style (value string) (tuple.Style) {
 
-	tclStyle := tuple.Style{"  ", "{", "}", "", "\n", "true", "false", '#'}
-	jmlStyle := tuple.Style{"  ", "{", "}", "", "\n", "true", "false", '#'}
-	tupleStyle := tuple.Style{"  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
-	lispStyle := tuple.Style{"  ", "(", ")", "", "\n", "true", "false", ';'}
-
+	tclStyle := tuple.Style{"", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
+	jmlStyle := tuple.Style{"\n", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
+	tupleStyle := tuple.Style{"", "", "  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
+	lispStyle := tuple.Style{"", "", "  ", "(", ")", "", "\n", "true", "false", ';'}
+	yamlStyle := tuple.Style{"---\n", "...\n", "  ", ":", "", "", "\n", "true", "false", '#'}
 
 	switch value {
 	case ".l": return lispStyle
@@ -47,13 +48,8 @@ func style (value string) (tuple.Style) {
 	case ".tuple": return tupleStyle
 	case ".fl.tcl": return tclStyle
 	case ".tcl": return tclStyle
-	//case ".yaml": fallthrough
-	//case ".json": fallthrough
-	//case ".xml": fallthrough
-	//case ".jpost": fallthrough
-	//case ".tsv": fallthrough
-	// case ".csv":
-	case ".yaml": fallthrough
+	case ".yaml":
+		return yamlStyle
 	case ".json": fallthrough
 	case ".xml": fallthrough
 	case ".jpost": fallthrough
@@ -66,11 +62,6 @@ func style (value string) (tuple.Style) {
 }
 
 func main() {
-	
-	//tclStyle := tuple.Style{"  ", "{", "}", "", "\n", "true", "false", '#'}
-	//jmlStyle := tuple.Style{"  ", "{", "}", "", "\n", "true", "false", '#'}
-	//tupleStyle := tuple.Style{"  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
-	//lispStyle := tuple.Style{"  ", "(", ")", "", "\n", "true", "false", ';'}
 
 	var in = flag.String("in", ".l", "The format of the input.")
 	var out = flag.String("out", ".l", "The format of the output.")
@@ -83,7 +74,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Print("%s\n", 0.1)
+		fmt.Printf("%s %s %s %s\n", os.Args[0], VERSION, COMMIT, BUILT)
 		return
 	}
 
@@ -118,6 +109,8 @@ func main() {
 			if suffix == "" {
 				suffix = *in
 			}
+			fmt.Print(outputStyle.StartDoc)
+			
 			context.Verbose("source [%s] suffix [%s]", context.SourceName, suffix)
 			inputStyle := style(*in)
 			parser := tuple.NewSExpressionParser(inputStyle, outputStyle, nextFunction(outputStyle))
@@ -131,7 +124,8 @@ func main() {
 				parser.ParseCommandShell (context)
 			case ".tuple": 
 				parser.ParseTuple (context)
-			case ".yaml": fallthrough
+			case ".yaml":
+				fallthrough
 			case ".json": fallthrough
 			case ".xml": fallthrough
 			case ".jpost": fallthrough
@@ -141,6 +135,7 @@ func main() {
 			default:
 				context.Error("Unsupported file suffix: '%s', source: '%s'", suffix, context.SourceName)
 			}
-			fmt.Printf("\n")
+			//fmt.Printf("\n")
+			fmt.Print(outputStyle.EndDoc)
 		})
 }

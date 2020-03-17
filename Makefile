@@ -7,13 +7,16 @@
 #
 #############################################################################
 
+VERSION_FILE=src/lisp/version.go
+VERSION="0.1"
+
 all: bin/lisp pkg/linux_amd64/tuple.a bin/jml # forth json
 
 bin/lisp: lisp
 bin/jml: jml
 pkg/linux_amd64/tuple.a: tuple
 
-lisp: tuple src/lisp/lisp.go
+lisp: tuple src/lisp/lisp.go ${VERSION_FILE}
 	go install $@
 
 jml: tuple src/jml/jml.go
@@ -21,6 +24,18 @@ jml: tuple src/jml/jml.go
 
 tuple: src/tuple/tuple.go
 	go install $@
+
+#############################################################################
+# Automatically create a file with version, date and commit infomration
+#############################################################################
+
+${VERSION_FILE}:
+	@echo "// Auto generated"  > $@
+	@echo "package main" >> $@
+	@echo "const BUILT = \"`date -u -Iseconds`\"" >> $@
+	@echo "const COMMIT = \"`git rev-parse  HEAD`\""  >> $@
+	@echo "const VERSION = \"${VERSION}\""  >> $@
+
 
 #############################################################################
 #  Run tests
@@ -34,7 +49,7 @@ tuple: src/tuple/tuple.go
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: test_basic test_arithmetic test_tcl # test_infix
+test: version test_basic test_arithmetic test_tcl # test_infix
 
 TDIR=src/lisp/testdata/
 T1DIR=target/test/1/
@@ -42,8 +57,11 @@ T2DIR=target/test/2/
 
 DIFF=" -y --suppress-common-lines "
 
+version: lisp
+	bin/lisp --version
+
 test_dirs: 
-	mkdir -p ${T1DIR}/${TDIR} ${T2DIR}/${TDIR}
+	mkdir -p ${T1DIR}${TDIR} ${T2DIR}${TDIR}
 
 test_basic: ${TDIR}test.l test_dirs all
 	bin/lisp $<  > ${T1DIR}$<
@@ -79,4 +97,4 @@ smoke: test test_dirs
 #############################################################################
 
 clean:
-	rm -rf bin target # pkg
+	rm -rf bin target ${VERSION_FILE} # pkg

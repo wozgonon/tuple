@@ -14,22 +14,28 @@ ff () {
 
 run_test() {
     local suffix=$1
-    local suffix2=$2
+    local outSuffix=$2
+    local suffix2=$3
     local file="src/lisp/testdata/test.${suffix2}"
+    echo "-- In:"
     cat ${file}
-    echo "----"
-    bin/lisp --in .${suffix} --out .${suffix} ${file}
+    echo "-- Out:"
+    bin/lisp --in .${suffix} --out .${outSuffix} ${file}
 }
 
 rl () {
-    run_test l l
+    run_test l l l
 }
 
 rtcl () {
-    run_test tcl fl.tcl
+    run_test tcl tcl fl.tcl
 }
 
 rtup () {
-    run_test tuple tuple
+    run_test tuple tuple tuple
+}
+
+ry () {
+    run_test l yaml l
 }
 

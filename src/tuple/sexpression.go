@@ -8,7 +8,7 @@ package tuple
 import (
 	"io"
 	"unicode"
-	"fmt"
+	//"fmt"
 	"unicode/utf8"
 )
 
@@ -122,7 +122,7 @@ func (parser SExpressionParser) ParseTuple(context * ParserContext) {
 				parser.next(token)
 			}
 		}
-		fmt.Print("\n")
+		//fmt.Print("\n")
 	}
 }
 
@@ -179,7 +179,7 @@ func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 		default:
 			parser.next(token)
 		}
-		fmt.Print("\n")
+		//fmt.Print("\n")
 	}
 }
 
