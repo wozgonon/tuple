@@ -484,8 +484,51 @@ func (grammar PropertyGrammar) Parse(context * ParserContext) {
 	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
-func (grammar PropertyGrammar) Print(token interface{}, next func(value string)) {
-	grammar.parser.style.PrettyPrint(token, next)
+func (grammar PropertyGrammar) printToken(depth string, token interface{}, out func(value string)) {
+	style := grammar.parser.style
+	
+	if tuple, ok := token.(Tuple); ok {
+		len := len(tuple.List)
+		if len == 0 {
+			out(depth)
+			out(style.ScalarPrefix)
+			return
+		}
+		var newDepth string
+		head := tuple.List[0]
+		atom, first := head.(Atom)
+
+		var prefix string
+		if depth == "" {
+			prefix = ""
+		} else {
+			prefix = depth + "."
+		}
+		if first {
+			newDepth = prefix + atom.Name
+		} else {
+			newDepth = depth + "."
+		}
+		for k, token := range tuple.List {
+			if ! first || k >0  {
+				grammar.printToken(newDepth, token, out)
+				if k < len-1 {
+					out(style.Separator)
+					out(style.LineBreak)
+				}
+			}
+		}
+
+	} else {
+		out(depth)
+		out(style.ScalarPrefix)
+		style.printScalar(token, out)
+	}
+}
+
+func (grammar PropertyGrammar) Print(token interface{}, out func(value string)) {
+	grammar.printToken("", token, out)
+	out (string(NEWLINE))
 }
 
 func NewPropertyGrammar() Grammar {

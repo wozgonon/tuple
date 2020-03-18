@@ -146,7 +146,7 @@ func (style Style) printToken(depth string, token interface{}, out func(value st
 		atom, ok := head.(Atom)
 		first := ok && style.indentOnly()
 
-		if style.IsWholePath() || style.IsIni() {
+		if style.IsIni() {
 			var prefix string
 			if depth == "" {
 				prefix = ""
@@ -197,8 +197,7 @@ func (style Style) printToken(depth string, token interface{}, out func(value st
 				//out("$")
 			}
 		}
-		if style.IsWholePath() {
-		} else if style.IsIni() {
+		if style.IsIni() {
 			//out(style.LineBreak)
 		} else if !style.indentOnly() {
 			out(style.LineBreak)
@@ -216,10 +215,6 @@ func (style Style) printToken(depth string, token interface{}, out func(value st
 
 func (style Style) IsIni() bool {
 	return style.Indent == "ini" // TODO
-}
-
-func (style Style) IsWholePath() bool {
-	return style.Indent == "" // TODO
 }
 
 func (style Style) indentOnly() bool {
