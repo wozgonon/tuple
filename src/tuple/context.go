@@ -109,7 +109,23 @@ func (context * ParserContext) Verbose(format string, args ...interface{}) {
 	}
 }
 
-func RunParser(args []string, logGrammar Grammar, verbose bool, next Next, parse func (context * ParserContext)) {
+func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * Grammar, grammars *Grammars, next Next) {
+
+	// TODO this can be improved
+	parse := func (context * ParserContext) {
+		suffix := context.Suffix()
+		var grammar *Grammar
+		if suffix == "" {
+			if inputGrammar == nil {
+				panic("Input grammar for '" + context.SourceName + "' not given, use -in ...")
+			}
+			grammar = inputGrammar
+		} else {
+			grammar = grammars.FindBySuffixOrPanic(suffix)
+		}
+		context.Verbose("source [%s] suffix [%s]", context.SourceName, (*grammar).FileSuffix ())
+		(*grammar).Parse(context)
+	}
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)

@@ -49,23 +49,23 @@ func main() {
 	}
 
 	//
-	// Set up and then look up the set of supported syntaxes.
+	// Set up and then look up the set of supported grammars.
 	//
 
-	syntaxes := tuple.NewGrammars()
-	syntaxes.Add((tuple.NewLispGrammar()))
-	syntaxes.Add((tuple.NewTclGrammar()))
-	syntaxes.Add((tuple.NewJmlGrammar()))
-	syntaxes.Add((tuple.NewTupleGrammar()))
-	syntaxes.Add((tuple.NewYamlGrammar()))
-	syntaxes.Add((tuple.NewIniGrammar()))
-	syntaxes.Add((tuple.NewPropertyGrammar()))
+	grammars := tuple.NewGrammars()
+	grammars.Add((tuple.NewLispGrammar()))
+	grammars.Add((tuple.NewTclGrammar()))
+	grammars.Add((tuple.NewJmlGrammar()))
+	grammars.Add((tuple.NewTupleGrammar()))
+	grammars.Add((tuple.NewYamlGrammar()))
+	grammars.Add((tuple.NewIniGrammar()))
+	grammars.Add((tuple.NewPropertyGrammar()))
 
-	outputGrammar := syntaxes.FindBySuffixOrPanic(*out)
-	loggerGrammar := syntaxes.FindBySuffixOrPanic(*logger)
+	outputGrammar := grammars.FindBySuffixOrPanic(*out)
+	loggerGrammar := grammars.FindBySuffixOrPanic(*logger)
 	var inputGrammar *tuple.Grammar = nil
 	if *in != "" {
-		inputGrammar = syntaxes.FindBySuffixOrPanic(*in)
+		inputGrammar = grammars.FindBySuffixOrPanic(*in)
 	}
 	
 	//
@@ -99,20 +99,5 @@ func main() {
 	numberOfFiles := flag.NArg()
 	files := os.Args[args-numberOfFiles:]
  
-	tuple.RunParser(files, *loggerGrammar, *verbose,
-		pipeline,
-		func (context * tuple.ParserContext) {
-			suffix := context.Suffix()
-			var syntax *tuple.Grammar
-			if suffix == "" {
-				if inputGrammar == nil {
-					panic("Input syntax for '" + context.SourceName + "' not given, use -in ...")
-				}
-				syntax = inputGrammar
-			} else {
-				syntax = syntaxes.FindBySuffixOrPanic(suffix)
-			}
-			context.Verbose("source [%s] suffix [%s]", context.SourceName, (*syntax).FileSuffix ())
-			(*syntax).Parse(context)
-		})
+	tuple.RunParser(files, *loggerGrammar, *verbose, inputGrammar, &grammars, pipeline)
 }
