@@ -16,66 +16,254 @@
 */
 package tuple
 
+import "io"
+import "unicode"
+
 /////////////////////////////////////////////////////////////////////////////
 // Lisp Grammar
 /////////////////////////////////////////////////////////////////////////////
 
+// A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
+// A nested structure of scalars (atoms and numbers), lists and key-values pairs (called cons cells).
+// These are used for the syntax of LISP but also any other language can typically be converted to an S-Expression,
+// it is in particular a very useful format for debugging a parser by printing out the Abstract Syntaxt Tree (AST) created by parsing.
 type Lisp struct {
 	parser SExpressionParser
 }
 
-func (syntax Lisp) Name() string {
+func (grammar Lisp) Name() string {
 	return "Lisp"
 }
 
-func (syntax Lisp) FileSuffix() string {
+func (grammar Lisp) FileSuffix() string {
 	return ".l"
 }
 
-func (syntax Lisp) Parse(context * ParserContext) {
-	syntax.parser.ParseSExpression(context)
+func (grammar Lisp) parseSExpressionTuple(context * ParserContext, tuple *Tuple) (error) {
+
+	parser := grammar.parser
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err != nil:
+			context.Error("parsing %s", err);
+			return err /// ??? Any need to return
+		case token == parser.style.Close:
+			return nil
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := grammar.parseSExpressionTuple(context, &subTuple)
+			if err == io.EOF {
+				context.Error ("Missing close bracket")
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			tuple.Append(subTuple)
+		default:
+			if _,ok := token.(Comment); ok {
+				// TODO Ignore ???
+			} else {
+				tuple.Append(token)
+			}
+		}
+	}
+
 }
 
-func (syntax Lisp) Print(token interface{}, next func(value string)) {
-	syntax.parser.outputStyle.PrettyPrint(token, next)
+func (grammar Lisp) Parse(context * ParserContext) {
+	parser := grammar.parser
+
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			context.Error ("'%s'", err)
+			return
+		case token == parser.style.Close:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := grammar.parseSExpressionTuple(context, &subTuple)
+			if err != nil {
+				return
+			}
+			context.next(subTuple)
+		default:
+			context.next(token)
+		}
+	}
+}
+
+func (grammar Lisp) Print(token interface{}, next func(value string)) {
+	grammar.parser.style.PrettyPrint(token, next)
 }
 
 func NewLispGrammar() Grammar {
 	style := Style{"", "", "  ", "(", ")", "", "\n", "true", "false", ';'}
-	return Lisp{NewSExpressionParser(style, style)}
+	return Lisp{NewSExpressionParser(style)}
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // Tcl Grammar
 /////////////////////////////////////////////////////////////////////////////
 
+// The basic syntax of command shell parsers is typically very simple:
+// everything is a line of strings separated by spaces terminate by a newline.
+// Mostly no need for quotes or double quotes or semi-colons.
+// This makes it very easy to type command with a few parameters on a command line interface (CLI).
+//
+// Examples include [TCL](https://en.wikipedia.org/wiki/Tcl), [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), DOS cmd shell
+// TCL and bash use braces { ... } for nesting.
+//
+// Bash and DOS of course have lots of extra syntax for working with files but the
+// basic syntax typically does not understand arithmetic, with infix notation, one has to use a special tool:
+// * TCL has a 'expr' function that understand arithmetic with infix notation
+// * Bash one can use an external 'expr(1)' tool:  'expr 8.3 + 6'
+// * DOS has a special version of the SET command 'SET /a c=a+b'
+//
 type Tcl struct {
 	parser SExpressionParser
 }
 
-func (syntax Tcl) Name() string {
+func (grammar Tcl) Name() string {
 	return "Tcl"
 }
 
-func (syntax Tcl) FileSuffix() string {
+func (grammar Tcl) FileSuffix() string {
 	return ".tcl"
 }
 
-func (syntax Tcl) Parse(context * ParserContext) {
-	syntax.parser.ParseCommandShell (context)
-	//syntax.parser.ParseSExpression(context)
+func (grammar Tcl ) readCommandString(context * ParserContext, token string) (string, error) {
+	parser := grammar.parser
+	return ReadString(context, token, true, func (ch rune) bool {
+		return ! unicode.IsSpace(ch) && string(ch) != parser.style.Close && string(ch) != parser.style.Open && ch != '$'
+	})
 }
 
-func (syntax Tcl) Print(token interface{}, next func(value string)) {
-	syntax.parser.outputStyle.PrettyPrint(token, next)
+func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, error) {
+
+	parser := grammar.parser
+	for {
+		ch, err := context.ReadRune()
+		switch {
+		case err != nil: return "", err
+		case err == io.EOF: return "", nil
+		case ch == NEWLINE: return string(NEWLINE), nil
+		case unicode.IsSpace(ch): break
+		case ch == parser.style.OneLineComment:
+			// TODO ignore for now
+			//return string(ch), nil
+		case ch == parser.openChar :  return parser.style.Open, nil
+		case ch == parser.closeChar : return parser.style.Close, nil
+		case ch == '"' :  return ReadCLanguageString(context)
+		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
+		case ch == '$':
+			value, err := grammar.readCommandString(context, "")
+			if err != nil {
+				return nil, err
+			}
+			return Atom{value}, nil
+		case unicode.IsGraphic(ch): return grammar.readCommandString(context, string(ch))
+		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
+		default: context.Error("Error character not recognised '%d'", ch)
+		}
+	}
+}
+
+func (grammar Tcl) parseCommandShellTuple(context * ParserContext, tuple *Tuple) (error) {
+
+	parser := grammar.parser
+	for {
+		token, err := grammar.getNextCommandShell(context)
+		switch {
+		case err != nil:
+			context.Error("parsing %s", err);
+			return err /// ??? Any need to return
+		case token == parser.style.Close:
+			return nil
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := grammar.parseCommandShellTuple(context, &subTuple)
+			if err == io.EOF {
+				context.Error ("Missing close bracket")
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			tuple.Append(subTuple)
+		case token == string(NEWLINE):
+		default:
+			tuple.Append(token)
+		}
+	}
+}
+
+func (grammar Tcl) Parse(context * ParserContext) {
+
+	parser := grammar.parser
+
+	resultTuple := NewTuple()
+	for {
+		token, err := grammar.getNextCommandShell(context)
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			context.Error ("'%s'", err)
+			return
+		case token == string(NEWLINE):
+			l := resultTuple.Length()
+			context.Verbose ("Newline length of tuple=%d", l)
+			switch l {
+			case 0: // Ignore
+			case 1:
+				first := resultTuple.List[0]
+				if _, ok := first.(Atom); ok {
+					context.next(resultTuple)
+				} else {
+					context.next(token)
+				}
+			default:
+				context.next(resultTuple)
+			}
+			resultTuple = NewTuple()
+		case token == parser.style.OneLineComment:
+			comment, err := ReadUntilEndOfLine(context)
+			if err != nil {
+				return
+			}
+			context.next(comment)
+		case token == parser.style.Close:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := grammar.parseCommandShellTuple(context, &subTuple)
+			if err != nil {
+				return // tuple, err
+			}
+			resultTuple.Append(subTuple)
+		default:
+			context.Verbose("Add token: '%s'", token)
+			resultTuple.Append(token)
+		}
+	}
+}
+
+func (grammar Tcl) Print(token interface{}, next func(value string)) {
+	grammar.parser.style.PrettyPrint(token, next)
 }
 
 func NewTclGrammar() Grammar {
 	style := Style{"", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
-	return Tcl{NewSExpressionParser(style, style)}
+	return Tcl{NewSExpressionParser(style)}
 }
 
-/////////////////////////////////////////////////////////////////////////////
+/*/////////////////////////////////////////////////////////////////////////////
 // JML Grammar
 /////////////////////////////////////////////////////////////////////////////
 
@@ -83,26 +271,26 @@ type Jml struct {
 	parser SExpressionParser
 }
 
-func (syntax Jml) Name() string {
+func (grammar Jml) Name() string {
 	return "Jml"
 }
 
-func (syntax Jml) FileSuffix() string {
+func (grammar Jml) FileSuffix() string {
 	return ".jml"
 }
 
-func (syntax Jml) Parse(context * ParserContext) {
-	syntax.parser.ParseSExpression(context)
+func (grammar Jml) Parse(context * ParserContext) {
+	grammar.parser.ParseSExpression(context)
 }
 
-func (syntax Jml) Print(token interface{}, next func(value string)) {
-	syntax.parser.outputStyle.PrettyPrint(token, next)
+func (grammar Jml) Print(token interface{}, next func(value string)) {
+	grammar.parser.style.PrettyPrint(token, next)
 }
 
 func NewJmlGrammar() Grammar {
 	style := Style{"\n", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
-	return Jml{NewSExpressionParser(style, style)}
-}
+	return Jml{NewSExpressionParser(style)}
+}*/
 
 /////////////////////////////////////////////////////////////////////////////
 // Tuple Grammar
@@ -112,26 +300,93 @@ type TupleGrammar struct {
 	parser SExpressionParser
 }
 
-func (syntax TupleGrammar) Name() string {
+func (grammar TupleGrammar) Name() string {
 	return "TupleGrammar"
 }
 
-func (syntax TupleGrammar) FileSuffix() string {
+func (grammar TupleGrammar) FileSuffix() string {
 	return ".tuple"
 }
 
-func (syntax TupleGrammar) Parse(context * ParserContext) {
-	syntax.parser.ParseTuple (context)
-	//syntax.parser.ParseSExpression(context)
+func (grammar TupleGrammar) parseCommaTuple(context * ParserContext, tuple *Tuple) (error) {
+
+	parser := grammar.parser
+	// TODO comma and semi-colon
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err != nil:
+			context.Error("parsing %s", err);
+			return err /// ??? Any need to return
+		case token == parser.style.Close:
+			return nil
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := grammar.parseCommaTuple(context, &subTuple)
+			if err == io.EOF {
+				context.Error ("Missing close bracket")
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			tuple.Append(subTuple)
+		default:
+			if _,ok := token.(Comment); ok {
+				// TODO Ignore ???
+			} else {
+				tuple.Append(token)
+			}
+		}
+	}
+
 }
 
-func (syntax TupleGrammar) Print(token interface{}, next func(value string)) {
-	syntax.parser.outputStyle.PrettyPrint(token, next)
+func (grammar TupleGrammar) Parse(context * ParserContext) {
+
+	parser := grammar.parser
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			context.Error ("'%s'", err)
+			return
+		case token == parser.style.Close:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+		default:
+			if atom,ok := token.(Atom); ok {
+				bracket, err := parser.getNext(context)
+				if err != nil {
+					context.Error ("'%s'", err)
+					return
+				}
+				if bracket != parser.style.Open {
+					context.Error ("Expected open bracket '%s' after '%s', not '%s'", parser.style.Open, token, bracket)
+				} else {
+					subTuple := NewTuple()
+					subTuple.Append(atom)
+					err := grammar.parseCommaTuple(context, &subTuple)
+					if err != nil {
+						return
+					}
+					context.next(subTuple)
+				}
+			} else {
+				context.next(token)
+			}
+		}
+	}
+}
+
+func (grammar TupleGrammar) Print(token interface{}, next func(value string)) {
+	grammar.parser.style.PrettyPrint(token, next)
 }
 
 func NewTupleGrammar() Grammar {
 	style := Style{"", "", "  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
-	return TupleGrammar{NewSExpressionParser(style, style)}
+	return TupleGrammar{NewSExpressionParser(style)}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -142,27 +397,27 @@ type Yaml struct {
 	parser SExpressionParser
 }
 
-func (syntax Yaml) Name() string {
+func (grammar Yaml) Name() string {
 	return "Yaml"
 }
 
-func (syntax Yaml) FileSuffix() string {
+func (grammar Yaml) FileSuffix() string {
 	return ".yaml"
 }
 
-func (syntax Yaml) Parse(context * ParserContext) {
-	context.Error("Not implemented file suffix: '%s'", syntax.FileSuffix())
+func (grammar Yaml) Parse(context * ParserContext) {
+	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
-func (syntax Yaml) Print(token interface{}, next func(value string)) {
-	next(syntax.parser.outputStyle.StartDoc)
-	syntax.parser.outputStyle.PrettyPrint(token, next)
-	next(syntax.parser.outputStyle.EndDoc)
+func (grammar Yaml) Print(token interface{}, next func(value string)) {
+	next(grammar.parser.style.StartDoc)
+	grammar.parser.style.PrettyPrint(token, next)
+	next(grammar.parser.style.EndDoc)
 }
 
 func NewYamlGrammar() Grammar {
 	style := Style{"---\n", "...\n", "  ", ":", "", "", "\n", "true", "false", '#'}
-	return Yaml{NewSExpressionParser(style, style)}
+	return Yaml{NewSExpressionParser(style)}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -173,26 +428,26 @@ type Ini struct {
 	parser SExpressionParser
 }
 
-func (syntax Ini) Name() string {
+func (grammar Ini) Name() string {
 	return "Ini"
 }
 
-func (syntax Ini) FileSuffix() string {
+func (grammar Ini) FileSuffix() string {
 	return ".ini"
 }
 
-func (syntax Ini) Parse(context * ParserContext) {
-	context.Error("Not implemented file suffix: '%s'", syntax.FileSuffix())
+func (grammar Ini) Parse(context * ParserContext) {
+	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
-func (syntax Ini) Print(token interface{}, next func(value string)) {
-	syntax.parser.outputStyle.PrettyPrint(token, next)
+func (grammar Ini) Print(token interface{}, next func(value string)) {
+	grammar.parser.style.PrettyPrint(token, next)
 }
 
 func NewIniGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/INI_file
 	style := Style{"", "", "ini", "= ", "", "", "\n", "true", "false", '#'}
-	return Ini{NewSExpressionParser(style, style)}
+	return Ini{NewSExpressionParser(style)}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -203,26 +458,26 @@ type PropertyGrammar struct {
 	parser SExpressionParser
 }
 
-func (syntax PropertyGrammar) Name() string {
+func (grammar PropertyGrammar) Name() string {
 	return "PropertyGrammar"
 }
 
-func (syntax PropertyGrammar) FileSuffix() string {
+func (grammar PropertyGrammar) FileSuffix() string {
 	return ".properties"
 }
 
-func (syntax PropertyGrammar) Parse(context * ParserContext) {
-	context.Error("Not implemented file suffix: '%s'", syntax.FileSuffix())
+func (grammar PropertyGrammar) Parse(context * ParserContext) {
+	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
-func (syntax PropertyGrammar) Print(token interface{}, next func(value string)) {
-	syntax.parser.outputStyle.PrettyPrint(token, next)
+func (grammar PropertyGrammar) Print(token interface{}, next func(value string)) {
+	grammar.parser.style.PrettyPrint(token, next)
 }
 
 func NewPropertyGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/.properties
 	style := Style{"", "", "", " = ", "", "", "\n", "true", "false", '#'}
-	return PropertyGrammar{NewSExpressionParser(style, style)}
+	return PropertyGrammar{NewSExpressionParser(style)}
 }
 
 // TODO json xml postfix

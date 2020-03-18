@@ -34,7 +34,7 @@ func main() {
 	var logger = flag.String("log", ".l", "The format of the error logging.")
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
 	var eval = flag.Bool("eval", false, "Run 'eval' interpretter.")
-	var query = flag.String("query", "", "Select parts of the AST matching a query pattern.")
+	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
 	var version = flag.Bool("version", false, "Print version of this software.")
 
 	flag.Parse()
@@ -55,7 +55,7 @@ func main() {
 	grammars := tuple.NewGrammars()
 	grammars.Add((tuple.NewLispGrammar()))
 	grammars.Add((tuple.NewTclGrammar()))
-	grammars.Add((tuple.NewJmlGrammar()))
+	//grammars.Add((tuple.NewJmlGrammar()))
 	grammars.Add((tuple.NewTupleGrammar()))
 	grammars.Add((tuple.NewYamlGrammar()))
 	grammars.Add((tuple.NewIniGrammar()))
@@ -84,10 +84,11 @@ func main() {
 			tuple.SimpleEval(value, next)
 		}
 	}
-	if *query != "" {
+	if *queryPattern != "" {
 		next := pipeline
+		query := tuple.NewQuery(*queryPattern)
 		pipeline = func(value interface{}) {
-			tuple.Query(*query, value, next)
+			query.Match(value, next)
 		}
 	}
 	

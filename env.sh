@@ -43,7 +43,7 @@ rl () {
 }
 
 rtcl () {
-    run_test tcl tcl fl.tcl
+    run_test tcl tcl tcl
 }
 
 rtup () {

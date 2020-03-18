@@ -21,6 +21,9 @@ import "log"
 import "strconv"
 import "reflect"
 import "math"
+import "io"
+import "unicode"
+import "unicode/utf8"
 
 /////////////////////////////////////////////////////////////////////////////
 // Pretty printer
@@ -37,6 +40,42 @@ type Style struct {
 	True string
 	False string
 	OneLineComment rune
+}
+
+type SExpressionParser struct {
+	style Style
+	openChar rune
+	closeChar rune
+}
+
+func NewSExpressionParser(style Style) SExpressionParser {
+
+	openChar, _ := utf8.DecodeRuneInString(style.Open)
+	closeChar, _ := utf8.DecodeRuneInString(style.Close)
+	return SExpressionParser{style,openChar,closeChar}
+}
+
+func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, error) {
+
+	for {
+		ch, err := context.ReadRune()
+		switch {
+		case err != nil: return "", err
+		case err == io.EOF: return "", nil
+		case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
+		case ch == parser.style.OneLineComment: return ReadUntilEndOfLine(context)
+		case ch == parser.openChar :  return parser.style.Open, nil
+		case ch == parser.closeChar : return parser.style.Close, nil
+		case ch == '"' :  return ReadCLanguageString(context)
+		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
+		case IsArithmetic(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
+		case IsCompare(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) })
+		case unicode.IsLetter(ch):  return ReadAtom(context, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
+		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
+		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
+		default: context.Error("Error character not recognised '%d'", ch)
+		}
+	}
 }
 
 func quote(value string, out func(value string)) {
