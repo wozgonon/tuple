@@ -427,40 +427,30 @@ func (grammar Yaml) printToken(depth string, token interface{}, out func(value s
 
 	style := grammar.parser.style
 	if tuple, ok := token.(Tuple); ok {
-		// style.printTuple(depth, tuple, out)
 
+		out(depth)
+		out(style.ScalarPrefix)
 		len := len(tuple.List)
 		if len == 0 {
-			out(depth)
-			out(style.ScalarPrefix)
 			out("[]")
 			return
 		}
-
-		out(depth)
-		out("- ")
 		out(style.LineBreak)
-		var newDepth string
+		depth = depth + style.Indent
 		head := tuple.List[0]
-		atom, ok := head.(Atom)
-		first := ok
-
+		atom, first := head.(Atom)
+		newDepth := depth
 		if first {
-			depth = depth + style.Indent
 			out(depth)
 			quote(atom.Name, out)
 			out(style.Open)
 			out(style.LineBreak)
 			newDepth = depth + style.Indent
-		} else {
-			depth = depth + style.Indent
-			newDepth = depth
 		}
 		for k, token := range tuple.List {
 			if ! first || k >0  {
 				grammar.printToken(newDepth, token, out)
 				if k < len-1 {
-					out(style.Separator)
 					out(style.LineBreak)
 				}
 			}
