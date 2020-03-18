@@ -70,7 +70,7 @@ test_arithmetic: ${TDIR}arithmetic.l test_dirs all
 	@bin/wozg --eval ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
-test_tcl: ${TDIR}test.fl.tcl test_dirs all
+test_tcl: ${TDIR}test.tcl test_dirs all
 	bin/wozg --in .tcl --out .tcl $<  > ${T1DIR}$<
 	@bin/wozg --in .tcl --out .tcl ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
@@ -86,7 +86,7 @@ test_infix: ${TDIR}infix.l test_dirs  all
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
 smoke: test test_dirs 
-	bin/wozg --out tcl ${TDIR}test.fl.tcl
+	bin/wozg --out tcl ${TDIR}test.tcl
 
 #############################################################################
 #  Clean up

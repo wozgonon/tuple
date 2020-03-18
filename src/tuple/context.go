@@ -26,17 +26,21 @@ import 	"path"
 const PROMPT = "$ "
 const STDIN = "<stdin>"
 
+type Next func(value interface{})
+
 type ParserContext struct {
 	SourceName string
 	line int64
 	column int64
 	scanner io.RuneScanner
-	logStyle Style
+	logGrammar Grammar
 	verbose bool
+	next Next
+
 }
 
-func NewParserContext(sourceName string, scanner io.RuneScanner, logStyle Style, verbose bool) ParserContext {
-	context :=  ParserContext{sourceName, 1, 0, scanner, logStyle, verbose}
+func NewParserContext(sourceName string, scanner io.RuneScanner, logGrammar Grammar, verbose bool, next Next) ParserContext {
+	context :=  ParserContext{sourceName, 1, 0, scanner, logGrammar, verbose, next}
 	context.Verbose("Parsing file [%s] suffix [%s]", sourceName, context.Suffix())
 	return context
 }
@@ -91,7 +95,7 @@ func (context * ParserContext) log(format string, level string, args ...interfac
 	tuple.Append(context.column)
 	tuple.Append(context.SourceName)
 	tuple.Append(suffix)
-	context.logStyle.PrettyPrint(tuple, func (value string) { fmt.Print(value) })
+	context.logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
 
 }
 
@@ -105,11 +109,11 @@ func (context * ParserContext) Verbose(format string, args ...interface{}) {
 	}
 }
 
-func RunParser(args []string, logStyle Style, verbose bool, parse func (context * ParserContext)) {
+func RunParser(args []string, logGrammar Grammar, verbose bool, next Next, parse func (context * ParserContext)) {
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
-		context := NewParserContext(STDIN, reader, logStyle, verbose)
+		context := NewParserContext(STDIN, reader, logGrammar, verbose, next)
 		context.prompt()
 		parse(&context)
 	} else {
@@ -119,7 +123,7 @@ func RunParser(args []string, logStyle Style, verbose bool, parse func (context 
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, logStyle, verbose)
+			context := NewParserContext(fileName, reader, logGrammar, verbose, next)
 			parse(&context)
 			file.Close()
 		}

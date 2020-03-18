@@ -49,11 +49,16 @@ func (style Style) printToken(depth string, token interface{}, out func(value st
 	if tuple, ok := token.(Tuple); ok {
 		style.printTuple(depth, tuple, out)
 	} else {
-		out(depth)
 		if style.IsWholePath() {
-			out(style.Open)
-		} else if style.indentOnly() {
-			out("- ")
+			out(depth)
+
+		} else {
+			out(depth)
+			if style.IsWholePath() || style.IsIni() {
+				out(style.Open)
+			} else if style.indentOnly() {
+				out("- ")
+			}
 		}
 		switch token.(type) {
 		case Atom:
@@ -117,7 +122,7 @@ func (style Style) printTuple(depth string, tuple Tuple, out func(value string))
 	atom, ok := head.(Atom)
 	first := ok && style.indentOnly()
 
-	if style.IsWholePath() {
+	if style.IsWholePath() || style.IsIni() {
 		var prefix string
 		if depth == "" {
 			prefix = ""
@@ -133,7 +138,14 @@ func (style Style) printTuple(depth string, tuple Tuple, out func(value string))
 			first = true
 		} else {
 			newDepth = depth
-		}	
+		}
+		if style.IsIni() {
+			out(style.LineBreak)
+			out("[")
+			out(depth)
+			out("]")
+			out(style.LineBreak)
+		}
 	} else if first {
 		depth = depth + style.Indent
 		out(depth)
@@ -163,6 +175,8 @@ func (style Style) printTuple(depth string, tuple Tuple, out func(value string))
 		}
 	}
 	if style.IsWholePath() {
+	} else if style.IsIni() {
+		//out(style.LineBreak)
 	} else if !style.indentOnly() {
 		out(style.LineBreak)
 		out(depth)
@@ -171,13 +185,17 @@ func (style Style) printTuple(depth string, tuple Tuple, out func(value string))
 	//out("&")
 }
 
+func (style Style) IsIni() bool {
+	return style.Indent == "ini" // TODO
+}
+
 func (style Style) IsWholePath() bool {
 	return style.Indent == "" // TODO
 }
 
 func (style Style) indentOnly() bool {
 	// TODO set this as a parameter
-	return style.Close == "" && style.Indent != "" // TODO
+	return !style.IsIni() && style.Close == "" && style.Indent != "" // TODO
 }
 
 func (style Style) PrettyPrint(token interface{}, out func(value string)) {

@@ -20,8 +20,6 @@ import "math"
 
 //  A simple toy evaluator
 
-type Next func(value interface{})
-
 func toFloat64(value interface{}) float64 {
 	switch val := value.(type) {
 	case int64: return float64(val)

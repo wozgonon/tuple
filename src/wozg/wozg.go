@@ -20,149 +20,99 @@ import (
 	"tuple"
 	"os"
 	"fmt"
+	"flag"
 )
-
-import "flag"
-
-
-//func check(e error) {
-//    if e != nil {
-//        panic(e)
-//    }
-//}
-
-/*
-	lisp := func (context * tuple.ParserContext) {
-		parser := tuple.NewSExpressionParser(lispStyle, outputStyle, nextFunction(outputStyle))
-		parser.ParseSExpression (context)
-	}
-	jml :=  func (context * tuple.ParserContext) {
-		parser := tuple.NewSExpressionParser(jmlStyle, outputStyle, nextFunction(outputStyle))
-		parser.ParseSExpression (context)
-	}
-	tcl := func (context * tuple.ParserContext) {
-		parser := tuple.NewSExpressionParser(tclStyle, outputStyle, nextFunction(outputStyle))
-		parser.ParseCommandShell (context)
-	}
-	tuple := func (context * tuple.ParserContext) {
-		parser := tuple.NewSExpressionParser(tupleStyle, outputStyle, nextFunction(outputStyle))
-		parser.ParseTuple (context)
-	}
-*/	
-
-func style (value string) (tuple.Style) {
-
-
-	tclStyle := tuple.Style{"", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
-	jmlStyle := tuple.Style{"\n", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
-	tupleStyle := tuple.Style{"", "", "  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
-	lispStyle := tuple.Style{"", "", "  ", "(", ")", "", "\n", "true", "false", ';'}
-
-	yamlStyle := tuple.Style{"---\n", "...\n", "  ", ":", "", "", "\n", "true", "false", '#'}
-
-	// https://en.wikipedia.org/wiki/INI_file
-	iniStyle := tuple.Style{"", "", "", ": ", "", "", "\n", "true", "false", '#'}
-	// https://en.wikipedia.org/wiki/.properties
-	propertiesStyle := tuple.Style{"", "", "", " = ", "", "", "\n", "true", "false", '#'}
-
-	switch value {
-	case ".l": return lispStyle
-	case ".jml": return jmlStyle
-	case ".tuple": return tupleStyle
-	case ".fl.tcl": return tclStyle
-	case ".tcl": return tclStyle
-	case ".yaml": return yamlStyle
-	case ".ini": return iniStyle
-	case ".properties": return propertiesStyle
-	case ".json": fallthrough
-	case ".xml": fallthrough
-	case ".jpost": fallthrough
-	case ".tsv": fallthrough
-	case ".csv":
-	case ".init":
-	case ".sql":
-		return lispStyle
-	default:
-		return lispStyle
-	}
-		return lispStyle
-}
 
 func main() {
 
+	//
+	//  Set up the command line arguments
+	//
+	
 	var in = flag.String("in", ".l", "The format of the input.")
 	var out = flag.String("out", ".l", "The format of the output.")
 	var logger = flag.String("log", ".l", "The format of the error logging.")
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
 	var eval = flag.Bool("eval", false, "Run 'eval' interpretter.")
+	var query = flag.String("query", "", "Select parts of the AST matching a query pattern.")
 	var version = flag.Bool("version", false, "Print version of this software.")
-	//var interactive = flag.Bool("interactive", false, "Runs in interactive code, as a CLI or REPL.  Set -in")
 
 	flag.Parse()
 
+	//
+	//  Print the version message.
+	//
+ 
 	if *version {
 		fmt.Printf("%s %s %s %s\n", os.Args[0], VERSION, COMMIT, BUILT)
 		return
 	}
 
+	//
+	// Set up and then look up the set of supported syntaxes.
+	//
+
+	syntaxes := tuple.NewGrammars()
+	syntaxes.Add((tuple.NewLispGrammar()))
+	syntaxes.Add((tuple.NewTclGrammar()))
+	syntaxes.Add((tuple.NewJmlGrammar()))
+	syntaxes.Add((tuple.NewTupleGrammar()))
+	syntaxes.Add((tuple.NewYamlGrammar()))
+	syntaxes.Add((tuple.NewIniGrammar()))
+	syntaxes.Add((tuple.NewPropertyGrammar()))
+
+	outputGrammar := syntaxes.FindBySuffixOrPanic(*out)
+	loggerGrammar := syntaxes.FindBySuffixOrPanic(*logger)
+	var inputGrammar *tuple.Grammar = nil
+	if *in != "" {
+		inputGrammar = syntaxes.FindBySuffixOrPanic(*in)
+	}
+	
+	//
+	//  Set up the translator pipeline.
+	//
+
+	prettyPrint := func(tuple interface{}) {
+		(*outputGrammar).Print(tuple, func(value string) {
+			fmt.Printf ("%s", value)
+		})
+	}
+	pipeline := prettyPrint
+	if *eval {
+		next := pipeline
+		pipeline = func(value interface{}) {
+			tuple.SimpleEval(value, next)
+		}
+	}
+	if *query != "" {
+		next := pipeline
+		pipeline = func(value interface{}) {
+			tuple.Query(*query, value, next)
+		}
+	}
+	
+	//
+	//  Run the translators over all the input files.
+	//
+
 	args := len(os.Args)
 	numberOfFiles := flag.NArg()
 	files := os.Args[args-numberOfFiles:]
-
-	//if len(files) == 0 && !*interactive {
-	//	return
-	//}
-	
-	outputStyle := style(*out)
-	logStyle := style(*logger)
-
-	nextFunction := func(outputStyle tuple.Style) tuple.Next {
-		pretty := func(tuple interface{}) {
-			outputStyle.PrettyPrint(tuple, func(value string) {
-				fmt.Printf ("%s", value)
-			})
-		}
-		if *eval {
-			return func(value interface{}) {
-				tuple.SimpleEval(value, pretty)
-			}
-		} else {
-			return pretty
-		}
-	}
-	tuple.RunParser(files, logStyle, *verbose,
+ 
+	tuple.RunParser(files, *loggerGrammar, *verbose,
+		pipeline,
 		func (context * tuple.ParserContext) {
 			suffix := context.Suffix()
+			var syntax *tuple.Grammar
 			if suffix == "" {
-				suffix = *in
+				if inputGrammar == nil {
+					panic("Input syntax for '" + context.SourceName + "' not given, use -in ...")
+				}
+				syntax = inputGrammar
+			} else {
+				syntax = syntaxes.FindBySuffixOrPanic(suffix)
 			}
-			fmt.Print(outputStyle.StartDoc)
-			
-			context.Verbose("source [%s] suffix [%s]", context.SourceName, suffix)
-			inputStyle := style(*in)
-			parser := tuple.NewSExpressionParser(inputStyle, outputStyle, nextFunction(outputStyle))
-			switch suffix {
-			case ".l":
-				parser.ParseSExpression (context)
-			case ".jml":
-				parser.ParseSExpression (context)
-			case ".fl.tcl": 
-			case ".tcl": 
-				parser.ParseCommandShell (context)
-			case ".tuple": 
-				parser.ParseTuple (context)
-			case ".yaml":
-				fallthrough
-			case ".json": fallthrough
-			case ".xml": fallthrough
-			case ".jpost": fallthrough
-			case ".tsv": fallthrough
-			case ".csv":
-				context.Error("Not implemented file suffix: '%s'", suffix)
-			default:
-				context.Error("Unsupported file suffix: '%s', source: '%s'", suffix, context.SourceName)
-			}
-			//fmt.Printf("\n")
-			fmt.Print(outputStyle.EndDoc)
+			context.Verbose("source [%s] suffix [%s]", context.SourceName, (*syntax).FileSuffix ())
+			(*syntax).Parse(context)
 		})
 }

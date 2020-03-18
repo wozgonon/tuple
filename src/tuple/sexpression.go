@@ -38,14 +38,13 @@ type SExpressionParser struct {
 	outputStyle Style
 	openChar rune
 	closeChar rune
-	next Next
 }
 
-func NewSExpressionParser(style Style, outputStyle Style, next Next) SExpressionParser {
+func NewSExpressionParser(style Style, outputStyle Style) SExpressionParser {
 
 	openChar, _ := utf8.DecodeRuneInString(style.Open)
 	closeChar, _ := utf8.DecodeRuneInString(style.Close)
-	return SExpressionParser{style,outputStyle,openChar,closeChar,next}
+	return SExpressionParser{style,outputStyle,openChar,closeChar}
 }
 
 func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, error) {
@@ -132,10 +131,10 @@ func (parser SExpressionParser) ParseTuple(context * ParserContext) {
 					if err != nil {
 						return
 					}
-					parser.next(subTuple)
+					context.next(subTuple)
 				}
 			} else {
-				parser.next(token)
+				context.next(token)
 			}
 		}
 		//fmt.Print("\n")
@@ -173,6 +172,8 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
 func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 
 	for {
@@ -191,9 +192,9 @@ func (parser SExpressionParser) ParseSExpression(context * ParserContext) {
 			if err != nil {
 				return
 			}
-			parser.next(subTuple)
+			context.next(subTuple)
 		default:
-			parser.next(token)
+			context.next(token)
 		}
 		//fmt.Print("\n")
 	}
@@ -280,12 +281,12 @@ func (parser SExpressionParser) ParseCommandShell(context * ParserContext) {
 			case 1:
 				first := resultTuple.List[0]
 				if _, ok := first.(Atom); ok {
-					parser.next(resultTuple)
+					context.next(resultTuple)
 				} else {
-					parser.next(token)
+					context.next(token)
 				}
 			default:
-				parser.next(resultTuple)
+				context.next(resultTuple)
 			}
 			resultTuple = NewTuple()
 		case token == parser.style.OneLineComment:
@@ -293,7 +294,7 @@ func (parser SExpressionParser) ParseCommandShell(context * ParserContext) {
 			if err != nil {
 				return
 			}
-			parser.next(comment)
+			context.next(comment)
 		case token == parser.style.Close:
 			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
 		case token == parser.style.Open:
@@ -310,3 +311,4 @@ func (parser SExpressionParser) ParseCommandShell(context * ParserContext) {
 		//fmt.Print("% ")
 	}
 }
+
