@@ -423,10 +423,59 @@ func (grammar Yaml) Parse(context * ParserContext) {
 	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
-func (grammar Yaml) Print(token interface{}, next func(value string)) {
-	//next(grammar.parser.style.StartDoc)
-	grammar.parser.style.PrettyPrint(token, next)
-	//next(grammar.parser.style.EndDoc)
+func (grammar Yaml) printToken(depth string, token interface{}, out func(value string)) {
+
+	style := grammar.parser.style
+	if tuple, ok := token.(Tuple); ok {
+		// style.printTuple(depth, tuple, out)
+
+		len := len(tuple.List)
+		if len == 0 {
+			out(depth)
+			out(style.ScalarPrefix)
+			out("[]")
+			return
+		}
+
+		out(depth)
+		out("- ")
+		out(style.LineBreak)
+		var newDepth string
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		first := ok
+
+		if first {
+			depth = depth + style.Indent
+			out(depth)
+			quote(atom.Name, out)
+			out(style.Open)
+			out(style.LineBreak)
+			newDepth = depth + style.Indent
+		} else {
+			depth = depth + style.Indent
+			newDepth = depth
+		}
+		for k, token := range tuple.List {
+			if ! first || k >0  {
+				grammar.printToken(newDepth, token, out)
+				if k < len-1 {
+					out(style.Separator)
+					out(style.LineBreak)
+				}
+			}
+		}
+
+	} else {
+		out(depth)
+		out(style.ScalarPrefix)
+		style.printScalar(token, out)
+	}
+}
+
+func (grammar Yaml) Print(token interface{}, out func(value string)) {
+	grammar.printToken("", token, out)
+	out (string(NEWLINE))
 }
 
 func NewYamlGrammar() Grammar {
@@ -454,8 +503,64 @@ func (grammar Ini) Parse(context * ParserContext) {
 	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
-func (grammar Ini) Print(token interface{}, next func(value string)) {
-	grammar.parser.style.PrettyPrint(token, next)
+// TODO 
+func (grammar Ini ) printToken(depth string, key string, token interface{}, out func(value string)) {
+
+	style := grammar.parser.style
+	
+	if tuple, ok := token.(Tuple); ok {
+
+		len := len(tuple.List)
+		if len == 0 {
+			out(depth)
+			out(style.ScalarPrefix)
+			return
+		}
+
+		var newDepth string
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		first := false
+
+		var prefix string
+		if depth == "" {
+			prefix = ""
+		} else {
+			prefix = depth + "."
+		}
+		if ok {
+			key = atom.Name
+			newDepth = prefix + atom.Name
+			first = true
+		} else {
+			key = "."
+			newDepth = depth
+		}
+		out(style.LineBreak)
+		out("[")
+		out(depth)
+		out("]")
+		out(style.LineBreak)
+		for k, token := range tuple.List {
+			if ! first || k >0  {
+				grammar.printToken(newDepth, key, token, out)
+				if k < len-1 {
+					out(style.Separator)
+					out(style.LineBreak)
+				}
+			}
+		}
+
+	} else {
+		out(key) // TODO just key
+		out(style.ScalarPrefix)
+		style.printScalar(token, out)
+	}
+}
+
+func (grammar Ini) Print(token interface{}, out func(value string)) {
+	grammar.printToken("", "", token, out)
+	out (string(NEWLINE))
 }
 
 func NewIniGrammar() Grammar {

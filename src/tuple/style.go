@@ -85,6 +85,10 @@ func quote(value string, out func(value string)) {
 	out(DOUBLE_QUOTE)
 }
 
+func (style Style) indentOnly() bool { // TODO Remove this
+       return style.Close == "" && style.Indent != "" // TODO
+}
+
 func (style Style) printScalar(token interface{}, out func(value string)) {
 	switch token.(type) {
 	case Atom:
@@ -121,105 +125,39 @@ func (style Style) printScalar(token interface{}, out func(value string)) {
 
 func (style Style) printToken(depth string, token interface{}, out func(value string)) {
 	if tuple, ok := token.(Tuple); ok {
-		// style.printTuple(depth, tuple, out)
 
 		len := len(tuple.List)
+		out(depth)
 		if len == 0 {
-			out(depth)
-			out(style.ScalarPrefix)
-			if style.indentOnly() {
-				out("[]")
-			} else {
-				out(style.Open)
-				out(style.Close)
-			}
+			out(style.Open)
+			out(style.Close)
 			return
 		}
-
-		if style.indentOnly() {
-			out(depth)
-			out("- ")
-			out(style.LineBreak)
-		}
-		var newDepth string
 		head := tuple.List[0]
 		atom, ok := head.(Atom)
 		first := ok && style.indentOnly()
-
-		if style.IsIni() {
-			var prefix string
-			if depth == "" {
-				prefix = ""
-			} else {
-				prefix = depth + "."
-			}
-			if ok {
-				newDepth = prefix + atom.Name
-				//out(depth)
-				//out(style.Open)
-				//out("*")
-				//out(style.LineBreak)
-				first = true
-			} else {
-				newDepth = depth
-			}
-			if style.IsIni() {
-				out(style.LineBreak)
-				out("[")
-				out(depth)
-				out("]")
-				out(style.LineBreak)
-			}
-		} else if first {
-			depth = depth + style.Indent
-			out(depth)
-			quote(atom.Name, out)
-			out(style.Open)
-			out(style.LineBreak)
-			newDepth = depth + style.Indent
-		} else if style.indentOnly() {
-			depth = depth + style.Indent
-			newDepth = depth
-		} else {
-			out(depth)
-			out(style.Open)
-			out(style.LineBreak)
-			newDepth = depth + style.Indent
-		}
+		if first {
+			out(atom.Name)
+		}			
+		out(style.Open)
+		out(style.LineBreak)
+		newDepth := depth + style.Indent
 		for k, token := range tuple.List {
-			if ! first || k >0  {
-				style.printToken(newDepth, token, out)
-				if k < len-1 {
-					out(style.Separator)
-					out(style.LineBreak)
-				}
-				//out("@")
-				//out("$")
+			style.printToken(newDepth, token, out)
+			if ! first && k < len-1 {
+				out(style.Separator)
+				out(style.LineBreak)
 			}
 		}
-		if style.IsIni() {
-			//out(style.LineBreak)
-		} else if !style.indentOnly() {
-			out(style.LineBreak)
-			out(depth)
-			out(style.Close)
-		}
-		//out("&")
+		out(style.LineBreak)
+		out(depth)
+		out(style.Close)
 
 	} else {
 		out(depth)
 		out(style.ScalarPrefix)
 		style.printScalar(token, out)
 	}
-}
-
-func (style Style) IsIni() bool {
-	return style.Indent == "ini" // TODO
-}
-
-func (style Style) indentOnly() bool {
-	// TODO set this as a parameter
-	return !style.IsIni() && style.Close == "" && style.Indent != "" // TODO
 }
 
 func (style Style) PrettyPrint(token interface{}, out func(value string)) {

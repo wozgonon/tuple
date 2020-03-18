@@ -62,8 +62,8 @@ test_dirs:
 test_basic: ${TDIR}test.l test_dirs all
 	bin/wozg $<  > ${T1DIR}$<
 	@bin/wozg ${T1DIR}$<  > ${T2DIR}$<
-	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
-	@diff -y --suppress-common-lines ${T2DIR}$< $<.golden
+	diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
+	diff -y --suppress-common-lines ${T2DIR}$< $<.golden
 
 test_arithmetic: ${TDIR}arithmetic.l test_dirs all
 	bin/wozg --eval $<  > ${T1DIR}$<
