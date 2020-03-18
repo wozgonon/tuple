@@ -45,7 +45,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version test_basic test_arithmetic test_tcl test_yaml # test_infix
+test: version test_basic test_arithmetic test_tcl test_yaml test_query # test_infix
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -88,6 +88,10 @@ test_infix: ${TDIR}infix.l test_dirs  all
 	bin/wozg $<  > ${T1DIR}$<
 	@bin/wozg ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
+
+test_query:
+	bin/wozg --query a.*.c ${TDIR}nested.l > ${T1DIR}nested.l
+	diff -y --suppress-common-lines ${T1DIR}nested.l ${TDIR}nested.l.golden
 
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl

@@ -13,18 +13,39 @@ func NewQuery(query string) Query {
 	return Query{query, components, 0}
 }
 
-func (query Query) Match(expression interface{}, next Next) {
+func (query Query) match(depth int, token interface{}, next Next) {
+	if tuple, ok := token.(Tuple); ok {
 
-	if _, ok := expression.(Tuple); ok {
-	} else {
-		if query.query == "*" {
+		if len(tuple.List) == 0 {
 			return
 		}
-		
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		var name string
+		if ok {
+			name = atom.Name
+		} else {
+			return // TODO
+		}
+		ll := len(query.components)
+		if query.depth < ll {
+			component := query.components[depth]
+			if name == component || component == "*" {
+				if depth == ll-1 {
+					next(token)
+					return
+				}
+				for _, token := range tuple.List {
+					query.match(depth+1, token, next)
+				}
+				
+			}
+		}
 	}
-	panic("TODO match query against expression.")
-	match := true // TODO
-	if match {
-		next(expression)
-	}
+}
+
+
+func (query Query) Match(expression interface{}, next Next) {
+
+	query.match(0, expression, next)
 }
