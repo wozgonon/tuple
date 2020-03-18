@@ -40,6 +40,7 @@ type Style struct {
 	True string
 	False string
 	OneLineComment rune
+	ScalarPrefix string
 }
 
 type SExpressionParser struct {
@@ -84,144 +85,133 @@ func quote(value string, out func(value string)) {
 	out(DOUBLE_QUOTE)
 }
 
-func (style Style) printToken(depth string, token interface{}, out func(value string)) {
-	if tuple, ok := token.(Tuple); ok {
-		style.printTuple(depth, tuple, out)
-	} else {
-		if style.IsWholePath() {
-			out(depth)
-
+func (style Style) printScalar(token interface{}, out func(value string)) {
+	switch token.(type) {
+	case Atom:
+		if style.indentOnly() {
+			quote(token.(Atom).Name, out)
 		} else {
-			out(depth)
-			if style.IsWholePath() || style.IsIni() {
-				out(style.Open)
-			} else if style.indentOnly() {
-				out("- ")
-			}
+			out(token.(Atom).Name)
 		}
-		switch token.(type) {
-		case Atom:
-			if style.indentOnly() {
-				quote(token.(Atom).Name, out)
-			} else {
-				out(token.(Atom).Name)
-			}
-		case string:
-			quote(token.(string), out)   // TODO Escape
-		case bool:
-			if token.(bool) {
-				out(style.True)
-			} else {
-				out(style.False)
-			}				
-		case Comment:
-			out(string(style.OneLineComment))
-			out(token.(Comment).Comment)
-		case int64:
-			out(strconv.FormatInt(int64(token.(int64)), 10))
-		case float64:
-			float := token.(float64)
-			if math.IsInf(float, 64) {
-				out("Inf")  // Do not print +Inf
-			} else {
-				out(fmt.Sprint(token.(float64)))
-			}
-		default:
-			log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);
-			out(UNKNOWN)
+	case string:
+		quote(token.(string), out)   // TODO Escape
+	case bool:
+		if token.(bool) {
+			out(style.True)
+		} else {
+			out(style.False)
+		}				
+	case Comment:
+		out(string(style.OneLineComment))
+		out(token.(Comment).Comment)
+	case int64:
+		out(strconv.FormatInt(int64(token.(int64)), 10))
+	case float64:
+		float := token.(float64)
+		if math.IsInf(float, 64) {
+			out("Inf")  // Do not print +Inf
+		} else {
+			out(fmt.Sprint(token.(float64)))
 		}
+	default:
+		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);
+		out(UNKNOWN)
 	}
 }
 
-func (style Style) printTuple(depth string, tuple Tuple, out func(value string)) {
+func (style Style) printToken(depth string, token interface{}, out func(value string)) {
+	if tuple, ok := token.(Tuple); ok {
+		// style.printTuple(depth, tuple, out)
 
-	len := len(tuple.List)
-	if len == 0 {
+		len := len(tuple.List)
+		if len == 0 {
+			out(depth)
+			out(style.ScalarPrefix)
+			if style.indentOnly() {
+				out("[]")
+			} else {
+				out(style.Open)
+				out(style.Close)
+			}
+			return
+		}
 
-		 if style.indentOnly() {
+		if style.indentOnly() {
 			out(depth)
 			out("- ")
-			out("[]")
+			out(style.LineBreak)
+		}
+		var newDepth string
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		first := ok && style.indentOnly()
+
+		if style.IsWholePath() || style.IsIni() {
+			var prefix string
+			if depth == "" {
+				prefix = ""
+			} else {
+				prefix = depth + "."
+			}
+			if ok {
+				newDepth = prefix + atom.Name
+				//out(depth)
+				//out(style.Open)
+				//out("*")
+				//out(style.LineBreak)
+				first = true
+			} else {
+				newDepth = depth
+			}
+			if style.IsIni() {
+				out(style.LineBreak)
+				out("[")
+				out(depth)
+				out("]")
+				out(style.LineBreak)
+			}
+		} else if first {
+			depth = depth + style.Indent
+			out(depth)
+			quote(atom.Name, out)
+			out(style.Open)
+			out(style.LineBreak)
+			newDepth = depth + style.Indent
+		} else if style.indentOnly() {
+			depth = depth + style.Indent
+			newDepth = depth
 		} else {
 			out(depth)
 			out(style.Open)
-			//out("$")
+			out(style.LineBreak)
+			newDepth = depth + style.Indent
+		}
+		for k, token := range tuple.List {
+			if ! first || k >0  {
+				style.printToken(newDepth, token, out)
+				if k < len-1 {
+					out(style.Separator)
+					out(style.LineBreak)
+				}
+				//out("@")
+				//out("$")
+			}
+		}
+		if style.IsWholePath() {
+		} else if style.IsIni() {
+			//out(style.LineBreak)
+		} else if !style.indentOnly() {
+			out(style.LineBreak)
+			out(depth)
 			out(style.Close)
 		}
-		return
-	}
+		//out("&")
 
-	if style.indentOnly() {
-		out(depth)
-		out("- ")
-		out(style.LineBreak)
-	}
-	var newDepth string
-	head := tuple.List[0]
-	atom, ok := head.(Atom)
-	first := ok && style.indentOnly()
-
-	if style.IsWholePath() || style.IsIni() {
-		var prefix string
-		if depth == "" {
-			prefix = ""
-		} else {
-			prefix = depth + "."
-		}
-		if ok {
-			newDepth = prefix + atom.Name
-			//out(depth)
-			//out(style.Open)
-			//out("*")
-			//out(style.LineBreak)
-			first = true
-		} else {
-			newDepth = depth
-		}
-		if style.IsIni() {
-			out(style.LineBreak)
-			out("[")
-			out(depth)
-			out("]")
-			out(style.LineBreak)
-		}
-	} else if first {
-		depth = depth + style.Indent
-		out(depth)
-		quote(atom.Name, out)
-		out(style.Open)
-		out(style.LineBreak)
-		newDepth = depth + style.Indent
-	} else if style.indentOnly() {
-		depth = depth + style.Indent
-		newDepth = depth
 	} else {
 		out(depth)
-		out(style.Open)
-		out(style.LineBreak)
-		newDepth = depth + style.Indent
+		out(style.ScalarPrefix)
+		style.printScalar(token, out)
 	}
-	
-	for k, token := range tuple.List {
-		if ! first || k >0  {
-			style.printToken(newDepth, token, out)
-			if k < len-1 {
-				out(style.Separator)
-				out(style.LineBreak)
-			}
-			//out("@")
-			//out("$")
-		}
-	}
-	if style.IsWholePath() {
-	} else if style.IsIni() {
-		//out(style.LineBreak)
-	} else if !style.indentOnly() {
-		out(style.LineBreak)
-		out(depth)
-		out(style.Close)
-	}
-	//out("&")
 }
 
 func (style Style) IsIni() bool {
@@ -239,19 +229,7 @@ func (style Style) indentOnly() bool {
 
 func (style Style) PrettyPrint(token interface{}, out func(value string)) {
 
-	ignoreOuterBrackets := style.Open == string('{')
-	if tuple, ok := token.(Tuple); ok && ignoreOuterBrackets {
-		len := len(tuple.List)
-		for k, token := range tuple.List {
-			style.printToken("", token, out)
-			if k < len-1 {
-				out(style.Indent)
-				out(style.Separator)
-			}
-		}
-	} else {
-		style.printToken("", token, out)
-	}
+	style.printToken("", token, out)
 	out (string(NEWLINE))
 }
 

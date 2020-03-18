@@ -103,7 +103,7 @@ func (grammar Lisp) Print(token interface{}, next func(value string)) {
 }
 
 func NewLispGrammar() Grammar {
-	style := Style{"", "", "  ", "(", ")", "", "\n", "true", "false", ';'}
+	style := Style{"", "", "  ", "(", ")", "", "\n", "true", "false", ';', ""}
 	return Lisp{NewSExpressionParser(style)}
 }
 
@@ -254,12 +254,25 @@ func (grammar Tcl) Parse(context * ParserContext) {
 	}
 }
 
-func (grammar Tcl) Print(token interface{}, next func(value string)) {
-	grammar.parser.style.PrettyPrint(token, next)
+func (grammar Tcl) Print(token interface{}, out func(value string)) {
+	style := grammar.parser.style
+	if tuple, ok := token.(Tuple); ok {
+		len := len(tuple.List)
+		for k, token := range tuple.List {
+			style.printToken("", token, out)
+			if k < len-1 {
+				out(style.Indent)
+				out(style.Separator)
+			}
+		}
+	} else {
+		style.printToken("", token, out)
+	}
+	out (string(NEWLINE))
 }
 
 func NewTclGrammar() Grammar {
-	style := Style{"", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
+	style := Style{"", "", "  ", "{", "}", "", "\n", "true", "false", '#', ""}
 	return Tcl{NewSExpressionParser(style)}
 }
 
@@ -385,7 +398,7 @@ func (grammar TupleGrammar) Print(token interface{}, next func(value string)) {
 }
 
 func NewTupleGrammar() Grammar {
-	style := Style{"", "", "  ", "(", ")", ",", "\n", "true", "false", '%'} // prolog, sql '--' for 
+	style := Style{"", "", "  ", "(", ")", ",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
 	return TupleGrammar{NewSExpressionParser(style)}
 }
 
@@ -393,6 +406,7 @@ func NewTupleGrammar() Grammar {
 // Yaml Grammar
 /////////////////////////////////////////////////////////////////////////////
 
+// http://www.yamllint.com/
 type Yaml struct {
 	parser SExpressionParser
 }
@@ -410,13 +424,13 @@ func (grammar Yaml) Parse(context * ParserContext) {
 }
 
 func (grammar Yaml) Print(token interface{}, next func(value string)) {
-	next(grammar.parser.style.StartDoc)
+	//next(grammar.parser.style.StartDoc)
 	grammar.parser.style.PrettyPrint(token, next)
-	next(grammar.parser.style.EndDoc)
+	//next(grammar.parser.style.EndDoc)
 }
 
 func NewYamlGrammar() Grammar {
-	style := Style{"---\n", "...\n", "  ", ":", "", "", "\n", "true", "false", '#'}
+	style := Style{"---\n", "...\n", "  ", ":", "", "", "\n", "true", "false", '#', "- "}
 	return Yaml{NewSExpressionParser(style)}
 }
 
@@ -446,7 +460,7 @@ func (grammar Ini) Print(token interface{}, next func(value string)) {
 
 func NewIniGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/INI_file
-	style := Style{"", "", "ini", "= ", "", "", "\n", "true", "false", '#'}
+	style := Style{"", "", "ini", "= ", "", "", "\n", "true", "false", '#', "="}
 	return Ini{NewSExpressionParser(style)}
 }
 
@@ -476,7 +490,7 @@ func (grammar PropertyGrammar) Print(token interface{}, next func(value string))
 
 func NewPropertyGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/.properties
-	style := Style{"", "", "", " = ", "", "", "\n", "true", "false", '#'}
+	style := Style{"", "", "", " = ", "", "", "\n", "true", "false", '#', " = "}
 	return PropertyGrammar{NewSExpressionParser(style)}
 }
 

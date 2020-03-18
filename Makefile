@@ -45,7 +45,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version test_basic test_arithmetic test_tcl # test_infix
+test: version test_basic test_arithmetic test_tcl test_yaml # test_infix
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -79,6 +79,10 @@ test_tuple: ${TDIR}test.tuple test_dirs all
 	bin/wozg --out .tuple $<  > ${T1DIR}$<
 	@bin/wozg --out .tuple ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
+
+test_yaml: ${TDIR}test.l  ${TDIR}test.yaml.golden test_dirs all
+	bin/wozg --out .yaml $<  > ${T1DIR}test.yaml
+	diff -y --suppress-common-lines ${T1DIR}test.yaml ${TDIR}test.yaml.golden
 
 test_infix: ${TDIR}infix.l test_dirs  all
 	bin/wozg $<  > ${T1DIR}$<

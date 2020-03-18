@@ -17,7 +17,6 @@
 package tuple
 
 import "io"
-//import "log"
 import "unicode"
 import "strconv"
 import "math"
