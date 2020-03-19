@@ -35,6 +35,8 @@ type Style struct {
 	Indent string
 	Open string
 	Close string
+	Open2 string
+	Close2 string
 	Separator string
 	LineBreak string
 	True string
@@ -47,13 +49,17 @@ type SExpressionParser struct {
 	style Style
 	openChar rune
 	closeChar rune
+	openChar2 rune
+	closeChar2 rune
 }
 
 func NewSExpressionParser(style Style) SExpressionParser {
 
 	openChar, _ := utf8.DecodeRuneInString(style.Open)
 	closeChar, _ := utf8.DecodeRuneInString(style.Close)
-	return SExpressionParser{style,openChar,closeChar}
+	openChar2, _ := utf8.DecodeRuneInString(style.Open2)
+	closeChar2, _ := utf8.DecodeRuneInString(style.Close2)
+	return SExpressionParser{style,openChar,closeChar,openChar2,closeChar2}
 }
 
 func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, error) {
@@ -67,6 +73,8 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 		case ch == parser.style.OneLineComment: return ReadUntilEndOfLine(context)
 		case ch == parser.openChar :  return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
+		case ch == parser.openChar2 :  return parser.style.Open2, nil
+		case ch == parser.closeChar2 : return parser.style.Close2, nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
 		case IsArithmetic(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })

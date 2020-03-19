@@ -60,6 +60,7 @@ func main() {
 	grammars.Add((tuple.NewYamlGrammar()))
 	grammars.Add((tuple.NewIniGrammar()))
 	grammars.Add((tuple.NewPropertyGrammar()))
+	grammars.Add((tuple.NewJSONGrammar()))
 
 	outputGrammar := grammars.FindBySuffixOrPanic(*out)
 	loggerGrammar := grammars.FindBySuffixOrPanic(*logger)

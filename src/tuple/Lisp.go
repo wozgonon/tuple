@@ -103,7 +103,9 @@ func (grammar Lisp) Print(token interface{}, next func(value string)) {
 }
 
 func NewLispGrammar() Grammar {
-	style := Style{"", "", "  ", "(", ")", "", "\n", "true", "false", ';', ""}
+	style := Style{"", "", "  ",
+		"(", ")", "", "",
+		"", "\n", "true", "false", ';', ""}
 	return Lisp{NewSExpressionParser(style)}
 }
 
@@ -272,7 +274,9 @@ func (grammar Tcl) Print(token interface{}, out func(value string)) {
 }
 
 func NewTclGrammar() Grammar {
-	style := Style{"", "", "  ", "{", "}", "", "\n", "true", "false", '#', ""}
+	style := Style{"", "", "  ",
+		"{", "}", "[", "]",
+		"", "\n", "true", "false", '#', ""}
 	return Tcl{NewSExpressionParser(style)}
 }
 
@@ -398,7 +402,9 @@ func (grammar TupleGrammar) Print(token interface{}, next func(value string)) {
 }
 
 func NewTupleGrammar() Grammar {
-	style := Style{"", "", "  ", "(", ")", ",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
+	style := Style{"", "", "  ",
+		"(", ")", "", "",
+		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
 	return TupleGrammar{NewSExpressionParser(style)}
 }
 
@@ -469,7 +475,9 @@ func (grammar Yaml) Print(token interface{}, out func(value string)) {
 }
 
 func NewYamlGrammar() Grammar {
-	style := Style{"---\n", "...\n", "  ", ":", "", "", "\n", "true", "false", '#', "- "}
+	style := Style{"---\n", "...\n", "  ", 
+		":", "", "[", "]",
+		"", "\n", "true", "false", '#', "- "}
 	return Yaml{NewSExpressionParser(style)}
 }
 
@@ -555,7 +563,9 @@ func (grammar Ini) Print(token interface{}, out func(value string)) {
 
 func NewIniGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/INI_file
-	style := Style{"", "", "ini", "= ", "", "", "\n", "true", "false", '#', "="}
+	style := Style{"", "", "",
+		"", "", "", "",
+		"= ", "\n", "true", "false", '#', "="}
 	return Ini{NewSExpressionParser(style)}
 }
 
@@ -628,9 +638,117 @@ func (grammar PropertyGrammar) Print(token interface{}, out func(value string)) 
 
 func NewPropertyGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/.properties
-	style := Style{"", "", "", " = ", "", "", "\n", "true", "false", '#', " = "}
+	style := Style{"", "", "",
+		"", "", "", "",
+		" = ", "\n", "true", "false", '#', " = "}
 	return PropertyGrammar{NewSExpressionParser(style)}
 }
 
 // TODO json xml postfix
+
+/////////////////////////////////////////////////////////////////////////////
+// JSON Grammar
+/////////////////////////////////////////////////////////////////////////////
+
+type JSONGrammar struct {
+	parser SExpressionParser
+}
+
+func (grammar JSONGrammar) Name() string {
+	return "JSON"
+}
+
+func (grammar JSONGrammar) FileSuffix() string {
+	return ".json"
+}
+
+func (grammar JSONGrammar) parseTuple(context * ParserContext, tuple *Tuple) (error) {
+
+	parser := grammar.parser
+	// TODO comma and semi-colon
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err != nil:
+			context.Error("parsing %s", err);
+			return err /// ??? Any need to return
+		case token == parser.style.Close:
+			return nil
+		case token == parser.style.Close2:
+			return nil
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := grammar.parseTuple(context, &subTuple)
+			if err == io.EOF {
+				context.Error ("Missing close bracket")
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			tuple.Append(subTuple)
+		case token == parser.style.Open2:
+		default:
+			if _,ok := token.(Comment); ok {
+				// TODO Ignore ???
+			} else {
+				tuple.Append(token)
+			}
+		}
+	}
+
+}
+
+func (grammar JSONGrammar) Parse(context * ParserContext) {
+
+	parser := grammar.parser
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			context.Error ("'%s'", err)
+			return
+		case token == parser.style.Close2:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close2)
+		case token == parser.style.Close:
+			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+		default:
+			if atom,ok := token.(Atom); ok {
+				bracket, err := parser.getNext(context)
+				if err != nil {
+					context.Error ("'%s'", err)
+					return
+				}
+				switch {
+				case bracket == parser.style.Open:
+					subTuple := NewTuple()
+					subTuple.Append(atom)
+					err := grammar.parseTuple(context, &subTuple)
+					if err != nil {
+						return
+					}
+					context.next(subTuple)
+				case bracket == parser.style.Open2:
+				default:
+					context.Error ("Expected open bracket '%s' or '%s' after '%s', not '%s'", parser.style.Open, parser.style.Open2, token, bracket)
+				}
+			} else {
+				context.next(token)
+			}
+		}
+	}
+}
+
+func (grammar JSONGrammar) Print(token interface{}, next func(value string)) {
+	grammar.parser.style.PrettyPrint(token, next)
+}
+
+func NewJSONGrammar() Grammar {
+	style := Style{"", "", "  ",
+		"[", "]", "{", "}",
+		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
+	return JSONGrammar{NewSExpressionParser(style)}
+}
 
