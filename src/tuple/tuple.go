@@ -56,7 +56,11 @@ func (tuple *Tuple) Length() int {
 	return len(tuple.List)
 }
 
-func NewTuple() Tuple {
-	return Tuple{make([]interface{}, 0)}
+//func NewTuple() Tuple {
+//	return Tuple{make([]interface{}, 0)}
+//}
+
+func NewTuple(values...interface{}) Tuple {
+	return Tuple{values}
 }
 

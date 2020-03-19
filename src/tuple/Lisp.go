@@ -18,7 +18,126 @@ package tuple
 
 import "io"
 import "unicode"
+import "errors"
 //import "fmt"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+/////////////////////////////////////////////////////////////////////////////
+
+
+func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, tuple *Tuple) (error) {
+
+	//fmt.Printf("parseSExpressionTuple depth=%d, s\n", context.depth)
+	
+	style := parser.style
+	for {
+		token, err := parser.getNext(context)
+		switch {
+		case err != nil:
+			context.Error("parsing %s", err);
+			return err /// ??? Any need to return
+		case token == style.Close:
+			//fmt.Printf("*** close=%s\n", token)
+			return nil
+		case token == style.Close2:
+			//fmt.Printf("*** close=%s\n", token)
+			return nil
+		case token == style.Open || token == style.Open2:
+			context.Open()
+			subTuple := NewTuple()
+			err := parser.parseSExpressionTuple(context, &subTuple)
+			context.Close()
+			if err == io.EOF {
+				context.Error ("Missing close bracket")
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			//fmt.Printf("1. s=%s", subTuple)
+			tuple.Append(subTuple)
+		case token == style.KeyValueSeparator:  // TODO check if it is an operator
+			//fmt.Printf("--------------------\n")
+			if tuple.Length() == 0 {
+				context.Error("Unexpected operator '%s'", style.KeyValueSeparator)
+				return errors.New("Unexpected")
+			}
+			key := tuple.List[tuple.Length()-1]
+			//fmt.Printf("** key=%s\n", key)
+			value, err := parser.parse(context)
+			if err != nil {
+				return err
+			}
+			if value == style.Close || value == style.Close2 {
+				context.Error ("Unexpected close bracket '%s'", token)
+				return errors.New("Unexpected")
+
+			}
+			//fmt.Printf("depth=%d, key=%s value=%s\n", context.depth, key, value)
+			tuple.List[tuple.Length() -1] = NewTuple(Atom{"_cons"}, key, value)
+		default:
+			if _,ok := token.(Comment); ok {
+				// TODO Ignore ???
+			} else {
+				//fmt.Printf("depth=%d, append=%s\n", context.depth, token)
+				tuple.Append(token)
+			}
+		}
+	}
+}
+
+func (parser SExpressionParser) parse(context * ParserContext) (interface{}, error) {
+
+	style := parser.style
+	token, err := parser.getNext(context)
+	switch {
+	case err == io.EOF:
+		return nil, err
+	case err != nil:
+		context.Error ("'%s'", err)
+		return nil, err
+	case token == style.Close:
+		if context.depth == 0 {
+			context.Error ("Unexpected close bracket '%s'", style.Close)
+			return nil, errors.New("Unexpected")
+		}
+		//context.Close()
+		return token, nil
+	case token == style.Close2:
+		context.Error ("Unexpected close bracket '%s'", style.Close2)
+		return nil, errors.New("Unexpected")
+	case token == style.Open || token == style.Open2:
+		//fmt.Printf("!!!Open\n")
+		context.Open()
+		tuple := NewTuple()
+		err := parser.parseSExpressionTuple(context, &tuple)
+		context.Close()
+		if err != nil {
+			return nil, err
+		}
+		return tuple, nil
+	default:
+		//if _,ok := token.(Comment); ok {
+			// TODO Ignore ???
+		//} else {
+			return token, nil
+		//}
+	}
+}
+
+func (parser SExpressionParser) Parse(context * ParserContext) {
+
+	for {
+		value, err := parser.parse(context)
+		if err == nil {
+			context.next(value)
+		} else {
+			return
+		}
+	}
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Lisp Grammar
@@ -28,86 +147,31 @@ import "unicode"
 // A nested structure of scalars (atoms and numbers), lists and key-values pairs (called cons cells).
 // These are used for the syntax of LISP but also any other language can typically be converted to an S-Expression,
 // it is in particular a very useful format for debugging a parser by printing out the Abstract Syntaxt Tree (AST) created by parsing.
-type Lisp struct {
+type LispGrammar struct {
 	parser SExpressionParser
 }
 
-func (grammar Lisp) Name() string {
+func (grammar LispGrammar) Name() string {
 	return "Lisp"
 }
 
-func (grammar Lisp) FileSuffix() string {
+func (grammar LispGrammar) FileSuffix() string {
 	return ".l"
 }
 
-func (grammar Lisp) parseSExpressionTuple(context * ParserContext, tuple *Tuple) (error) {
-
-	parser := grammar.parser
-	for {
-		token, err := parser.getNext(context)
-		switch {
-		case err != nil:
-			context.Error("parsing %s", err);
-			return err /// ??? Any need to return
-		case token == parser.style.Close:
-			return nil
-		case token == parser.style.Open:
-			subTuple := NewTuple()
-			err := grammar.parseSExpressionTuple(context, &subTuple)
-			if err == io.EOF {
-				context.Error ("Missing close bracket")
-				return err
-			}
-			if err != nil {
-				return err
-			}
-			tuple.Append(subTuple)
-		default:
-			if _,ok := token.(Comment); ok {
-				// TODO Ignore ???
-			} else {
-				tuple.Append(token)
-			}
-		}
-	}
-
+func (grammar LispGrammar) Parse(context * ParserContext) {
+	grammar.parser.Parse(context)
 }
 
-func (grammar Lisp) Parse(context * ParserContext) {
-	parser := grammar.parser
-
-	for {
-		token, err := parser.getNext(context)
-		switch {
-		case err == io.EOF:
-			return
-		case err != nil:
-			context.Error ("'%s'", err)
-			return
-		case token == parser.style.Close:
-			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
-		case token == parser.style.Open:
-			subTuple := NewTuple()
-			err := grammar.parseSExpressionTuple(context, &subTuple)
-			if err != nil {
-				return
-			}
-			context.next(subTuple)
-		default:
-			context.next(token)
-		}
-	}
-}
-
-func (grammar Lisp) Print(token interface{}, next func(value string)) {
+func (grammar LispGrammar) Print(token interface{}, next func(value string)) {
 	grammar.parser.style.PrettyPrint(token, next)
 }
 
 func NewLispGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"(", ")", "", "",
+		"(", ")", "", "", ".",
 		"", "\n", "true", "false", ';', ""}
-	return Lisp{NewSExpressionParser(style)}
+	return LispGrammar{NewSExpressionParser(style)}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -276,7 +340,7 @@ func (grammar Tcl) Print(token interface{}, out func(value string)) {
 
 func NewTclGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"{", "}", "[", "]",
+		"{", "}", "[", "]", ":",
 		"", "\n", "true", "false", '#', ""}
 	return Tcl{NewSExpressionParser(style)}
 }
@@ -404,7 +468,7 @@ func (grammar TupleGrammar) Print(token interface{}, next func(value string)) {
 
 func NewTupleGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"(", ")", "", "",
+		"(", ")", "", "", ":",
 		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
 	return TupleGrammar{NewSExpressionParser(style)}
 }
@@ -477,7 +541,7 @@ func (grammar Yaml) Print(token interface{}, out func(value string)) {
 
 func NewYamlGrammar() Grammar {
 	style := Style{"---\n", "...\n", "  ", 
-		":", "", "[", "]",
+		":", "", "[", "]", "",
 		"", "\n", "true", "false", '#', "- "}
 	return Yaml{NewSExpressionParser(style)}
 }
@@ -565,7 +629,7 @@ func (grammar Ini) Print(token interface{}, out func(value string)) {
 func NewIniGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/INI_file
 	style := Style{"", "", "",
-		"", "", "", "",
+		"", "", "", "", "",
 		"= ", "\n", "true", "false", '#', "="}
 	return Ini{NewSExpressionParser(style)}
 }
@@ -640,7 +704,7 @@ func (grammar PropertyGrammar) Print(token interface{}, out func(value string)) 
 func NewPropertyGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/.properties
 	style := Style{"", "", "",
-		"", "", "", "",
+		"", "", "", "", "",
 		" = ", "\n", "true", "false", '#', " = "}
 	return PropertyGrammar{NewSExpressionParser(style)}
 }
@@ -663,70 +727,8 @@ func (grammar JSONGrammar) FileSuffix() string {
 	return ".json"
 }
 
-func (grammar JSONGrammar) parseTuple(context * ParserContext, tuple *Tuple) (error) {
-
-	parser := grammar.parser
-	// TODO comma and semi-colon
-	for {
-		token, err := parser.getNext(context)
-		switch {
-		case err != nil:
-			context.Error("parsing %s", err);
-			return err /// ??? Any need to return
-		case token == parser.style.Close:
-			return nil
-		case token == parser.style.Close2:
-			return nil
-		case token == parser.style.Open:
-			subTuple := NewTuple()
-			err := grammar.parseTuple(context, &subTuple)
-			if err == io.EOF {
-				context.Error ("Missing close bracket")
-				return err
-			}
-			if err != nil {
-				return err
-			}
-			tuple.Append(subTuple)
-		case token == parser.style.Open2:
-		default:
-			if _,ok := token.(Comment); ok {
-				// TODO Ignore ???
-			} else {
-				tuple.Append(token)
-			}
-		}
-	}
-
-}
-
 func (grammar JSONGrammar) Parse(context * ParserContext) {
-
-	parser := grammar.parser
-	for {
-		token, err := parser.getNext(context)
-		switch {
-		case err == io.EOF:
-			return
-		case err != nil:
-			context.Error ("'%s'", err)
-			return
-		case token == parser.style.Close2:
-			context.Error ("Unexpected close bracket '%s'", parser.style.Close2)
-		case token == parser.style.Close:
-			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
-		case token == parser.style.Open:
-			subTuple := NewTuple()
-			err := grammar.parseTuple(context, &subTuple)
-			if err != nil {
-				return
-			}
-			context.next(subTuple)
-		case token == parser.style.Open2:
-		default:
-			context.next(token)
-		}
-	}
+	grammar.parser.Parse(context)
 }
 
 func (grammar JSONGrammar) Print(token interface{}, next func(value string)) {
@@ -735,7 +737,7 @@ func (grammar JSONGrammar) Print(token interface{}, next func(value string)) {
 
 func NewJSONGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"[", "]", "{", "}",
+		"[", "]", "{", "}", ":",
 		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
 	return JSONGrammar{NewSExpressionParser(style)}
 }

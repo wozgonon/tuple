@@ -32,6 +32,7 @@ type ParserContext struct {
 	SourceName string
 	line int64
 	column int64
+	depth int
 	scanner io.RuneScanner
 	logGrammar Grammar
 	verbose bool
@@ -40,9 +41,17 @@ type ParserContext struct {
 }
 
 func NewParserContext(sourceName string, scanner io.RuneScanner, logGrammar Grammar, verbose bool, next Next) ParserContext {
-	context :=  ParserContext{sourceName, 1, 0, scanner, logGrammar, verbose, next}
+	context :=  ParserContext{sourceName, 1, 0, 0, scanner, logGrammar, verbose, next}
 	context.Verbose("Parsing file [%s] suffix [%s]", sourceName, context.Suffix())
 	return context
+}
+
+func (context * ParserContext) Open() {
+	context.depth += 1
+}
+
+func (context * ParserContext) Close() {
+	context.depth -= 1
 }
 
 func (context * ParserContext) IsInteractive() bool {
@@ -56,7 +65,11 @@ func (context * ParserContext) Suffix() string {
 func (context * ParserContext) prompt() {
 	if context.IsInteractive() {
 		fmt.Print (context.SourceName)
-		fmt.Print (PROMPT)
+		if context.depth > 0 {
+			fmt.Printf (" %d%s", context.depth, PROMPT)
+		} else {
+			fmt.Print (PROMPT)
+		}
 	}
 }
 

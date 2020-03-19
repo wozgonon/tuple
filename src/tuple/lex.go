@@ -189,3 +189,32 @@ func IsCompare(ch rune) bool {
 		default: return false
 	}
 }
+
+
+type Operators struct {
+	priority map[string]int
+}
+
+func NewOperators() Operators {
+	return Operators{make(map[string]int, 0)}
+}
+
+func (operators *Operators) Add(operator string, priority int) {
+	(*operators).priority[operator] = priority
+}
+
+func (operators *Operators) AddCOperators() {
+	operators.Add("^", 10)
+	operators.Add("*", 90)
+	operators.Add("/", 90)
+	operators.Add("+", 80)
+	operators.Add("-", 80)
+	operators.Add("<", 60)
+	operators.Add(">", 60)
+	operators.Add("<=", 60)
+	operators.Add(">=", 60)
+	operators.Add("==", 60)
+	operators.Add("!=", 60)
+	operators.Add("&&", 50)
+	operators.Add("||", 50)
+}

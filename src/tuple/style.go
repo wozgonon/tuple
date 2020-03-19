@@ -33,10 +33,13 @@ type Style struct {
 	StartDoc string
 	EndDoc string
 	Indent string
+
 	Open string
 	Close string
 	Open2 string
 	Close2 string
+	KeyValueSeparator string
+	
 	Separator string
 	LineBreak string
 	True string
@@ -51,6 +54,7 @@ type SExpressionParser struct {
 	closeChar rune
 	openChar2 rune
 	closeChar2 rune
+	KeyValueSeparator rune
 }
 
 func NewSExpressionParser(style Style) SExpressionParser {
@@ -59,7 +63,8 @@ func NewSExpressionParser(style Style) SExpressionParser {
 	closeChar, _ := utf8.DecodeRuneInString(style.Close)
 	openChar2, _ := utf8.DecodeRuneInString(style.Open2)
 	closeChar2, _ := utf8.DecodeRuneInString(style.Close2)
-	return SExpressionParser{style,openChar,closeChar,openChar2,closeChar2}
+	KeyValueSeparator, _ := utf8.DecodeRuneInString(style.KeyValueSeparator)
+	return SExpressionParser{style,openChar,closeChar,openChar2,closeChar2,KeyValueSeparator}
 }
 
 func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, error) {
@@ -77,6 +82,7 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 		case ch == parser.closeChar2 : return parser.style.Close2, nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
+		case ch == parser.KeyValueSeparator : return parser.style.KeyValueSeparator, nil
 		case IsArithmetic(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
 		case IsCompare(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) })
 		case unicode.IsLetter(ch):  return ReadAtom(context, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
@@ -141,15 +147,26 @@ func (style Style) printToken(depth string, token interface{}, out func(value st
 			out(style.Close)
 			return
 		}
+		newDepth := depth + style.Indent
 		head := tuple.List[0]
 		atom, ok := head.(Atom)
 		first := ok && style.indentOnly()
 		if first {
 			out(atom.Name)
-		}			
+		} else if ok && atom.Name == "_cons" {
+			style.printToken(depth, tuple.List[1], out)
+			out (" ")
+			out(style.KeyValueSeparator)
+			out (" ")
+			if _, ok = tuple.List[2].(Tuple); ok {
+				style.printToken(depth, tuple.List[2], out)
+			} else {
+				style.printScalar(tuple.List[2], out)
+			}
+			return
+		}
 		out(style.Open)
 		out(style.LineBreak)
-		newDepth := depth + style.Indent
 		for k, token := range tuple.List {
 			style.printToken(newDepth, token, out)
 			if ! first && k < len-1 {
