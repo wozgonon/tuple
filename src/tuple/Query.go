@@ -27,6 +27,7 @@ func (query Query) match(depth int, token interface{}, next Next) {
 		} else {
 			return // TODO
 		}
+		//TODO Handles cons cells
 		ll := len(query.components)
 		if query.depth < ll {
 			component := query.components[depth]
