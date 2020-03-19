@@ -94,7 +94,7 @@ test_query:
 	diff -y --suppress-common-lines ${T1DIR}nested.l ${TDIR}nested.l.golden
 
 test_json: ${TDIR}test.json
-	bin/wozg src/wozg/testdata/test.json
+	bin/wozg -out json src/wozg/testdata/test.json
 	echo TODO
 
 smoke: test test_dirs 

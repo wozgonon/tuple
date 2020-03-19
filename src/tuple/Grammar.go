@@ -22,6 +22,7 @@ import "strings"
 //
 // The print and parse method ought to be inverse functions of each other
 // so the output of parse can be passed to print which in principle should be parsable by the parse function.
+//
 type Grammar interface {
 	// A friendly name for the syntax
 	Name() string
