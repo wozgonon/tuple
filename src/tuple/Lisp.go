@@ -18,6 +18,7 @@ package tuple
 
 import "io"
 import "unicode"
+//import "fmt"
 
 /////////////////////////////////////////////////////////////////////////////
 // Lisp Grammar
@@ -714,29 +715,16 @@ func (grammar JSONGrammar) Parse(context * ParserContext) {
 			context.Error ("Unexpected close bracket '%s'", parser.style.Close2)
 		case token == parser.style.Close:
 			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
-		default:
-			if atom,ok := token.(Atom); ok {
-				bracket, err := parser.getNext(context)
-				if err != nil {
-					context.Error ("'%s'", err)
-					return
-				}
-				switch {
-				case bracket == parser.style.Open:
-					subTuple := NewTuple()
-					subTuple.Append(atom)
-					err := grammar.parseTuple(context, &subTuple)
-					if err != nil {
-						return
-					}
-					context.next(subTuple)
-				case bracket == parser.style.Open2:
-				default:
-					context.Error ("Expected open bracket '%s' or '%s' after '%s', not '%s'", parser.style.Open, parser.style.Open2, token, bracket)
-				}
-			} else {
-				context.next(token)
+		case token == parser.style.Open:
+			subTuple := NewTuple()
+			err := grammar.parseTuple(context, &subTuple)
+			if err != nil {
+				return
 			}
+			context.next(subTuple)
+		case token == parser.style.Open2:
+		default:
+			context.next(token)
 		}
 	}
 }

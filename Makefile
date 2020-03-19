@@ -93,6 +93,9 @@ test_query:
 	bin/wozg --query a.*.c ${TDIR}nested.l > ${T1DIR}nested.l
 	diff -y --suppress-common-lines ${T1DIR}nested.l ${TDIR}nested.l.golden
 
+test_json: ${TDIR}test.json
+	echo TODO
+
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl
 

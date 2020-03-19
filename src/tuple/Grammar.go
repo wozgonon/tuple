@@ -16,6 +16,8 @@
 */
 package tuple
 
+import "strings"
+
 // The Grammar interface represents a particular language Grammar or Grammar or File Format.
 //
 // The print and parse method ought to be inverse functions of each other
@@ -52,6 +54,9 @@ func (syntaxes * Grammars) Add(syntax Grammar) {
 }
 
 func (syntaxes * Grammars) FindBySuffix(suffix string) (*Grammar, bool) {
+	if ! strings.HasPrefix(suffix, ".") {
+		suffix = "." + suffix
+	}
 	syntax, ok := syntaxes.all[suffix]
 	return &syntax, ok
 }
