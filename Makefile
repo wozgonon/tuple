@@ -45,7 +45,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version test_basic test_arithmetic test_tcl test_yaml test_query # test_infix
+test: version test_basic test_arithmetic test_tcl test_yaml test_query test_json # test_infix
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -93,9 +93,11 @@ test_query:
 	bin/wozg --query a.*.c ${TDIR}nested.l > ${T1DIR}nested.l
 	diff -y --suppress-common-lines ${T1DIR}nested.l ${TDIR}nested.l.golden
 
-test_json: ${TDIR}test.json
-	bin/wozg -out json src/wozg/testdata/test.json
-	echo TODO
+test_json: ${TDIR}test.json all
+	@bin/wozg -out json ${TDIR}test.json > ${T1DIR}test.json
+	@bin/wozg -out json ${T1DIR}test.json > ${T2DIR}test.json
+	diff -y --suppress-common-lines ${T1DIR}test.json  ${T2DIR}test.json
+	diff -y --suppress-common-lines ${T1DIR}test.json ${TDIR}test.json.golden
 
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl

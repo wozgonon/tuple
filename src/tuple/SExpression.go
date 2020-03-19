@@ -50,6 +50,11 @@ type Style struct {
 }
 
 // A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
+//
+// See https://en.wikipedia.org/wiki/S-expression
+//
+//  Not quite since these are not CONS cells
+//
 // A nested structure of scalars (atoms and numbers), lists and key-values pairs (called cons cells).
 // These are used for the syntax of LISP but also any other language can typically be converted to an S-Expression,
 // it is in particular a very useful format for debugging a parser by printing out the Abstract Syntaxt Tree (AST) created by parsing.
@@ -273,6 +278,17 @@ func (parser SExpressionParser) printScalar(token interface{}, out func(value st
 	}
 }
 
+func (parser SExpressionParser) isCons(tuple Tuple) bool {
+	if tuple.Length() > 0 {
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		if ok && atom.Name == "_cons" {
+			return true
+		}
+	}
+	return false
+}
+
 func (parser SExpressionParser) printObject(depth string, token interface{}, out func(value string)) {
 
 	style := parser.style
@@ -291,19 +307,29 @@ func (parser SExpressionParser) printObject(depth string, token interface{}, out
 		first := ok && style.indentOnly()
 		if first {
 			out(atom.Name)
-		} else if ok && atom.Name == "_cons" {
+		} else if parser.isCons(tuple) {
 			parser.printObject(depth, tuple.List[1], out)
-			out (" ")
-			out(style.KeyValueSeparator)
-			out (" ")
 			if _, ok = tuple.List[2].(Tuple); ok {
-				parser.printObject(depth, tuple.List[2], out)
+				out (" ")
+				out(style.KeyValueSeparator)
+				out (style.LineBreak)
+				parser.printObject(newDepth, tuple.List[2], out)
 			} else {
+				out (" ")
+				out(style.KeyValueSeparator)
+				out (" ")
 				parser.printScalar(tuple.List[2], out)
 			}
 			return
 		}
-		out(style.Open)
+		tuple1, ok := tuple.List[0].(Tuple)
+		cons := ok && parser.isCons(tuple1)
+		if cons {
+			// TODO Need a way to differentiate between [] and {}
+			out(style.Open2)
+		} else {
+			out(style.Open)
+		}
 		out(style.LineBreak)
 		for k, token := range tuple.List {
 			parser.printObject(newDepth, token, out)
@@ -314,8 +340,11 @@ func (parser SExpressionParser) printObject(depth string, token interface{}, out
 		}
 		out(style.LineBreak)
 		out(depth)
-		out(style.Close)
-
+		if cons {
+			out(style.Close2)
+		} else {
+			out(style.Close)
+		}
 	} else {
 		out(depth)
 		out(style.ScalarPrefix)
