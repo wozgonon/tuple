@@ -85,18 +85,31 @@ func NewSExpressionParser(style Style) SExpressionParser {
 // Lexer
 /////////////////////////////////////////////////////////////////////////////
 
+func readRune(context * ParserContext, parser SExpressionParser) (rune, error) {
+	ch, err := context.ReadRune()
+	switch {
+	case err != nil: return ch, err
+	case ch == parser.openChar, ch == parser.openChar2  :
+		context.Open()
+	case ch == parser.closeChar, ch == parser.closeChar2 :
+		context.Close()
+	}
+	return ch, nil
+
+}
+
 func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, error) {
 
 	for {
-		ch, err := context.ReadRune()
+		ch, err := readRune(context, parser)
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
 		case ch == parser.style.OneLineComment: return ReadUntilEndOfLine(context)
-		case ch == parser.openChar :  return parser.style.Open, nil
+		case ch == parser.openChar : return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
-		case ch == parser.openChar2 :  return parser.style.Open2, nil
+		case ch == parser.openChar2 : return parser.style.Open2, nil
 		case ch == parser.closeChar2 : return parser.style.Close2, nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
@@ -117,8 +130,6 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 
 func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, tuple *Tuple) (error) {
 
-	//fmt.Printf("parseSExpressionTuple depth=%d, s\n", context.depth)
-	
 	style := parser.style
 	for {
 		token, err := parser.getNext(context)
@@ -127,16 +138,12 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 			context.Error("parsing %s", err);
 			return err /// ??? Any need to return
 		case token == style.Close:
-			//fmt.Printf("*** close=%s\n", token)
 			return nil
 		case token == style.Close2:
-			//fmt.Printf("*** close=%s\n", token)
 			return nil
 		case token == style.Open || token == style.Open2:
-			context.Open()
 			subTuple := NewTuple()
 			err := parser.parseSExpressionTuple(context, &subTuple)
-			context.Close()
 			if err == io.EOF {
 				context.Error ("Missing close bracket")
 				return err
@@ -144,16 +151,13 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 			if err != nil {
 				return err
 			}
-			//fmt.Printf("1. s=%s", subTuple)
 			tuple.Append(subTuple)
 		case token == style.KeyValueSeparator:  // TODO check if it is an operator
-			//fmt.Printf("--------------------\n")
 			if tuple.Length() == 0 {
 				context.Error("Unexpected operator '%s'", style.KeyValueSeparator)
 				return errors.New("Unexpected")
 			}
 			key := tuple.List[tuple.Length()-1]
-			//fmt.Printf("** key=%s\n", key)
 			value, err := parser.parse(context)
 			if err != nil {
 				return err
@@ -163,13 +167,11 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 				return errors.New("Unexpected")
 
 			}
-			//fmt.Printf("depth=%d, key=%s value=%s\n", context.depth, key, value)
 			tuple.List[tuple.Length() -1] = NewTuple(Atom{"_cons"}, key, value)
 		default:
 			if _,ok := token.(Comment); ok {
 				// TODO Ignore ???
 			} else {
-				//fmt.Printf("depth=%d, append=%s\n", context.depth, token)
 				tuple.Append(token)
 			}
 		}
@@ -191,17 +193,13 @@ func (parser SExpressionParser) parse(context * ParserContext) (interface{}, err
 			context.Error ("Unexpected close bracket '%s'", style.Close)
 			return nil, errors.New("Unexpected")
 		}
-		//context.Close()
 		return token, nil
 	case token == style.Close2:
 		context.Error ("Unexpected close bracket '%s'", style.Close2)
 		return nil, errors.New("Unexpected")
 	case token == style.Open || token == style.Open2:
-		//fmt.Printf("!!!Open\n")
-		context.Open()
 		tuple := NewTuple()
 		err := parser.parseSExpressionTuple(context, &tuple)
-		context.Close()
 		if err != nil {
 			return nil, err
 		}

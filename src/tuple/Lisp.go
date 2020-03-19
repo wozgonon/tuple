@@ -91,7 +91,7 @@ func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, er
 
 	parser := grammar.parser
 	for {
-		ch, err := context.ReadRune()
+		ch, err := readRune(context, grammar.parser)
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
@@ -100,7 +100,7 @@ func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, er
 		case ch == parser.style.OneLineComment:
 			// TODO ignore for now
 			//return string(ch), nil
-		case ch == parser.openChar :  return parser.style.Open, nil
+		case ch == parser.openChar : return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
