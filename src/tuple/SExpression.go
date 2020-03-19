@@ -106,7 +106,11 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
-		case ch == parser.style.OneLineComment: return ReadUntilEndOfLine(context)
+		case ch == parser.style.OneLineComment:
+			_, err = ReadUntilEndOfLine(context)
+			if err != nil {
+				return nil, err
+			}
 		case ch == parser.openChar : return parser.style.Open, nil
 		case ch == parser.closeChar : return parser.style.Close, nil
 		case ch == parser.openChar2 : return parser.style.Open2, nil
@@ -137,9 +141,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 		case err != nil:
 			context.Error("parsing %s", err);
 			return err /// ??? Any need to return
-		case token == style.Close:
-			return nil
-		case token == style.Close2:
+		case token == style.Close, token == style.Close2:
 			return nil
 		case token == style.Open || token == style.Open2:
 			subTuple := NewTuple()
@@ -169,11 +171,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 			}
 			tuple.List[tuple.Length() -1] = NewTuple(Atom{"_cons"}, key, value)
 		default:
-			if _,ok := token.(Comment); ok {
-				// TODO Ignore ???
-			} else {
-				tuple.Append(token)
-			}
+			tuple.Append(token)
 		}
 	}
 }
@@ -188,15 +186,10 @@ func (parser SExpressionParser) parse(context * ParserContext) (interface{}, err
 	case err != nil:
 		context.Error ("'%s'", err)
 		return nil, err
-	case token == style.Close:
-		if context.depth == 0 {
-			context.Error ("Unexpected close bracket '%s'", style.Close)
-			return nil, errors.New("Unexpected")
-		}
-		return token, nil
-	case token == style.Close2:
-		context.Error ("Unexpected close bracket '%s'", style.Close2)
+	case token == style.Close, token == style.Close2:
+		context.Error ("Unexpected close bracket '%s'", style.Close)
 		return nil, errors.New("Unexpected")
+		return token, nil
 	case token == style.Open || token == style.Open2:
 		tuple := NewTuple()
 		err := parser.parseSExpressionTuple(context, &tuple)
