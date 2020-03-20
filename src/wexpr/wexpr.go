@@ -45,7 +45,7 @@ func main () {
 	sexp := tuple.NewSExpressionParser(style)
 
 	context := tuple.NewParserContext("<cli>", reader, logGrammar, *verbose, pipeline)
-	grammar := tuple.NewOperatorStack(&context, &operators)
+	grammar := tuple.NewOperatorGrammar(&context, &operators)
 
 	for {
 		token, err := sexp.GetNext(&context)
