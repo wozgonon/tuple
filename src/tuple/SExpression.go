@@ -98,7 +98,7 @@ func readRune(context * ParserContext, parser SExpressionParser) (rune, error) {
 
 }
 
-func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, error) {
+func (parser SExpressionParser) GetNext(context * ParserContext) (interface{}, error) {
 
 	for {
 		ch, err := readRune(context, parser)
@@ -115,6 +115,7 @@ func (parser SExpressionParser) getNext(context * ParserContext) (interface{}, e
 		case ch == parser.closeChar : return parser.style.Close, nil
 		case ch == parser.openChar2 : return parser.style.Open2, nil
 		case ch == parser.closeChar2 : return parser.style.Close2, nil
+		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
 		case ch == parser.KeyValueSeparator : return parser.style.KeyValueSeparator, nil
@@ -136,7 +137,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 
 	style := parser.style
 	for {
-		token, err := parser.getNext(context)
+		token, err := parser.GetNext(context)
 		switch {
 		case err != nil:
 			context.Error("parsing %s", err);
@@ -159,17 +160,17 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 				context.Error("Unexpected operator '%s'", style.KeyValueSeparator)
 				return errors.New("Unexpected")
 			}
-			key := tuple.List[tuple.Length()-1]
-			value, err := parser.parse(context)
+			left := tuple.List[tuple.Length()-1]
+			right, err := parser.parse(context)
 			if err != nil {
 				return err
 			}
-			if value == style.Close || value == style.Close2 {
+			if right == style.Close || right == style.Close2 {
 				context.Error ("Unexpected close bracket '%s'", token)
 				return errors.New("Unexpected")
 
 			}
-			tuple.List[tuple.Length() -1] = NewTuple(Atom{"_cons"}, key, value)
+			tuple.List[tuple.Length() -1] = NewTuple(Atom{"_cons"}, left, right)
 		default:
 			tuple.Append(token)
 		}
@@ -179,7 +180,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 func (parser SExpressionParser) parse(context * ParserContext) (interface{}, error) {
 
 	style := parser.style
-	token, err := parser.getNext(context)
+	token, err := parser.GetNext(context)
 	switch {
 	case err == io.EOF:
 		return nil, err

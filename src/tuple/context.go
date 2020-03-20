@@ -116,6 +116,10 @@ func (context * ParserContext) Error(format string, args ...interface{}) {
 	context.log(format, "ERROR", args...)
 }
 
+func (context * ParserContext) UnexpectedCloseBracketError(token string, args ...interface{}) {
+	context.Error ("Unexpected close bracket '%s'", token)
+}
+
 func (context * ParserContext) Verbose(format string, args ...interface{}) {
 	if context.verbose {
 		context.log(format, "VERBOSE", args...)
@@ -159,3 +163,30 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 	}
 }
 
+
+//
+//  Set up the translator pipeline.
+//
+func SimplePipeline (eval bool, queryPattern string, outputGrammar * Grammar) Next {
+
+	prettyPrint := func(tuple interface{}) {
+		(*outputGrammar).Print(tuple, func(value string) {
+			fmt.Printf ("%s", value)
+		})
+	}
+	pipeline := prettyPrint
+	if eval {
+		next := pipeline
+		pipeline = func(value interface{}) {
+			SimpleEval(value, next)
+		}
+	}
+	if queryPattern != "" {
+		next := pipeline
+		query := NewQuery(queryPattern)
+		pipeline = func(value interface{}) {
+			query.Match(value, next)
+		}
+	}
+	return pipeline
+}

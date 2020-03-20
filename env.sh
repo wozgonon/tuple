@@ -19,6 +19,9 @@ mck () {
     make clean test
 }
 
+alias wexpr=bin/wexpr
+alias wozg=bin/wozg
+
 #############################################################################
 # Search for a pattern in the source code
 #############################################################################

@@ -182,7 +182,7 @@ func (grammar Tcl) Parse(context * ParserContext) {
 			}
 			context.next(comment)
 		case token == parser.style.Close:
-			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+			context.UnexpectedCloseBracketError (parser.style.Close)
 		case token == parser.style.Open:
 			subTuple := NewTuple()
 			err := grammar.parseCommandShellTuple(context, &subTuple)
@@ -271,7 +271,7 @@ func (grammar TupleGrammar) parseCommaTuple(context * ParserContext, tuple *Tupl
 	parser := grammar.parser
 	// TODO comma and semi-colon
 	for {
-		token, err := parser.getNext(context)
+		token, err := parser.GetNext(context)
 		switch {
 		case err != nil:
 			context.Error("parsing %s", err);
@@ -304,7 +304,7 @@ func (grammar TupleGrammar) Parse(context * ParserContext) {
 
 	parser := grammar.parser
 	for {
-		token, err := parser.getNext(context)
+		token, err := parser.GetNext(context)
 		switch {
 		case err == io.EOF:
 			return
@@ -312,10 +312,10 @@ func (grammar TupleGrammar) Parse(context * ParserContext) {
 			context.Error ("'%s'", err)
 			return
 		case token == parser.style.Close:
-			context.Error ("Unexpected close bracket '%s'", parser.style.Close)
+			context.UnexpectedCloseBracketError (parser.style.Close)
 		default:
 			if atom,ok := token.(Atom); ok {
-				bracket, err := parser.getNext(context)
+				bracket, err := parser.GetNext(context)
 				if err != nil {
 					context.Error ("'%s'", err)
 					return

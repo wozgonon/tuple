@@ -72,26 +72,7 @@ func main() {
 	//
 	//  Set up the translator pipeline.
 	//
-
-	prettyPrint := func(tuple interface{}) {
-		(*outputGrammar).Print(tuple, func(value string) {
-			fmt.Printf ("%s", value)
-		})
-	}
-	pipeline := prettyPrint
-	if *eval {
-		next := pipeline
-		pipeline = func(value interface{}) {
-			tuple.SimpleEval(value, next)
-		}
-	}
-	if *queryPattern != "" {
-		next := pipeline
-		query := tuple.NewQuery(*queryPattern)
-		pipeline = func(value interface{}) {
-			query.Match(value, next)
-		}
-	}
+	pipeline := tuple.SimplePipeline (*eval, *queryPattern, outputGrammar)
 	
 	//
 	//  Run the translators over all the input files.

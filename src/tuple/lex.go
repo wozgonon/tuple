@@ -76,7 +76,7 @@ func ReadNumber(context * ParserContext, token string) (interface{}, error) {
 	for {
 		ch, err := context.ReadRune()
 		if err == io.EOF {
-			return token, nil
+			break
 		} else if err != nil {
 			return "", err
 		} else if ch == '.' && dots == 0 {
@@ -87,16 +87,16 @@ func ReadNumber(context * ParserContext, token string) (interface{}, error) {
 			token = token + string(ch) // TODO not efficient
 		} else {
 			context.UnreadRune()
-			if token == "." {
-				context.UnreadRune()
-				return token, nil
-			}
-			switch dots {
-			case 0: return strconv.ParseInt(token, 10, 0)
-			case 1:	return strconv.ParseFloat(token, 64)
-			} 
+			//if token == "." {
+			//	context.UnreadRune()
+			//}
+			break
 		}
 	}
+	switch dots {
+	case 0: return strconv.ParseInt(token, 10, 0)
+	default: return strconv.ParseFloat(token, 64)
+	} 
 }
 
 func ReadUntilEndOfLine(context * ParserContext) (Comment, error) {
@@ -191,30 +191,3 @@ func IsCompare(ch rune) bool {
 }
 
 
-type Operators struct {
-	priority map[string]int
-}
-
-func NewOperators() Operators {
-	return Operators{make(map[string]int, 0)}
-}
-
-func (operators *Operators) Add(operator string, priority int) {
-	(*operators).priority[operator] = priority
-}
-
-func (operators *Operators) AddCOperators() {
-	operators.Add("^", 10)
-	operators.Add("*", 90)
-	operators.Add("/", 90)
-	operators.Add("+", 80)
-	operators.Add("-", 80)
-	operators.Add("<", 60)
-	operators.Add(">", 60)
-	operators.Add("<=", 60)
-	operators.Add(">=", 60)
-	operators.Add("==", 60)
-	operators.Add("!=", 60)
-	operators.Add("&&", 50)
-	operators.Add("||", 50)
-}

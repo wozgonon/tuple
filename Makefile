@@ -10,10 +10,15 @@
 VERSION_FILE=src/wozg/version.go
 VERSION="0.1"
 
-all: bin/wozg pkg/linux_amd64/tuple.a
+all: bin/wozg bin/wozg bin/wexpr pkg/linux_amd64/tuple.a
 
+
+bin/wexpr: wexpr
 bin/wozg: wozg
 pkg/linux_amd64/tuple.a: tuple
+
+wexpr: tuple src/wexpr/wexpr.go ${VERSION_FILE}
+	go install $@
 
 wozg: tuple src/wozg/wozg.go ${VERSION_FILE}
 	go install $@
@@ -45,7 +50,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version test_basic test_arithmetic test_tcl test_yaml test_query test_json # test_infix
+test: version test_basic test_arithmetic test_tcl test_yaml test_query test_json test_wexpr # test_infix
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -98,6 +103,11 @@ test_json: ${TDIR}test.json all
 	@bin/wozg -out json ${T1DIR}test.json > ${T2DIR}test.json
 	diff -y --suppress-common-lines ${T1DIR}test.json  ${T2DIR}test.json
 	diff -y --suppress-common-lines ${T1DIR}test.json ${TDIR}test.json.golden
+
+test_wexpr: bin/wexpr
+	test "11 == `bin/wexpr "11"`"
+	test "7 == `bin/wexpr "1+2*3"`"
+	test "5 == `bin/wexpr "1*2+3"`"
 
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl

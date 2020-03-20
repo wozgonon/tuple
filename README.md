@@ -83,6 +83,23 @@ go install src/lisp/lisp.go
 
 ```
 
+## Domain Specific Languages (DSL)
+
+A [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) is a computer language aimed at partiular problem domain
+rather than as a general purpose programming language.
+
+mini-language
+
+Often the whole point of a DSL is let one express a small set instructions very concisely,
+and one typically does not want to get bogged down in writing a grammar.
+WOGZ can deal with the parsing and expression evaluation
+while one can just implement the small functionality that one needs.
+
+WOGZ provides a number of generic grammars which should cover all reasonable cases,
+if one needs to tweak the grammar please do so.
+If you really need something very complex then best use a general purpose ANTLR or YACC/BISON.
+
+
 ## Personal preferences
 
 Syntax preferences can be very subjective.
