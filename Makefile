@@ -118,6 +118,12 @@ test_wexpr: bin/wexpr
 	test "10 == `bin/wexpr "1+(2+3)+4"`"
 	test "10 == `bin/wexpr "(1+2+3+4)"`"
 	test "10 == `bin/wexpr "((1+((2)+3))+(4))"`"
+	test "123 == `bin/wexpr -- "-123"`"
+	test "123 == `bin/wexpr -- "-(123)"`"
+	test "3 == `bin/wexpr -- "-(1+2)"`"
+	test "3 == `bin/wexpr -- "-(-(-1)+2)"`"
+	test "3 == `bin/wexpr -- "(0- - 3)"`"
+	test "-3 == `bin/wexpr -- "-(0- - 3)"`"
 
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl

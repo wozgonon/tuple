@@ -16,12 +16,19 @@
 */
 package tuple
 
+import "strings"
+
 /////////////////////////////////////////////////////////////////////////////
 //  An operator grammar
 /////////////////////////////////////////////////////////////////////////////
 
-// https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-// https://en.wikipedia.org/wiki/Operator-precedence_grammar
+//  A Grammar for handling infix expressions for arithmetic.
+//
+// See technical details please see:
+//   https://en.wikipedia.org/wiki/Operator-precedence_grammar
+//
+// For implementation see:
+//    https://en.wikipedia.org/wiki/Shunting-yard_algorithm
 type OperatorGrammar struct {
 	context * ParserContext
 	operators * Operators
@@ -35,12 +42,14 @@ func NewOperatorGrammar(context * ParserContext, operators * Operators) Operator
 }
 
 func (stack * OperatorGrammar) pushOperator(token Atom) {
+	stack.context.Verbose("PUSH OPERATOR\t '%s'", token.Name)
 	(*stack).operatorStack = append((*stack).operatorStack, token)
 }
 
 // Remove top from operator stack
 func (stack * OperatorGrammar) popOperator() {
 	lo := len(stack.operatorStack) // This could be passed in for efficiency
+	stack.context.Verbose("POP OPERATOR\t '%s'", (*stack).operatorStack[lo-1].Name)
 	(*stack).operatorStack = (*stack).operatorStack[:lo-1]
 }
 
@@ -50,14 +59,12 @@ func (stack * OperatorGrammar) PushValue(value interface{}) {
 		// TODO handle this situation, flush current contents or add a comma operator
 		return
 	}
-	stack.context.Verbose("PushValue: %s\n", value)
+	stack.context.Verbose("PUSH VALUE\t'%s'\n", value)
 	(*stack).Values.Append(value)
 	(*stack).wasOperator = false
 }
 
 func (stack * OperatorGrammar) OpenBracket(token Atom) {
-
-	// TODO NewTuple()
 
 	//lv := stack.Values.Length()
 	//if ! (*stack).wasOperator && lv > 0 {
@@ -68,6 +75,24 @@ func (stack * OperatorGrammar) OpenBracket(token Atom) {
 	//}
 	(*stack).wasOperator = true
 }
+
+// Replace top of value stack with an expression
+func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) {
+
+	values := &((*stack).Values.List)
+	lv := stack.Values.Length()
+	stack.context.Verbose(" -- Values: %d val=%s op=%s\n", lv, (*values) [lv - 1], top.Name)
+	if strings.HasPrefix(top.Name, "_unary_") {
+		//stack.context.Verbose("  HAS PREFIX")
+		val1 := (*values) [lv - 1]
+		(*stack).Values.List = append((*values)[:lv-1], NewTuple(top, val1))
+	} else {
+		val1 := (*values) [lv - 2]
+		val2 := (*values) [lv - 1]
+		(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+	}
+}
+
 
 func (stack * OperatorGrammar) CloseBracket(token Atom) {
 	// TODO should this return an error
@@ -82,7 +107,7 @@ func (stack * OperatorGrammar) CloseBracket(token Atom) {
 		stack.popOperator()
 
 		lv := stack.Values.Length()
-		stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
+		//stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
 		values := &((*stack).Values.List)
 		if stack.operators.IsOpenBracket(top) {
 			if ! stack.operators.MatchBrackets(top, token) {
@@ -93,42 +118,27 @@ func (stack * OperatorGrammar) CloseBracket(token Atom) {
 			(*stack).Values.List = append((*values)[:lv-1], val1)
 			return
 		} else {
-			// Replace top of value stack with an expression
-			//eval(token, 2)
-			val1 := (*values) [lv - 2]
-			val2 := (*values) [lv - 1]
-			(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+			stack.reduceOperatorExpression(top)
 		}
 	}
 }
 
-/*func (stack * OperatorGrammar) eval(token string, arity int) {
-	values := &((*stack).Values.List)
-	lv := stack.Values.Length()
-	args := (*values) [lv-arity-1:]
-	(*stack).Values.List = append((*values)[:lv-arity-1], NewTuple(token, args...))
-}*/
-
 // Signal end of input
 func (stack * OperatorGrammar) EOF(next Next) {
 	lo := len(stack.operatorStack)
-	stack.context.Verbose("OpStack Len=%d\n", lo)
+	//stack.context.Verbose("OpStack Len=%d\n", lo)
 	for index := lo-1 ; index >= 0; index -= 1 {
 		top := stack.operatorStack[index]
 		stack.popOperator()
 
 		lv := stack.Values.Length()
-		stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
+		//stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
 		values := &((*stack).Values.List)
 		if stack.operators.IsOpenBracket(top) {
 			val1 := (*values) [lv - 1]
 			(*stack).Values.List = append((*values)[:lv-1], val1)
 		} else {
-			// Replace top of value stack with an expression
-			//eval(token, 2)
-			val1 := (*values) [lv - 2]
-			val2 := (*values) [lv - 1]
-			(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+			stack.reduceOperatorExpression(top)
 		}
 	}
 	//assert len(stack.values) == 1
@@ -141,42 +151,37 @@ func (stack * OperatorGrammar) EOF(next Next) {
 
 func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	values := &((*stack).Values.List)
-	lv := stack.Values.Length()
-	if lv == 0 || (*stack).wasOperator {
-		if stack.operators.IsUnaryPrefix(atom.Name) {
-			// TODO treat plus as a no-op
-			//eval(atom, 1)
-			val1 := (*values) [lv - 1]
-			(*stack).Values.List = append((*values)[:lv-2], NewTuple(atom, val1))
-		}
-	} else {
-		atomPrecedence := stack.operators.Precedence(atom)
-		lo := len(stack.operatorStack)
-		for index := lo-1 ; index >= 0; index -= 1 {
-			top := stack.operatorStack[index]
-			if stack.operators.IsOpenBracket(top) {
-				val1 := (*values) [lv - 1]
-				(*stack).Values.List = append((*values)[:lv-1], val1)
-
-			} else if stack.operators.Precedence(top) > atomPrecedence {
-				stack.popOperator()
-				// Replace top of value stack with an expression
-				//eval(atom, 2)
-				lv := stack.Values.Length()
-				stack.context.Verbose(" -- index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
-				val1 := (*values) [lv - 2]
-				val2 := (*values) [lv - 1]
-				(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
-			} else {
-				break
-			}
-		}
-		stack.pushOperator(atom)
+	unary := (*stack).wasOperator && stack.operators.IsUnaryPrefix(atom.Name) 
+	if unary {
+		atom = Atom{"_unary_" + atom.Name}
 	}
+	atomPrecedence := stack.operators.Precedence(atom)
+	lo := len(stack.operatorStack)
+	for index := lo-1 ; index >= 0; index -= 1 {
+		top := stack.operatorStack[index]
+		stack.context.Verbose("PushOperator\t%s\ttop=%s\t%d", atom, top, len(*values))
+		if !unary && stack.operators.IsOpenBracket(top) {
+			//lv := stack.Values.Length()
+			//val1 := (*values) [lv - 1]
+			//(*stack).Values.List = append((*values)[:lv-1], val1)
+			break
+		} else if stack.operators.Precedence(top) >= atomPrecedence {
+			stack.popOperator()
+			stack.reduceOperatorExpression(top)
+		} else {
+			break
+		}
+	}
+	stack.pushOperator(atom)
+	
 	// TODO postfix
 	(*stack).wasOperator = true
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//  Operators
+/////////////////////////////////////////////////////////////////////////////
 
 // A table of operators
 type Operators struct {
@@ -226,7 +231,9 @@ func (operators *Operators) IsUnaryPrefix(token string) bool {
 }
 
 func (operators *Operators) AddStandardCOperators() {
-	operators.Add("^", 10)
+	operators.Add("_unary_+", 110)
+	operators.Add("_unary_-", 110)
+	operators.Add("^", 100)
 	operators.Add("*", 90)
 	operators.Add("/", 90)
 	operators.Add("+", 80)

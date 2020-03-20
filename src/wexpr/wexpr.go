@@ -32,7 +32,6 @@ func main () {
 	args := os.Args[argsLength-numberOfFiles:]
 	expression := strings.Join(args, " ")
 
-	fmt.Printf("[%s]\n", expression)
 	operators := tuple.NewOperators()
 	operators.AddStandardCOperators()
 
@@ -47,13 +46,15 @@ func main () {
 	context := tuple.NewParserContext("<cli>", reader, logGrammar, *verbose, pipeline)
 	grammar := tuple.NewOperatorGrammar(&context, &operators)
 
+	context.Verbose("Inout: [%s]", expression)
+
 	for {
 		token, err := sexp.GetNext(&context)
 		if err == io.EOF {
 			grammar.EOF(pipeline)
 			break
 		}
-		context.Verbose("-- %s\n", token)
+		//context.Verbose("-- %s\n", token)
 		if token == "(" {
 			grammar.OpenBracket(tuple.Atom{"("})
 		} else if token == ")" {

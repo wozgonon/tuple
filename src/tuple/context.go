@@ -109,7 +109,7 @@ func (context * ParserContext) log(format string, level string, args ...interfac
 	tuple.Append(int64(context.depth))
 	tuple.Append(context.SourceName)
 	tuple.Append(suffix)
-	context.logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
+	// TODO context.logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
 
 }
 
