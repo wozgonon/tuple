@@ -55,7 +55,7 @@ func (stack * OperatorGrammar) popOperator() {
 
 func (stack * OperatorGrammar) PushValue(value interface{}) {
 	if ! (*stack).wasOperator {
-		stack.context.Error("Unexpected value: %s\n", value)
+		stack.context.Error("Unexpected value '%s' after value %s\n", value)
 		// TODO handle this situation, flush current contents or add a comma operator
 		return
 	}

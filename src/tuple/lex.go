@@ -37,7 +37,7 @@ func ReadString (context * ParserContext, token string, unReadLast bool, test fu
 	for {
 		ch, err := context.ReadRune()
 		if err == io.EOF {
-			context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
+			//context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 			return token, nil
 		} else if err != nil {
 			//log.Printf("ERROR nil")

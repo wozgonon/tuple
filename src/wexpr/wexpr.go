@@ -68,6 +68,7 @@ func main () {
 			} else if operators.IsCloseBracket(atom) {
 				grammar.CloseBracket(atom)
 			} else {
+				
 				grammar.PushValue(atom)
 			}
 		} else {

@@ -119,7 +119,7 @@ func (parser SExpressionParser) GetNext(context * ParserContext) (interface{}, e
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
 		case ch == parser.KeyValueSeparator : return parser.style.KeyValueSeparator, nil
-		case IsArithmetic(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
+		case IsArithmetic(ch): return Atom{string(ch)}, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
 		case IsCompare(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) })
 		case unicode.IsLetter(ch):  return ReadAtom(context, string(ch), func(r rune) bool { return unicode.IsLetter(r) })
 		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))

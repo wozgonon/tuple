@@ -124,8 +124,9 @@ test_wexpr: bin/wexpr
 	test "3 == `bin/wexpr -- "-(-(-1)+2)"`"
 	test "3 == `bin/wexpr -- "(0- - 3)"`"
 	test "-3 == `bin/wexpr -- "-(0- - 3)"`"
-	# TODO test "-3 == `bin/wexpr -- "-(0- - - - 3)"`"
-	# TODO test "-3 == `bin/wexpr -- "-(0--3)"`"
+	test "-2 == `bin/wexpr -- "-(1--1)"`"
+	test "-3 == `bin/wexpr -- "-(0- - - - 3)"`"
+	 test "-3 == `bin/wexpr -- "-(0--3)"`"
 
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl
