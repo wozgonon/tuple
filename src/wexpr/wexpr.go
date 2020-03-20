@@ -11,7 +11,7 @@ import "flag"
 func main () {
 
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
-	var eval = flag.Bool("eval", true, "If not set then returns the AST, if set runs the 'eval' interpretter.")
+	var ast = flag.Bool("ast", false, "If set then returns the AST else runs the 'eval' interpretter.")
 	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
 	var version = flag.Bool("version", false, "Print version of this software.")
 	flag.Parse()
@@ -25,7 +25,7 @@ func main () {
 	//  Set up the translator pipeline.
 	//
 	outputGrammar := tuple.NewLispGrammar()
-	pipeline := tuple.SimplePipeline (*eval, *queryPattern, &outputGrammar)
+	pipeline := tuple.SimplePipeline (!*ast, *queryPattern, &outputGrammar)
 
 	argsLength := len(os.Args)
 	numberOfFiles := flag.NArg()
