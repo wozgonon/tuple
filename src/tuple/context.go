@@ -98,7 +98,7 @@ func (context * ParserContext) UnreadRune() {
 }
 
 func (context * ParserContext) log(format string, level string, args ...interface{}) {
-	prefix := fmt.Sprintf("%s at %d, %d in '%s': ", level, context.line, context.column, context.SourceName)
+	prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': ", level, context.line, context.column, context.depth, context.SourceName)
 	suffix := fmt.Sprintf(format, args...)
 	log.Print(prefix + suffix)
 
@@ -106,6 +106,7 @@ func (context * ParserContext) log(format string, level string, args ...interfac
 	tuple.Append(level)
 	tuple.Append(context.line)
 	tuple.Append(context.column)
+	tuple.Append(int64(context.depth))
 	tuple.Append(context.SourceName)
 	tuple.Append(suffix)
 	context.logGrammar.Print(tuple, func (value string) { fmt.Print(value) })

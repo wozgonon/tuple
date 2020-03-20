@@ -99,6 +99,11 @@ func (stack * OperatorStack) popOperator() {
 }
 
 func (stack * OperatorStack) PushValue(value interface{}) {
+	if ! (*stack).wasOperator {
+		stack.context.Error("Unexpected value: %s\n", value)
+		// TODO handle this situation, flush current contents or add a comma operator
+		return
+	}
 	stack.context.Verbose("PushValue: %s\n", value)
 	(*stack).Values.Append(value)
 	(*stack).wasOperator = false
@@ -125,12 +130,30 @@ func (stack * OperatorStack) CloseBracket(token Atom) {
 		stack.context.UnexpectedCloseBracketError (token.Name)
 		return
 	}
-	top := stack.operatorStack[lo-1]
-	if top != token {
-		stack.context.Error("Expected close bracket '%s' but found '%s'", top.Name, token.Name)
-		return
+
+	for index := lo-1 ; index >= 0; index -= 1 {
+		top := stack.operatorStack[index]
+		stack.popOperator()
+
+		lv := stack.Values.Length()
+		stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
+		values := &((*stack).Values.List)
+		if stack.operators.IsOpenBracket(top) {
+			if ! stack.operators.MatchBrackets(top, token) {
+				stack.context.Error("Expected close bracket '%s' but found '%s'", top.Name, token.Name)
+				return
+			}
+			val1 := (*values) [lv - 1]
+			(*stack).Values.List = append((*values)[:lv-1], val1)
+			return
+		} else {
+			// Replace top of value stack with an expression
+			//eval(token, 2)
+			val1 := (*values) [lv - 2]
+			val2 := (*values) [lv - 1]
+			(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+		}
 	}
-	stack.popOperator()
 }
 
 /*func (stack * OperatorStack) eval(token string, arity int) {
@@ -141,23 +164,33 @@ func (stack * OperatorStack) CloseBracket(token Atom) {
 }*/
 
 // Signal end of input
-func (stack * OperatorStack) EOF() interface{} {
+func (stack * OperatorStack) EOF(next Next) {
 	lo := len(stack.operatorStack)
 	stack.context.Verbose("OpStack Len=%d\n", lo)
 	for index := lo-1 ; index >= 0; index -= 1 {
 		top := stack.operatorStack[index]
-		stack.context.Verbose("  OpStack index=%d op=%s\n", index, top)
 		stack.popOperator()
-		// Replace top of value stack with an expression
-		//eval(token, 2)
+
 		lv := stack.Values.Length()
+		stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
 		values := &((*stack).Values.List)
-		val1 := (*values) [lv - 2]
-		val2 := (*values) [lv - 1]
-		(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+		if stack.operators.IsOpenBracket(top) {
+			val1 := (*values) [lv - 1]
+			(*stack).Values.List = append((*values)[:lv-1], val1)
+		} else {
+			// Replace top of value stack with an expression
+			//eval(token, 2)
+			val1 := (*values) [lv - 2]
+			val2 := (*values) [lv - 1]
+			(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+		}
 	}
 	//assert len(stack.values) == 1
-	return (*stack).Values.List[0]
+	// TODO this is a hack to handle space separated expressions: 1+2 3*4 5
+	for _, value := range (*stack).Values.List {
+		next (value)
+	}
+	
 }
 
 func (stack * OperatorStack) PushOperator(atom Atom) {
@@ -175,11 +208,16 @@ func (stack * OperatorStack) PushOperator(atom Atom) {
 		lo := len(stack.operatorStack)
 		for index := lo-1 ; index >= 0; index -= 1 {
 			top := stack.operatorStack[index]
-			if stack.operators.IsOpenBracket(top) || stack.operators.Precedence(top) > atomPrecedence {
+			if stack.operators.IsOpenBracket(top) {
+				val1 := (*values) [lv - 1]
+				(*stack).Values.List = append((*values)[:lv-1], val1)
+
+			} else if stack.operators.Precedence(top) > atomPrecedence {
 				stack.popOperator()
 				// Replace top of value stack with an expression
 				//eval(atom, 2)
 				lv := stack.Values.Length()
+				stack.context.Verbose(" -- index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
 				val1 := (*values) [lv - 2]
 				val2 := (*values) [lv - 1]
 				(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
@@ -225,6 +263,15 @@ func (operators *Operators) IsOpenBracket(atom Atom) bool {
 func (operators *Operators) IsCloseBracket(atom Atom) bool {
 	token := atom.Name
 	return token == ")" || token == "}" || token == "]"
+}
+
+func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
+	switch open.Name {
+	case  "(": return close.Name == ")"
+	case  "[": return close.Name == "]"
+	case  "{": return close.Name == "}"
+	default: return false
+	}
 }
 
 // TODO generalize

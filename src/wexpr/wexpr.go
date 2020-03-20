@@ -30,8 +30,9 @@ func main () {
 	argsLength := len(os.Args)
 	numberOfFiles := flag.NArg()
 	args := os.Args[argsLength-numberOfFiles:]
-	expression := strings.Join(args, "")
+	expression := strings.Join(args, " ")
 
+	fmt.Printf("[%s]\n", expression)
 	operators := tuple.NewOperators()
 	operators.AddStandardCOperators()
 
@@ -49,8 +50,7 @@ func main () {
 	for {
 		token, err := sexp.GetNext(&context)
 		if err == io.EOF {
-			result := grammar.EOF()
-			pipeline(result)
+			grammar.EOF(pipeline)
 			break
 		}
 		context.Verbose("-- %s\n", token)
