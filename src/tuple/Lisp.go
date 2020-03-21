@@ -45,7 +45,7 @@ func (grammar LispGrammar) Print(token interface{}, next func(value string)) {
 
 func NewLispGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"(", ")", "", "", ".",
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".",
 		"", "\n", "true", "false", ';', ""}
 	return LispGrammar{NewSExpressionParser(style)}
 }
@@ -216,7 +216,7 @@ func (grammar Tcl) Print(token interface{}, out func(value string)) {
 
 func NewTclGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"{", "}", "[", "]", ":",
+		OPEN_BRACE, CLOSE_BRACE, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, ":",
 		"", "\n", "true", "false", '#', ""}
 	return Tcl{NewSExpressionParser(style)}
 }
@@ -246,7 +246,7 @@ func (grammar Jml) Print(token interface{}, next func(value string)) {
 }
 
 func NewJmlGrammar() Grammar {
-	style := Style{"\n", "", "  ", "{", "}", "", "\n", "true", "false", '#'}
+	style := Style{"\n", "", "  ", OPEN_BRACE, CLOSE_BRACE, "", "\n", "true", "false", '#'}
 	return Jml{NewSExpressionParser(style)}
 }*/
 
@@ -344,7 +344,7 @@ func (grammar TupleGrammar) Print(token interface{}, next func(value string)) {
 
 func NewTupleGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"(", ")", "", "", ":",
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", ":",
 		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
 	return TupleGrammar{NewSExpressionParser(style)}
 }
@@ -417,7 +417,7 @@ func (grammar Yaml) Print(token interface{}, out func(value string)) {
 
 func NewYamlGrammar() Grammar {
 	style := Style{"---\n", "...\n", "  ", 
-		":", "", "[", "]", "",
+		":", "", OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, "",
 		"", "\n", "true", "false", '#', "- "}
 	return Yaml{NewSExpressionParser(style)}
 }
@@ -476,9 +476,9 @@ func (grammar Ini ) printObject(depth string, key string, token interface{}, out
 			newDepth = depth
 		}
 		out(style.LineBreak)
-		out("[")
+		out(OPEN_SQUARE_BRACKET)
 		out(depth)
-		out("]")
+		out(CLOSE_SQUARE_BRACKET)
 		out(style.LineBreak)
 		for k, token := range tuple.List {
 			if ! first || k >0  {
@@ -613,7 +613,7 @@ func (grammar JSONGrammar) Print(token interface{}, next func(value string)) {
 
 func NewJSONGrammar() Grammar {
 	style := Style{"", "", "  ",
-		"[", "]", "{", "}", ":",
+		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
 		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
 	return JSONGrammar{NewSExpressionParser(style)}
 }

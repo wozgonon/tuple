@@ -77,23 +77,31 @@ func (stack * OperatorGrammar) OpenBracket(token Atom) {
 	(*stack).wasOperator = true
 }
 
+func (stack * OperatorGrammar) reduceUnary(top Atom) {
+	values := &((*stack).Values.List)
+	lv := stack.Values.Length()
+	val1 := (*values) [lv - 1]
+	(*stack).Values.List = append((*values)[:lv-1], NewTuple(top, val1))
+	stack.context.Verbose(" REDUCE:\t%s\t'%s'\n", top.Name, val1)
+}
+
 // Replace top of value stack with an expression
 func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) {
 
 	values := &((*stack).Values.List)
 	lv := stack.Values.Length()
-	stack.context.Verbose(" -- Values: %d val=%s op=%s\n", lv, (*values) [lv - 1], top.Name)
 	if strings.HasPrefix(top.Name, "_unary_") {
-		//stack.context.Verbose("  HAS PREFIX")
-		val1 := (*values) [lv - 1]
-		(*stack).Values.List = append((*values)[:lv-1], NewTuple(top, val1))
+		stack.reduceUnary(top)
 	} else {
 		val1 := (*values) [lv - 2]
 		val2 := (*values) [lv - 1]
 		if top == SPACE_ATOM {
+			// TODO This breaks 'eval'
 			(*stack).Values.List = append((*values)[:lv-2], NewTuple(val1, val2)) // TODO should not need a special case
+			stack.context.Verbose(" REDUCE:\t'%s'\t'%s'\n", top.Name, val1)
 		} else {
 			(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+			stack.context.Verbose(" REDUCE:\t'%s'\t'%s'\t'%s'\n", top.Name, val1, val2)
 		}
 	}
 }
@@ -111,16 +119,12 @@ func (stack * OperatorGrammar) CloseBracket(token Atom) {
 		top := stack.operatorStack[index]
 		stack.popOperator()
 
-		lv := stack.Values.Length()
-		//stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
-		values := &((*stack).Values.List)
 		if stack.operators.IsOpenBracket(top) {
 			if ! stack.operators.MatchBrackets(top, token) {
 				stack.context.Error("Expected close bracket '%s' but found '%s'", top.Name, token.Name)
 				return
 			}
-			val1 := (*values) [lv - 1]
-			(*stack).Values.List = append((*values)[:lv-1], val1)
+			//stack.reduceUnary(top)
 			return
 		} else {
 			stack.reduceOperatorExpression(top)
@@ -136,12 +140,11 @@ func (stack * OperatorGrammar) EOF(next Next) {
 		top := stack.operatorStack[index]
 		stack.popOperator()
 
-		lv := stack.Values.Length()
-		//stack.context.Verbose("index=%d Values: %d OpStack: %d op=%s\n", index, lv, lo, top)
-		values := &((*stack).Values.List)
 		if stack.operators.IsOpenBracket(top) {
-			val1 := (*values) [lv - 1]
-			(*stack).Values.List = append((*values)[:lv-1], val1)
+			//stack.reduceUnary(top)
+			//val1 := (*values) [lv - 1]
+			//(*stack).Values.List = append((*values)[:lv-1], val1)
+			break
 		} else {
 			stack.reduceOperatorExpression(top)
 		}
@@ -156,9 +159,11 @@ func (stack * OperatorGrammar) EOF(next Next) {
 
 func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	values := &((*stack).Values.List)
-	unary := (*stack).wasOperator && stack.operators.IsUnaryPrefix(atom.Name) 
+
+	unaryOperator, ok := stack.operators.unary[atom.Name]
+	unary := (*stack).wasOperator && ok
 	if unary {
-		atom = Atom{"_unary_" + atom.Name}
+		atom = unaryOperator
 	}
 	atomPrecedence := stack.operators.Precedence(atom)
 	lo := len(stack.operatorStack)
@@ -191,11 +196,12 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 // A table of operators
 type Operators struct {
 	precedence map[string]int
+	unary map[string]Atom
 	brackets map[string]string
 }
 
 func NewOperators() Operators {
-	return Operators{make(map[string]int, 0), make(map[string]string, 0)}
+	return Operators{make(map[string]int, 0), make(map[string]Atom, 0), make(map[string]string, 0)}
 }
 
 func (operators *Operators) Add(operator string, precedence int) {
@@ -240,6 +246,8 @@ func (operators *Operators) IsUnaryPrefix(token string) bool {
 }
 
 func (operators *Operators) AddStandardCOperators() {
+	operators.unary["-"] = Atom{"_unary_-"}
+	operators.unary["+"] = Atom{"_unary_+"}
 	operators.brackets[OPEN_BRACKET] = CLOSE_BRACKET
 	operators.brackets[OPEN_SQUARE_BRACKET] = CLOSE_SQUARE_BRACKET
 	operators.brackets[OPEN_BRACE] = CLOSE_BRACE

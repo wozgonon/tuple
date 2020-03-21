@@ -39,9 +39,9 @@ type Atom struct {
 
 const OPEN_BRACKET = "("
 const CLOSE_BRACKET = ")"
-const OPEN_SQUARE_BRACKET = "("
-const CLOSE_SQUARE_BRACKET = ")"
-const OPEN_BRACE = "}"
+const OPEN_SQUARE_BRACKET = "["
+const CLOSE_SQUARE_BRACKET = "]"
+const OPEN_BRACE = "{"
 const CLOSE_BRACE = "}"
 
 var (

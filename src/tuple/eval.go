@@ -59,23 +59,29 @@ func eval(expression interface{}) interface{} {
 		if ll == 1 {
 			return eval(head)
 		}
+		atom, ok := head.(Atom)
+		if ! ok {
+			// TODO Handle case of list: (1 2 3)
+		}
 		evaluated := make([]interface{}, ll-1)
 		for k, v := range val.List[1:] {
 			evaluated[k] = eval(v)
 		}
 
-		name := head.(Atom).Name
+		name := atom.Name
 		switch ll {
 		case 2:
 			aa := toFloat64(evaluated[0])
 			switch name {
-			case "log": return math.Log(aa)
+			case "log":
+				return math.Log(aa)
+			case "exp": return math.Exp(aa)
 			case "sin": return math.Sin(aa)
 			case "cos": return math.Cos(aa)
 			case "tan": return math.Tan(aa)
-			case "acos": return math.Cos(aa)
-			case "asin": return math.Sin(aa)
-			case "atan": return math.Tan(aa)
+			case "acos": return math.Acos(aa)
+			case "asin": return math.Asin(aa)
+			case "atan": return math.Atan(aa)
 			case "_unary_-": return -aa
 			case "_unary_+": return aa
 			default: return math.NaN()
@@ -84,7 +90,8 @@ func eval(expression interface{}) interface{} {
 			aa := toFloat64(evaluated[0])
 			bb := toFloat64(evaluated[1])
 			switch name {
-			//case ":=": 
+				//case ":=": 
+			case "^": return math.Pow(aa,bb)
 			case "+": return aa+bb
 			case "-": return aa-bb
 			case "*": return aa*bb
