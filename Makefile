@@ -129,6 +129,8 @@ test_wexpr: bin/wexpr
 	test "-3 == `bin/wexpr -- "-(0--3)"`"
 	test "1 == `bin/wexpr -- "(cos 0)"`"
 	test "-1 == `bin/wexpr -- "(cos PI)"`"
+	test "3.141592653589793 == `bin/wexpr -- "(acos (cos PI))"`"
+	test "true == `bin/wexpr -- "((acos (cos PI)))==PI"`"
 
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl

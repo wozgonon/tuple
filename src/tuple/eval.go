@@ -82,6 +82,7 @@ func eval(expression interface{}) interface{} {
 			case "acos": return math.Acos(aa)
 			case "asin": return math.Asin(aa)
 			case "atan": return math.Atan(aa)
+			case "round": return math.Round(aa)
 			case "_unary_-": return -aa
 			case "_unary_+": return aa
 			default: return math.NaN()
@@ -102,6 +103,7 @@ func eval(expression interface{}) interface{} {
 			case "<=": return aa<=bb
 			case ">": return aa>bb
 			case "<": return aa<bb
+			case "atan2": return math.Atan2(aa,bb)
 			default: return math.NaN()
 			}
 		default:

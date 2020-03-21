@@ -117,8 +117,12 @@ func (context * ParserContext) Error(format string, args ...interface{}) {
 	context.log(format, "ERROR", args...)
 }
 
-func (context * ParserContext) UnexpectedCloseBracketError(token string, args ...interface{}) {
+func (context * ParserContext) UnexpectedCloseBracketError(token string) {
 	context.Error ("Unexpected close bracket '%s'", token)
+}
+
+func (context * ParserContext) UnexpectedEndOfInputErrorBracketError() {
+	context.Error ("Unexpected end of input")
 }
 
 func (context * ParserContext) Verbose(format string, args ...interface{}) {
