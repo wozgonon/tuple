@@ -136,6 +136,11 @@ test_wexpr: bin/wexpr
 	@bin/wexpr  "+("  || true
 	@bin/wexpr  "("  || true
 	@bin/wexpr  ")"  || true
+	test "0 == `bin/wexpr "(atan2 0 1)"`"
+	test "0.7853981633974483 == `bin/wexpr "(atan2 1 1)"`"
+
+
+
 
 smoke: test test_dirs 
 	bin/wozg --out tcl ${TDIR}test.tcl
