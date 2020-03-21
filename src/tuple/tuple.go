@@ -17,19 +17,39 @@
 package tuple
 
 /////////////////////////////////////////////////////////////////////////////
-// An atom
-// - a name for something, an identifier or operator
-/////////////////////////////////////////////////////////////////////////////
 
+type Token interface {
+
+}
+
+type String struct {
+	value string
+}
+
+type Number struct {
+	float bool
+	value string
+}
+
+// An Atom - a name for something, an identifier or operator
 type Atom struct {
 	// TODO include location and source for editors
 	Name string
 }
 
-/////////////////////////////////////////////////////////////////////////////
+const OPEN_BRACKET = "("
+const CLOSE_BRACKET = ")"
+const OPEN_SQUARE_BRACKET = "("
+const CLOSE_SQUARE_BRACKET = ")"
+const OPEN_BRACE = "}"
+const CLOSE_BRACE = "}"
 
-/////////////////////////////////////////////////////////////////////////////
+var (
+	SPACE_ATOM = Atom{" "}
+	CONS_ATOM = Atom{"_cons"}
+)
 
+// A textual comment
 type Comment struct {
 	// TODO include location and source for editors
 	Comment string

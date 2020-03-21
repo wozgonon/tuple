@@ -55,9 +55,10 @@ func (stack * OperatorGrammar) popOperator() {
 
 func (stack * OperatorGrammar) PushValue(value interface{}) {
 	if ! (*stack).wasOperator {
-		stack.context.Error("Unexpected value '%s' after value %s\n", value)
+		stack.PushOperator(SPACE_ATOM)
+		//stack.context.Error("Unexpected value '%s' after value %s\n", value)
 		// TODO handle this situation, flush current contents or add a comma operator
-		return
+		//	return
 	}
 	stack.context.Verbose("PUSH VALUE\t'%s'\n", value)
 	(*stack).Values.Append(value)
@@ -89,7 +90,11 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) {
 	} else {
 		val1 := (*values) [lv - 2]
 		val2 := (*values) [lv - 1]
-		(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+		if top == SPACE_ATOM {
+			(*stack).Values.List = append((*values)[:lv-2], NewTuple(val1, val2)) // TODO should not need a special case
+		} else {
+			(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+		}
 	}
 }
 
@@ -186,11 +191,11 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 // A table of operators
 type Operators struct {
 	precedence map[string]int
-
+	brackets map[string]string
 }
 
 func NewOperators() Operators {
-	return Operators{make(map[string]int, 0)}
+	return Operators{make(map[string]int, 0), make(map[string]string, 0)}
 }
 
 func (operators *Operators) Add(operator string, precedence int) {
@@ -208,7 +213,9 @@ func (operators *Operators) Precedence(token Atom) int {
 // TODO generalize
 func (operators *Operators) IsOpenBracket(atom Atom) bool {
 	token := atom.Name
-	return token == "(" || token == "{" || token == "["
+	_, ok := operators.brackets[token]
+	return ok
+	//return token == "(" || token == "{" || token == "["
 }
 
 func (operators *Operators) IsCloseBracket(atom Atom) bool {
@@ -217,12 +224,14 @@ func (operators *Operators) IsCloseBracket(atom Atom) bool {
 }
 
 func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
-	switch open.Name {
-	case  "(": return close.Name == ")"
-	case  "[": return close.Name == "]"
-	case  "{": return close.Name == "}"
-	default: return false
-	}
+	expectedClose, ok := operators.brackets[open.Name]
+	return ok && expectedClose == close.Name
+	//switch open.Name {
+	//case  "(": return close.Name == ")"
+	//case  "[": return close.Name == "]"
+	//case  "{": return close.Name == "}"
+	//default: return false
+	//}
 }
 
 // TODO generalize
@@ -231,6 +240,9 @@ func (operators *Operators) IsUnaryPrefix(token string) bool {
 }
 
 func (operators *Operators) AddStandardCOperators() {
+	operators.brackets[OPEN_BRACKET] = CLOSE_BRACKET
+	operators.brackets[OPEN_SQUARE_BRACKET] = CLOSE_SQUARE_BRACKET
+	operators.brackets[OPEN_BRACE] = CLOSE_BRACE
 	operators.Add("_unary_+", 110)
 	operators.Add("_unary_-", 110)
 	operators.Add("^", 100)
@@ -246,4 +258,7 @@ func (operators *Operators) AddStandardCOperators() {
 	operators.Add("!=", 60)
 	operators.Add("&&", 50)
 	operators.Add("||", 50)
+	//operators.Add(",", 40)
+	//operators.Add(";", 30)
+	operators.Add(SPACE_ATOM.Name, 10)  // TODO space???
 }

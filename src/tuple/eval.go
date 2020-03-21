@@ -33,8 +33,8 @@ func toFloat64(value interface{}) float64 {
 
 func Nullary(val Atom) interface{} {
 	switch val.Name {
-	case "Pi": return math.Pi
-	case "Phi": return math.Phi
+	case "PI": return math.Pi
+	case "PHI": return math.Phi
 	case "E": return math.E
 	case "true": return true
 	case "false": return false

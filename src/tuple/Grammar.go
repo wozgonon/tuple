@@ -69,3 +69,4 @@ func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) *Grammar {
 	}
 	return syntax
 }
+

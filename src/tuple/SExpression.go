@@ -170,7 +170,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 				return errors.New("Unexpected")
 
 			}
-			tuple.List[tuple.Length() -1] = NewTuple(Atom{"_cons"}, left, right)
+			tuple.List[tuple.Length() -1] = NewTuple(CONS_ATOM, left, right)
 		default:
 			tuple.Append(token)
 		}
@@ -274,7 +274,7 @@ func (parser SExpressionParser) isCons(tuple Tuple) bool {
 	if tuple.Length() > 0 {
 		head := tuple.List[0]
 		atom, ok := head.(Atom)
-		if ok && atom.Name == "_cons" {
+		if ok && atom == CONS_ATOM {
 			return true
 		}
 	}

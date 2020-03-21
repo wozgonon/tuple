@@ -66,7 +66,7 @@ func ReadAtom(context * ParserContext, prefix string, test func(rune) bool) (int
 	}
 }
 
-func ReadNumber(context * ParserContext, token string) (interface{}, error) {
+func ReadNumber(context * ParserContext, token string) (interface{}, error) {  // Number
 	var dots int
 	if token == "." {
 		dots = 1
@@ -93,6 +93,7 @@ func ReadNumber(context * ParserContext, token string) (interface{}, error) {
 			break
 		}
 	}
+	//return Number{dots=true,token}
 	switch dots {
 	case 0: return strconv.ParseInt(token, 10, 0)
 	default: return strconv.ParseFloat(token, 64)
