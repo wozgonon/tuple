@@ -82,5 +82,14 @@ func main() {
 	numberOfFiles := flag.NArg()
 	files := os.Args[args-numberOfFiles:]
  
-	tuple.RunParser(files, *loggerGrammar, *verbose, inputGrammar, &grammars, pipeline)
+	errors := tuple.RunParser(files, *loggerGrammar, *verbose, inputGrammar, &grammars, pipeline)
+
+
+	//
+	//  Exit with non-zero response code if any errors occurred.
+	//
+	if errors > 0 {
+		os.Exit(1)
+	}
+
 }

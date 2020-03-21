@@ -33,6 +33,7 @@ type ParserContext struct {
 	line int64
 	column int64
 	depth int
+	Errors int64
 	scanner io.RuneScanner
 	logGrammar Grammar
 	verbose bool
@@ -41,7 +42,7 @@ type ParserContext struct {
 }
 
 func NewParserContext(sourceName string, scanner io.RuneScanner, logGrammar Grammar, verbose bool, next Next) ParserContext {
-	context :=  ParserContext{sourceName, 1, 0, 0, scanner, logGrammar, verbose, next}
+	context :=  ParserContext{sourceName, 1, 0, 0, 0, scanner, logGrammar, verbose, next}
 	context.Verbose("Parsing file [%s] suffix [%s]", sourceName, context.Suffix())
 	return context
 }
@@ -115,6 +116,7 @@ func (context * ParserContext) log(format string, level string, args ...interfac
 
 func (context * ParserContext) Error(format string, args ...interface{}) {
 	context.log(format, "ERROR", args...)
+	context.Errors ++
 }
 
 func (context * ParserContext) UnexpectedCloseBracketError(token string) {
@@ -131,8 +133,9 @@ func (context * ParserContext) Verbose(format string, args ...interface{}) {
 	}
 }
 
-func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * Grammar, grammars *Grammars, next Next) {
+func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * Grammar, grammars *Grammars, next Next) int64 {
 
+	errors := int64(0)
 	// TODO this can be improved
 	parse := func (context * ParserContext) {
 		suffix := context.Suffix()
@@ -154,6 +157,8 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 		context := NewParserContext(STDIN, reader, logGrammar, verbose, next)
 		context.prompt()
 		parse(&context)
+		errors += context.Errors
+		
 	} else {
 		for _, fileName := range args {
 			file, err := os.Open(fileName)
@@ -163,9 +168,11 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 			reader := bufio.NewReader(file)
 			context := NewParserContext(fileName, reader, logGrammar, verbose, next)
 			parse(&context)
+			errors += context.Errors
 			file.Close()
 		}
 	}
+	return errors
 }
 
 

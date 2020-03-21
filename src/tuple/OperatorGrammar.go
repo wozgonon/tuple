@@ -104,9 +104,9 @@ func (stack * OperatorGrammar) OpenBracket(token Atom) {
 }
 
 func (stack * OperatorGrammar) CloseBracket(token Atom) {
-	// TODO should this return an error
 	lo := len(stack.operatorStack)
 	if lo == 0 || (*stack).wasOperator {
+		// TODO this should return an error
 		stack.context.UnexpectedCloseBracketError (token.Name)
 		return
 	}
@@ -118,9 +118,7 @@ func (stack * OperatorGrammar) CloseBracket(token Atom) {
 		if stack.operators.IsOpenBracket(top) {
 			if ! stack.operators.MatchBrackets(top, token) {
 				stack.context.Error("Expected close bracket '%s' but found '%s'", top.Name, token.Name)
-				return
 			}
-			//stack.reduceUnary(top)
 			return
 		} else {
 			stack.reduceOperatorExpression(top)
@@ -134,17 +132,12 @@ func (stack * OperatorGrammar) EOF(next Next) {
 		stack.context.UnexpectedEndOfInputErrorBracketError()
 		return
 	}
-
 	lo := len(stack.operatorStack)
-	//stack.context.Verbose("OpStack Len=%d\n", lo)
 	for index := lo-1 ; index >= 0; index -= 1 {
 		top := stack.operatorStack[index]
 		stack.popOperator()
 
 		if stack.operators.IsOpenBracket(top) {
-			//stack.reduceUnary(top)
-			//val1 := (*values) [lv - 1]
-			//(*stack).Values.List = append((*values)[:lv-1], val1)
 			break
 		} else {
 			stack.reduceOperatorExpression(top)
@@ -156,17 +149,9 @@ func (stack * OperatorGrammar) EOF(next Next) {
 	} else {
 		next ((*stack).Values)
 	}
-	//assert len(stack.values) == 1
-	// TODO this is a hack to handle space separated expressions: 1+2 3*4 5
-	//for _, value := range (*stack).Values.List {
-	//	next (value)
-	//}
-	
 }
 
 func (stack * OperatorGrammar) PushOperator(atom Atom) {
-	values := &((*stack).Values.List)
-
 	unaryOperator, ok := stack.operators.unary[atom.Name]
 	unary := (*stack).wasOperator && ok
 	if unary {
@@ -176,11 +161,7 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	lo := len(stack.operatorStack)
 	for index := lo-1 ; index >= 0; index -= 1 {
 		top := stack.operatorStack[index]
-		stack.context.Verbose("PushOperator\t%s\ttop=%s\t%d", atom, top, len(*values))
 		if !unary && stack.operators.IsOpenBracket(top) {
-			//lv := stack.Values.Length()
-			//val1 := (*values) [lv - 1]
-			//(*stack).Values.List = append((*values)[:lv-1], val1)
 			break
 		} else if stack.operators.Precedence(top) >= atomPrecedence {
 			stack.popOperator()
@@ -228,7 +209,6 @@ func (operators *Operators) IsOpenBracket(atom Atom) bool {
 	token := atom.Name
 	_, ok := operators.brackets[token]
 	return ok
-	//return token == "(" || token == "{" || token == "["
 }
 
 func (operators *Operators) IsCloseBracket(atom Atom) bool {
@@ -239,17 +219,13 @@ func (operators *Operators) IsCloseBracket(atom Atom) bool {
 func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
 	expectedClose, ok := operators.brackets[open.Name]
 	return ok && expectedClose == close.Name
-	//switch open.Name {
-	//case  "(": return close.Name == ")"
-	//case  "[": return close.Name == "]"
-	//case  "{": return close.Name == "}"
-	//default: return false
-	//}
 }
 
 // TODO generalize
 func (operators *Operators) IsUnaryPrefix(token string) bool {
-	return token == "+" || token == "-"
+	_, ok := operators.brackets[token]
+	return ok
+	//return token == "+" || token == "-"
 }
 
 func (operators *Operators) AddStandardCOperators() {

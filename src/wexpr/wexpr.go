@@ -75,4 +75,8 @@ func main () {
 			grammar.PushValue(token)
 		}
 	}
+	//fmt.Printf("Errors: %d\n", context.Errors)
+	if context.Errors > 0 {
+		os.Exit(1)
+	}
 }
