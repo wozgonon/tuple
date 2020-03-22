@@ -20,7 +20,7 @@ import "io"
 import "unicode"
 
 /////////////////////////////////////////////////////////////////////////////
-// Lisp Grammar
+// Lisp with conventional Prefix Grammar
 /////////////////////////////////////////////////////////////////////////////
 
 type LispGrammar struct {
@@ -48,6 +48,71 @@ func NewLispGrammar() Grammar {
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".",
 		"", "\n", "true", "false", ';', ""}
 	return LispGrammar{NewSExpressionParser(style)}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Lisp with an infix notation Grammar
+/////////////////////////////////////////////////////////////////////////////
+
+type LispWithInfixGrammar struct {
+	parser SExpressionParser
+	operators Operators
+}
+
+func (grammar LispWithInfixGrammar) Name() string {
+	return "Lisp with infix"
+}
+
+func (grammar LispWithInfixGrammar) FileSuffix() string {
+	return ".infix"
+}
+
+func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
+
+	operators := grammar.operators
+	operatorGrammar := NewOperatorGrammar(context, &operators)
+	for {
+		token, err := grammar.parser.GetNext(context)
+		if err == io.EOF {
+			operatorGrammar.EOF(context.next)
+			break
+		}
+		if token == "(" {
+			operatorGrammar.OpenBracket(Atom{"("})
+		} else if token == ")" {
+			operatorGrammar.CloseBracket(Atom{")"})
+
+		} else if atom, ok := token.(Atom); ok {
+			if operators.Precedence(atom) != -1 {
+				operatorGrammar.PushOperator(atom)
+			} else if operators.IsOpenBracket(atom) {
+				operatorGrammar.OpenBracket(atom)
+			} else if operators.IsCloseBracket(atom) {
+				operatorGrammar.CloseBracket(atom)
+			} else {
+				
+				operatorGrammar.PushValue(atom)
+			}
+		} else {
+			operatorGrammar.PushValue(token)
+		}
+	}
+
+	//operatorGrammar.parser.Parse(context)
+}
+
+func (grammar LispWithInfixGrammar) Print(token interface{}, next func(value string)) {
+	grammar.parser.Print(token, next)
+}
+
+func NewLispWithInfixGrammar() Grammar {
+	style := Style{"", "", "  ",
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
+		"", "\n", "true", "false", ';', ""}
+	operators := NewOperators()
+	operators.AddStandardCOperators()
+
+	return LispWithInfixGrammar{NewSExpressionParser(style), operators}
 }
 
 /////////////////////////////////////////////////////////////////////////////

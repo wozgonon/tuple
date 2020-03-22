@@ -73,36 +73,29 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 		if top == SPACE_ATOM { // TODO Could in principle generalize to make any binary operator n-ary
 			stack.context.Verbose("** REDUCE\t'%s'\n", top.Name)
 			stack.popOperator()
-			//tuple := NewTuple()
-			//tuple.Append(val1)
-			//tuple.Append(val2)
 			count := 2
 			for {
 				ll := len((*stack).operatorStack)
 				if ll == 0 {
 					break
 				}
-				top := (*stack).operatorStack[ll - 1]
+				nextTop := (*stack).operatorStack[ll - 1]
 				stack.context.Verbose("*** REDUCE\t'%s'\n", top.Name)
-				if top != SPACE_ATOM {
+				if nextTop != SPACE_ATOM {
 					break
 				}
 				stack.popOperator()
 				count += 1
-				//val := (*values) [lv - count]
-				//tuple.Append(val)
 			}
 			// TODO the following is not efficient and should be replaced with a slice: tuple := NewTuple(args...)
 			tuple := NewTuple()
+			//if top != SPACE_ATOM {
+			//	tuple.Append(top)
+			//}
 			args := (*values) [lv-count:]
 			for _,v := range args {
 				tuple.Append(v)
 			}
-			//tuple := NewTuple(args...)
-			////tuple := NewTuple(args[0], args[1])
-			//tuple := NewTuple(val1, val2)
-			//stack.context.Verbose(" LEN %d count=%d, %d... %d...  tupleLen=%d\n", lv-count, count, len(args), len(*values), tuple.Length())
-			//stack.context.Verbose(" REDUCE1:\t'SPACE'\t'%s'\t'%s'\t...%d...\n", val1, val2, tuple.Length())
 			stack.context.Verbose(" REDUCE:\t'SPACE'\t'%s'\t'%s'\t...%d...   \n", tuple.List[0], tuple.List[1], tuple.Length()) //, tuple.List==(*values))
 			(*stack).Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
 			return count - 2
@@ -120,9 +113,6 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 func (stack * OperatorGrammar) PushValue(value interface{}) {
 	if ! (*stack).wasOperator {
 		stack.PushOperator(SPACE_ATOM)
-		//stack.context.Error("Unexpected value '%s' after value %s\n", value)
-		// TODO handle this situation, flush current contents or add a comma operator
-		//	return
 	}
 	stack.context.Verbose("PUSH VALUE\t'%s'\n", value)
 	(*stack).Values.Append(value)

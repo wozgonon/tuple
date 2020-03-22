@@ -53,6 +53,7 @@ func main() {
 	//
 
 	grammars := tuple.NewGrammars()
+	grammars.Add(tuple.NewLispWithInfixGrammar())
 	grammars.Add((tuple.NewLispGrammar()))
 	grammars.Add((tuple.NewTclGrammar()))
 	//grammars.Add((tuple.NewJmlGrammar()))
