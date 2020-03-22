@@ -50,7 +50,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version test_basic test_arithmetic test_tcl test_yaml test_query test_json test_wexpr # test_infix
+test: version test_basic test_arithmetic test_tcl test_yaml test_query test_json test_infix test_wexpr # test_infix
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -89,10 +89,11 @@ test_yaml: ${TDIR}test.l  ${TDIR}test.yaml.golden test_dirs all
 	bin/wozg --out .yaml $<  > ${T1DIR}test.yaml
 	diff -y --suppress-common-lines ${T1DIR}test.yaml ${TDIR}test.yaml.golden
 
-test_infix: ${TDIR}infix.l test_dirs  all
-	bin/wozg $<  > ${T1DIR}$<
-	@bin/wozg ${T1DIR}$<  > ${T2DIR}$<
-	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
+test_infix: ${TDIR}test.infix test_dirs  all
+	bin/wozg $<  > ${T1DIR}test.infix.l
+	@bin/wozg ${T1DIR}test.infix.l  > ${T2DIR}test.infix.l
+	@diff -y --suppress-common-lines ${T1DIR}test.infix.l ${T2DIR}test.infix.l
+	@diff -y --suppress-common-lines ${T1DIR}test.infix.l ${TDIR}test.infix.l.golden
 
 test_query:
 	bin/wozg --query a.*.c ${TDIR}nested.l > ${T1DIR}nested.l

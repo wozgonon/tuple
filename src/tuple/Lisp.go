@@ -97,11 +97,10 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 			operatorGrammar.PushValue(token)
 		}
 	}
-
-	//operatorGrammar.parser.Parse(context)
 }
 
 func (grammar LispWithInfixGrammar) Print(token interface{}, next func(value string)) {
+	// TODO
 	grammar.parser.Print(token, next)
 }
 
@@ -113,6 +112,70 @@ func NewLispWithInfixGrammar() Grammar {
 	operators.AddStandardCOperators()
 
 	return LispWithInfixGrammar{NewSExpressionParser(style), operators}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Conventional arithmetic expression grammar Lisp with an infix notation Grammar
+/////////////////////////////////////////////////////////////////////////////
+
+type InfixGrammar struct {
+	parser SExpressionParser
+	operators Operators
+}
+
+func (grammar InfixGrammar) Name() string {
+	return "Lisp with infix"
+}
+
+func (grammar InfixGrammar) FileSuffix() string {
+	return ".infix"
+}
+
+func (grammar InfixGrammar) Parse(context * ParserContext) {
+
+	operators := grammar.operators
+	operatorGrammar := NewOperatorGrammar(context, &operators)
+	for {
+		token, err := grammar.parser.GetNext(context)
+		if err == io.EOF {
+			operatorGrammar.EOF(context.next)
+			break
+		}
+		if token == "(" {
+			operatorGrammar.OpenBracket(Atom{"("})
+		} else if token == ")" {
+			operatorGrammar.CloseBracket(Atom{")"})
+
+		} else if atom, ok := token.(Atom); ok {
+			if operators.Precedence(atom) != -1 {
+				operatorGrammar.PushOperator(atom)
+			} else if operators.IsOpenBracket(atom) {
+				operatorGrammar.OpenBracket(atom)
+			} else if operators.IsCloseBracket(atom) {
+				operatorGrammar.CloseBracket(atom)
+			} else {
+				
+				operatorGrammar.PushValue(atom)
+			}
+		} else {
+			operatorGrammar.PushValue(token)
+		}
+	}
+}
+
+func (grammar InfixGrammar) Print(token interface{}, next func(value string)) {
+	// TODO
+	grammar.parser.Print(token, next)
+}
+
+func NewInfixGrammar() Grammar {
+	style := Style{"", "", "  ",
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
+		"", "\n", "true", "false", ';', ""}
+	operators := NewOperators()
+	operators.AddStandardCOperators()
+
+	return InfixGrammar{NewSExpressionParser(style), operators}
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -180,9 +180,9 @@ func (stack * OperatorGrammar) EOF(next Next) {
 func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	stack.context.Verbose("*PushOperator '%s'", atom.Name)
 
+	unaryOperator, ok := stack.operators.unary[atom.Name]
+	unary := (*stack).wasOperator && ok
 	if atom != SPACE_ATOM {
-		unaryOperator, ok := stack.operators.unary[atom.Name]
-		unary := (*stack).wasOperator && ok
 		if unary {
 			atom = unaryOperator
 		}
@@ -200,10 +200,13 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 			}
 		}
 	}
-	stack.pushOperator(atom)
-	
-	// TODO postfix
-	(*stack).wasOperator = true
+	if ! unary && (*stack).wasOperator {
+		stack.context.Error("Unexpected binary operator '%s'", atom.Name)
+	} else {
+		stack.pushOperator(atom)
+		// TODO postfix
+		(*stack).wasOperator = true
+	}
 }
 
 
@@ -259,13 +262,13 @@ func (operators *Operators) IsUnaryPrefix(token string) bool {
 }
 
 func (operators *Operators) AddStandardCOperators() {
-	operators.unary["-"] = Atom{"_unary_-"}
-	operators.unary["+"] = Atom{"_unary_+"}
+	operators.unary["-"] = Atom{"_unary_minus"}
+	operators.unary["+"] = Atom{"_unary_plus"}
 	operators.brackets[OPEN_BRACKET] = CLOSE_BRACKET
 	operators.brackets[OPEN_SQUARE_BRACKET] = CLOSE_SQUARE_BRACKET
 	operators.brackets[OPEN_BRACE] = CLOSE_BRACE
-	operators.Add("_unary_+", 110)
-	operators.Add("_unary_-", 110)
+	operators.Add("_unary_plus", 110)
+	operators.Add("_unary_minus", 110)
 	operators.Add("^", 100)
 	operators.Add("*", 90)
 	operators.Add("/", 90)

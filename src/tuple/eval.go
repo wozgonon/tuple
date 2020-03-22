@@ -17,6 +17,7 @@
 package tuple
 
 import "math"
+import "strings"
 
 //  A simple toy evaluator
 
@@ -71,6 +72,15 @@ func eval(expression interface{}) interface{} {
 		name := atom.Name
 		switch ll {
 		case 2:
+			if str, ok := evaluated[0].(string); ok {
+				switch name {
+				case "len": return len(str)
+				case "lower": return strings.ToLower(str)
+				case "upper": return strings.ToUpper(str)
+				default: return math.NaN()
+				}
+			}
+			
 			aa := toFloat64(evaluated[0])
 			switch name {
 			case "log":
@@ -83,8 +93,8 @@ func eval(expression interface{}) interface{} {
 			case "asin": return math.Asin(aa)
 			case "atan": return math.Atan(aa)
 			case "round": return math.Round(aa)
-			case "_unary_-": return -aa
-			case "_unary_+": return aa
+			case "_unary_minus": return -aa
+			case "_unary_plus": return aa
 			default: return math.NaN()
 			}
 		case 3:

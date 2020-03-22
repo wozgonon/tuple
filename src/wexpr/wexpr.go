@@ -28,7 +28,6 @@ func main () {
 	args := os.Args[argsLength-numberOfFiles:]
 	expression := strings.Join(args, " ")
 
-
 	//
 	//  Set up the translator pipeline.
 	//
@@ -38,6 +37,7 @@ func main () {
 	logGrammar := tuple.NewLispGrammar()
 	context := tuple.NewParserContext("<cli>", reader, logGrammar, *verbose, pipeline)
 	grammar := tuple.NewLispWithInfixGrammar()
+	//grammar := tuple.InfixGrammar()
 
 	//
 	//  Set up the translator pipeline.

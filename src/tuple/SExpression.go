@@ -121,7 +121,7 @@ func (parser SExpressionParser) GetNext(context * ParserContext) (interface{}, e
 		case ch == parser.KeyValueSeparator : return parser.style.KeyValueSeparator, nil
 		case IsArithmetic(ch): return Atom{string(ch)}, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
 		case IsCompare(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) })
-		case unicode.IsLetter(ch):  return ReadAtom(context, string(ch), func(r rune) bool { return unicode.IsLetter(r) || unicode.IsNumber(r) })
+		case ch == '_' || unicode.IsLetter(ch):  return ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) })
 		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
 		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
 		default: context.Error("Error character not recognised '%d'", ch)
