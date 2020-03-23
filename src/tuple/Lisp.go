@@ -77,11 +77,10 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 			operatorGrammar.EOF(context.next)
 			break
 		}
-		if token == "(" {
-			operatorGrammar.OpenBracket(Atom{"("})
-		} else if token == ")" {
-			operatorGrammar.CloseBracket(Atom{")"})
-
+		if token == grammar.parser.style.Open {
+			operatorGrammar.OpenBracket(Atom{grammar.parser.style.Open})
+		} else if token == grammar.parser.style.Close {
+			operatorGrammar.CloseBracket(Atom{grammar.parser.style.Close})
 		} else if atom, ok := token.(Atom); ok {
 			if operators.Precedence(atom) != -1 {
 				operatorGrammar.PushOperator(atom)
