@@ -16,11 +16,6 @@
 */
 package tuple
 
-import "fmt"
-import "log"
-import "strconv"
-import "reflect"
-import "math"
 import "io"
 import "unicode"
 import "unicode/utf8"
@@ -222,29 +217,8 @@ func (parser SExpressionParser) printScalar(token interface{}, out func(value st
 		} else {
 			out(token.(Atom).Name)
 		}
-	case string:
-		quote(token.(string), out)   // TODO Escape
-	case bool:
-		if token.(bool) {
-			out(style.True)
-		} else {
-			out(style.False)
-		}				
-	case Comment:
-		out(string(style.OneLineComment))
-		out(token.(Comment).Comment)
-	case int64:
-		out(strconv.FormatInt(int64(token.(int64)), 10))
-	case float64:
-		float := token.(float64)
-		if math.IsInf(float, 64) {
-			out("Inf")  // Do not print +Inf
-		} else {
-			out(fmt.Sprint(token.(float64)))
-		}
 	default:
-		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);
-		out(UNKNOWN)
+		PrintScalar(style, "", token, out)
 	}
 }
 
