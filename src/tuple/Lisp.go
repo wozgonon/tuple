@@ -108,6 +108,7 @@ func NewLispWithInfixGrammar() Grammar {
 		"", "\n", "true", "false", ';', ""}
 	operators := NewOperators(style)
 	operators.AddStandardCOperators()
+	operators.Add(".", 105) // CONS Operator
 	return LispWithInfixGrammar{NewSExpressionParser(style), operators}
 }
 

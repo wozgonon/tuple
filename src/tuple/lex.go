@@ -93,6 +93,9 @@ func ReadNumber(context * ParserContext, token string) (interface{}, error) {  /
 			break
 		}
 	}
+	if token == "." {
+		return Atom{"."}, nil
+	}
 	//return Number{dots=true,token}
 	switch dots {
 	case 0: return strconv.ParseInt(token, 10, 0)

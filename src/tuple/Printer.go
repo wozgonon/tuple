@@ -83,8 +83,8 @@ func PrintExpression(printer Printer, depth string, token interface{}, out Strin
 		} else {
 			head := tuple.List[0]
 			atom, ok := head.(Atom)
-			//fmt.Print("Tuple [%s] %d\n", atom, len)
-			if ok {
+			//log.Printf("Tuple [%s] %d\n", atom, len)
+			if ok {  // TODO and head in a (binary) operator
 				switch len {
 				case 1:
 					printer.PrintIndent(depth, out)

@@ -211,6 +211,9 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	if ! unary && (*stack).wasOperator {
 		stack.context.Error("Unexpected binary operator '%s'", atom.Name)
 	} else {
+		if atom.Name == "." {
+			atom = CONS_ATOM
+		}
 		stack.pushOperator(atom)
 		// TODO postfix
 		(*stack).wasOperator = true
@@ -309,19 +312,22 @@ func (operators Operators) PrintUnaryOperator(depth string, atom Atom, value int
 
 func (operators Operators) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
 
-	out(operators.Style.Open)
-	newDepth := depth + "  "
-	operators.PrintSuffix(newDepth, out)
+	if _, ok := operators.precedence[atom.Name]; ok {
+		out(operators.Style.Open)
+		newDepth := depth + "  "
+		operators.PrintSuffix(newDepth, out)
+		
+		PrintExpression(operators, newDepth, value1, out)
 
-	PrintExpression(operators, newDepth, value1, out)
+		operators.PrintIndent(newDepth, out)
+		out(atom.Name)
+		operators.PrintSuffix(newDepth, out)
 
-	operators.PrintIndent(newDepth, out)
-	out(atom.Name)
-	operators.PrintSuffix(newDepth, out)
+		PrintExpression(operators, newDepth, value2, out)
 
-	PrintExpression(operators, newDepth, value2, out)
-
-	operators.PrintIndent(depth, out)
-	out(operators.Style.Close)
-	
+		operators.PrintIndent(depth, out)
+		out(operators.Style.Close)
+	} else {
+		PrintTuple(&operators, depth, NewTuple(atom, value1, value2), out)
+	}
 }
