@@ -141,11 +141,22 @@ func (stack * OperatorGrammar) CloseBracket(token Atom) {
 	stack.context.Verbose("CLOSE '%s'", token.Name)
 	lo := len(stack.operatorStack)
 	if lo == 0 || (*stack).wasOperator {
-		// TODO this should return an error
-		stack.context.UnexpectedCloseBracketError (token.Name)
-		return
+		if lo > 0 && stack.operators.IsOpenBracket(stack.operatorStack[lo-1]) {  // '()'  Empty list, is this always okay
+			(*stack).wasOperator = false
+			stack.popOperator()
+			//lv := stack.Values.Length()
+			values := (*stack).Values.List
+			(*stack).Values.List = append(values, NewTuple())
+			stack.context.Verbose(" REDUCE:\t'()'\n")
+			return
+		} else {
+			// TODO this should return an error
+			stack.context.UnexpectedCloseBracketError (token.Name)
+			return
+		}
 	}
 
+	(*stack).wasOperator = false
 	for index := lo-1 ; index >= 0; index -= 1 {
 		top := stack.operatorStack[index]
 		if stack.operators.IsOpenBracket(top) {

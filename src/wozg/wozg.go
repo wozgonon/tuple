@@ -57,7 +57,7 @@ func main() {
 	grammars.Add((tuple.NewLispGrammar()))
 	grammars.Add((tuple.NewTclGrammar()))
 	//grammars.Add((tuple.NewJmlGrammar()))
-	grammars.Add((tuple.NewTupleGrammar()))
+	grammars.Add((tuple.NewInfixExpressionGrammar()))
 	grammars.Add((tuple.NewYamlGrammar()))
 	grammars.Add((tuple.NewIniGrammar()))
 	grammars.Add((tuple.NewPropertyGrammar()))

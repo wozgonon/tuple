@@ -113,24 +113,28 @@ func NewLispWithInfixGrammar() Grammar {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Conventional arithmetic expression grammar Lisp with an infix notation Grammar
+// Conventional arithmetic expression grammar,
+// with an infix notation and conventional function call syntax a(b, c, ...)
 /////////////////////////////////////////////////////////////////////////////
 
-type InfixGrammar struct {
+type InfixExpressionGrammar struct {
 	parser SExpressionParser
 	operators Operators
 }
 
-func (grammar InfixGrammar) Name() string {
+func (grammar InfixExpressionGrammar) Name() string {
 	return "Lisp with infix"
 }
 
-func (grammar InfixGrammar) FileSuffix() string {
-	return ".infix"
+func (grammar InfixExpressionGrammar) FileSuffix() string {
+	return ".expr"
 }
 
-func (grammar InfixGrammar) Parse(context * ParserContext) {
+func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 
+	open := grammar.parser.style.Open
+	close := grammar.parser.style.Close
+	
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
@@ -139,10 +143,15 @@ func (grammar InfixGrammar) Parse(context * ParserContext) {
 			operatorGrammar.EOF(context.next)
 			break
 		}
-		if token == "(" {
-			operatorGrammar.OpenBracket(Atom{"("})
-		} else if token == ")" {
-			operatorGrammar.CloseBracket(Atom{")"})
+		if err != nil {
+			// TODO 
+			break
+		}
+
+		if token == open {
+			operatorGrammar.OpenBracket(Atom{open})
+		} else if token == close {
+			operatorGrammar.CloseBracket(Atom{close})
 
 		} else if atom, ok := token.(Atom); ok {
 			if operators.Precedence(atom) != -1 {
@@ -152,7 +161,21 @@ func (grammar InfixGrammar) Parse(context * ParserContext) {
 			} else if operators.IsCloseBracket(atom) {
 				operatorGrammar.CloseBracket(atom)
 			} else {
-				
+				ch, err := context.ReadRune()
+				if err == io.EOF {
+					operatorGrammar.PushValue(atom)
+					operatorGrammar.EOF(context.next)
+					break
+				}
+				if err != nil {
+					// TODO 
+					break
+				}
+				if ch == grammar.parser.openChar {
+					operatorGrammar.OpenBracket(Atom{open})
+				} else {
+					context.UnreadRune()
+				}
 				operatorGrammar.PushValue(atom)
 			}
 		} else {
@@ -161,20 +184,24 @@ func (grammar InfixGrammar) Parse(context * ParserContext) {
 	}
 }
 
-func (grammar InfixGrammar) Print(token interface{}, next func(value string)) {
-	// TODO
+func (grammar InfixExpressionGrammar) Print(token interface{}, next func(value string)) {
 	PrintExpression(&(grammar.operators), "", token, next)
-	//grammar.parser.Print(token, next)
 }
 
-func NewInfixGrammar() Grammar {
+func NewInfixExpressionGrammar() Grammar {
 	style := Style{"", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
-		"", "\n", "true", "false", ';', ""}
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", ":",
+		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
+
+
+	//style := Style{"", "", "  ",
+	//	OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
+	//	"", "\n", "true", "false", ';', ""}
 	operators := NewOperators(style)
 	operators.AddStandardCOperators()
+	operators.Add(".", 105) // CONS Operator
 
-	return InfixGrammar{NewSExpressionParser(style), operators}
+	return InfixExpressionGrammar{NewSExpressionParser(style), operators}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -376,105 +403,6 @@ func NewJmlGrammar() Grammar {
 	style := Style{"\n", "", "  ", OPEN_BRACE, CLOSE_BRACE, "", "\n", "true", "false", '#'}
 	return Jml{NewSExpressionParser(style)}
 }*/
-
-/////////////////////////////////////////////////////////////////////////////
-// Tuple Grammar
-/////////////////////////////////////////////////////////////////////////////
-
-type TupleGrammar struct {
-	parser SExpressionParser
-}
-
-func (grammar TupleGrammar) Name() string {
-	return "TupleGrammar"
-}
-
-func (grammar TupleGrammar) FileSuffix() string {
-	return ".tuple"
-}
-
-func (grammar TupleGrammar) parseCommaTuple(context * ParserContext, tuple *Tuple) (error) {
-
-	parser := grammar.parser
-	// TODO comma and semi-colon
-	for {
-		token, err := parser.GetNext(context)
-		switch {
-		case err != nil:
-			context.Error("parsing %s", err);
-			return err /// ??? Any need to return
-		case token == parser.style.Close:
-			return nil
-		case token == parser.style.Open:
-			subTuple := NewTuple()
-			err := grammar.parseCommaTuple(context, &subTuple)
-			if err == io.EOF {
-				context.Error ("Missing close bracket")
-				return err
-			}
-			if err != nil {
-				return err
-			}
-			tuple.Append(subTuple)
-		default:
-			if _,ok := token.(Comment); ok {
-				// TODO Ignore ???
-			} else {
-				tuple.Append(token)
-			}
-		}
-	}
-
-}
-
-func (grammar TupleGrammar) Parse(context * ParserContext) {
-
-	parser := grammar.parser
-	for {
-		token, err := parser.GetNext(context)
-		switch {
-		case err == io.EOF:
-			return
-		case err != nil:
-			context.Error ("'%s'", err)
-			return
-		case token == parser.style.Close:
-			context.UnexpectedCloseBracketError (parser.style.Close)
-		default:
-			if atom,ok := token.(Atom); ok {
-				bracket, err := parser.GetNext(context)
-				if err != nil {
-					context.Error ("'%s'", err)
-					return
-				}
-				if bracket != parser.style.Open {
-					context.Error ("Expected open bracket '%s' after '%s', not '%s'", parser.style.Open, token, bracket)
-				} else {
-					subTuple := NewTuple()
-					subTuple.Append(atom)
-					err := grammar.parseCommaTuple(context, &subTuple)
-					if err != nil {
-						return
-					}
-					context.next(subTuple)
-				}
-			} else {
-				context.next(token)
-			}
-		}
-	}
-}
-
-func (grammar TupleGrammar) Print(token interface{}, next func(value string)) {
-	grammar.parser.Print(token, next)
-}
-
-func NewTupleGrammar() Grammar {
-	style := Style{"", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", ":",
-		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
-	return TupleGrammar{NewSExpressionParser(style)}
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // Yaml Grammar
