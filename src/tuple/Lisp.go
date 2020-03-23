@@ -39,8 +39,8 @@ func (grammar LispGrammar) Parse(context * ParserContext) {
 	grammar.parser.Parse(context)
 }
 
-func (grammar LispGrammar) Print(token interface{}, next func(value string)) {
-	grammar.parser.Print(token, next)
+func (grammar LispGrammar) Print(object interface{}, out func(value string)) {
+	PrintExpression(&(grammar.parser.style), "", object, out)
 }
 
 func NewLispGrammar() Grammar {
@@ -100,17 +100,15 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 }
 
 func (grammar LispWithInfixGrammar) Print(token interface{}, next func(value string)) {
-	// TODO
-	grammar.parser.Print(token, next)
+	PrintExpression(&(grammar.operators), "", token, next)
 }
 
 func NewLispWithInfixGrammar() Grammar {
 	style := Style{"", "", "  ",
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
 		"", "\n", "true", "false", ';', ""}
-	operators := NewOperators()
+	operators := NewOperators(style)
 	operators.AddStandardCOperators()
-
 	return LispWithInfixGrammar{NewSExpressionParser(style), operators}
 }
 
@@ -165,14 +163,15 @@ func (grammar InfixGrammar) Parse(context * ParserContext) {
 
 func (grammar InfixGrammar) Print(token interface{}, next func(value string)) {
 	// TODO
-	grammar.parser.Print(token, next)
+	PrintExpression(&(grammar.operators), "", token, next)
+	//grammar.parser.Print(token, next)
 }
 
 func NewInfixGrammar() Grammar {
 	style := Style{"", "", "  ",
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
 		"", "\n", "true", "false", ';', ""}
-	operators := NewOperators()
+	operators := NewOperators(style)
 	operators.AddStandardCOperators()
 
 	return InfixGrammar{NewSExpressionParser(style), operators}

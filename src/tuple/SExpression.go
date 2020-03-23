@@ -26,29 +26,6 @@ import "unicode"
 import "unicode/utf8"
 import "errors"
 
-/////////////////////////////////////////////////////////////////////////////
-//
-/////////////////////////////////////////////////////////////////////////////
-
-type Style struct {
-	StartDoc string
-	EndDoc string
-	Indent string
-
-	Open string
-	Close string
-	Open2 string
-	Close2 string
-	KeyValueSeparator string
-	
-	Separator string
-	LineBreak string
-	True string
-	False string
-	OneLineComment rune
-	ScalarPrefix string
-}
-
 // A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
 //
 // See https://en.wikipedia.org/wiki/S-expression
@@ -100,25 +77,26 @@ func readRune(context * ParserContext, parser SExpressionParser) (rune, error) {
 
 func (parser SExpressionParser) GetNext(context * ParserContext) (interface{}, error) {
 
+	style := parser.style
 	for {
 		ch, err := readRune(context, parser)
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
-		case ch == parser.style.OneLineComment:
+		case ch == style.OneLineComment:
 			_, err = ReadUntilEndOfLine(context)
 			if err != nil {
 				return nil, err
 			}
-		case ch == parser.openChar : return parser.style.Open, nil
-		case ch == parser.closeChar : return parser.style.Close, nil
-		case ch == parser.openChar2 : return parser.style.Open2, nil
-		case ch == parser.closeChar2 : return parser.style.Close2, nil
+		case ch == parser.openChar : return style.Open, nil
+		case ch == parser.closeChar : return style.Close, nil
+		case ch == parser.openChar2 : return style.Open2, nil
+		case ch == parser.closeChar2 : return style.Close2, nil
 		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
-		case ch == parser.KeyValueSeparator : return parser.style.KeyValueSeparator, nil
+		case ch == parser.KeyValueSeparator : return style.KeyValueSeparator, nil
 		case IsArithmetic(ch): return Atom{string(ch)}, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
 		case IsCompare(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) })
 		case ch == '_' || unicode.IsLetter(ch):  return ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) })
@@ -344,13 +322,12 @@ func (parser SExpressionParser) printObject(depth string, token interface{}, out
 	}
 }
 
-/////////////////////////////////////////////////////////////////////////////
-
 //  Converts the given object into a text string that can be parsed as an SExpression
 //  See the Grammar interface.
-func (parser SExpressionParser) Print(object interface{}, out func(value string)) {
+func (parser SExpressionParser) Print(object interface{}, out StringFunction) {
 
 	parser.printObject("", object, out)
+	//PrintExpression(parser.style, "", object, out)  // TODO Use Printer
 	out (string(NEWLINE))
 }
 

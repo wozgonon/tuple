@@ -93,8 +93,10 @@ func eval(expression interface{}) interface{} {
 			case "asin": return math.Asin(aa)
 			case "atan": return math.Atan(aa)
 			case "round": return math.Round(aa)
-			case "_unary_minus": return -aa
-			case "_unary_plus": return aa
+			case "-": return -aa
+			case "+": return aa
+			//case "_unary_minus": return -aa
+			//case "_unary_plus": return aa
 			default: return math.NaN()
 			}
 		case 3:

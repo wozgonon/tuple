@@ -31,7 +31,7 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	outputGrammar := tuple.NewLispGrammar()
+	outputGrammar := tuple.NewLispWithInfixGrammar()
 	pipeline := tuple.SimplePipeline (!*ast, *queryPattern, &outputGrammar)
 	reader := bufio.NewReader(strings.NewReader(expression))
 	logGrammar := tuple.NewLispGrammar()

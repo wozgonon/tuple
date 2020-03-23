@@ -54,11 +54,19 @@ func (stack * OperatorGrammar) popOperator() {
 }
 
 func (stack * OperatorGrammar) reduceUnary(top Atom) {
+
+	var name Atom
+	switch top.Name {
+	case "_unary_minus": name = Atom{"-"}
+	case "_unary_plus": name = Atom{"+"}
+	default: name = top
+	}
+
 	values := &((*stack).Values.List)
 	lv := stack.Values.Length()
 	val1 := (*values) [lv - 1]
-	(*stack).Values.List = append((*values)[:lv-1], NewTuple(top, val1))
-	stack.context.Verbose(" REDUCE:\t%s\t'%s'\n", top.Name, val1)
+	(*stack).Values.List = append((*values)[:lv-1], NewTuple(name, val1))
+	stack.context.Verbose(" REDUCE:\t%s\t'%s'\n", name.Name, val1)
 }
 
 // Replace top of value stack with an expression
@@ -216,13 +224,14 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 
 // A table of operators
 type Operators struct {
+	Style
 	precedence map[string]int
 	unary map[string]Atom
 	brackets map[string]string
 }
 
-func NewOperators() Operators {
-	return Operators{make(map[string]int, 0), make(map[string]Atom, 0), make(map[string]string, 0)}
+func NewOperators(style Style) Operators {
+	return Operators{style, make(map[string]int, 0), make(map[string]Atom, 0), make(map[string]string, 0)}
 }
 
 func (operators *Operators) Add(operator string, precedence int) {
@@ -258,7 +267,6 @@ func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
 func (operators *Operators) IsUnaryPrefix(token string) bool {
 	_, ok := operators.brackets[token]
 	return ok
-	//return token == "+" || token == "-"
 }
 
 func (operators *Operators) AddStandardCOperators() {
@@ -285,4 +293,35 @@ func (operators *Operators) AddStandardCOperators() {
 	//operators.Add(",", 40)
 	//operators.Add(";", 30)
 	operators.Add(SPACE_ATOM.Name, 10)  // TODO space???
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Printer
+/////////////////////////////////////////////////////////////////////////////
+
+func (operators Operators) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
+	PrintTuple(&operators, depth, NewTuple(atom), out)
+}
+
+func (operators Operators) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+	PrintTuple(&operators, depth, NewTuple(atom, value), out)
+}
+
+func (operators Operators) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+
+	out(operators.Style.Open)
+	newDepth := depth + "  "
+	operators.PrintSuffix(newDepth, out)
+
+	PrintExpression(operators, newDepth, value1, out)
+
+	operators.PrintIndent(newDepth, out)
+	out(atom.Name)
+	operators.PrintSuffix(newDepth, out)
+
+	PrintExpression(operators, newDepth, value2, out)
+
+	operators.PrintIndent(depth, out)
+	out(operators.Style.Close)
+	
 }
