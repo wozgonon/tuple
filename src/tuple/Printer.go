@@ -25,12 +25,13 @@ type Printer interface {
 
 	PrintIndent(depth string, out StringFunction)
 	PrintSuffix(depth string, out StringFunction)
+	PrintSeparator(depth string, out StringFunction)
 	PrintEmptyTuple(depth string, out StringFunction)
 	PrintNullaryOperator(depth string, atom Atom, out StringFunction)
 	PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction)
 	PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction)
-	PrintOpenTuple(depth string, out StringFunction) string
-	PrintCloseTuple(depth string, out StringFunction)
+	PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string
+	PrintCloseTuple(depth string, tuple Tuple, out StringFunction)
 	PrintAtom(depth string, value Atom, out StringFunction)
 	PrintInt64(depth string, value int64, out StringFunction)
 	PrintFloat64(depth string, value float64, out StringFunction)
@@ -61,25 +62,36 @@ func PrintScalar(printer Printer, depth string, token interface{}, out StringFun
 }
 
 func PrintTuple(printer Printer, depth string, tuple Tuple, out StringFunction) {
-	newDepth := printer.PrintOpenTuple(depth, out)
+	newDepth := printer.PrintOpenTuple(depth, tuple, out)
 	printer.PrintSuffix(depth, out)
-	for _, value := range tuple.List {
-		PrintExpression(printer, newDepth, value, out)
+	ll := len(tuple.List)
+	for k, value := range tuple.List {
+		printer.PrintIndent(newDepth, out)
+		PrintExpression1(printer, newDepth, value, out)
+		if k < ll-1 {
+			printer.PrintSeparator(newDepth, out)
+		}
+		printer.PrintSuffix(depth, out)
+
 	}
 	printer.PrintIndent(depth, out)
-	printer.PrintCloseTuple(depth, out)
+	printer.PrintCloseTuple(depth, tuple, out)
 }
 
 func PrintExpression(printer Printer, depth string, token interface{}, out StringFunction) {
+	printer.PrintIndent(depth, out)
+	PrintExpression1(printer, depth, token, out)
+	printer.PrintSuffix(depth, out)
+}
+
+func PrintExpression1(printer Printer, depth string, token interface{}, out StringFunction) {
 
 	switch token.(type) {
 	case Tuple:
 		tuple := token.(Tuple)
 		len := len(tuple.List)
 		if len == 0 {
-			printer.PrintIndent(depth, out)
 			printer.PrintEmptyTuple(depth, out)
-			printer.PrintSuffix(depth, out)
 		} else {
 			head := tuple.List[0]
 			atom, ok := head.(Atom)
@@ -87,31 +99,19 @@ func PrintExpression(printer Printer, depth string, token interface{}, out Strin
 			if ok {  // TODO and head in a (binary) operator
 				switch len {
 				case 1:
-					printer.PrintIndent(depth, out)
 					printer.PrintNullaryOperator(depth, atom, out)
-					printer.PrintSuffix(depth, out)
 				case 2:
-					printer.PrintIndent(depth, out)
 					printer.PrintUnaryOperator(depth, atom, tuple.List[1], out)
-					printer.PrintSuffix(depth, out)
 				case 3:
-					printer.PrintIndent(depth, out)
 					printer.PrintBinaryOperator(depth, atom, tuple.List[1], tuple.List[2], out)
-					printer.PrintSuffix(depth, out)
 				default:
-					printer.PrintIndent(depth, out)
 					PrintTuple(printer, depth, tuple, out)
-					printer.PrintSuffix(depth, out)
 				}
 			} else {
-				printer.PrintIndent(depth, out)
 				PrintTuple(printer, depth, tuple, out)
-				printer.PrintSuffix(depth, out)
 			}
 		}
 	default:
-		printer.PrintIndent(depth, out)
 		PrintScalar(printer, depth, token, out)
-		printer.PrintSuffix(depth, out)
 	}
 }

@@ -222,17 +222,6 @@ func (parser SExpressionParser) printScalar(token interface{}, out func(value st
 	}
 }
 
-func (parser SExpressionParser) isCons(tuple Tuple) bool {
-	if tuple.Length() > 0 {
-		head := tuple.List[0]
-		atom, ok := head.(Atom)
-		if ok && atom == CONS_ATOM {
-			return true
-		}
-	}
-	return false
-}
-
 func (parser SExpressionParser) printObject(depth string, token interface{}, out func(value string)) {
 
 	style := parser.style
@@ -251,7 +240,7 @@ func (parser SExpressionParser) printObject(depth string, token interface{}, out
 		first := ok && style.indentOnly()
 		if first {
 			out(atom.Name)
-		} else if parser.isCons(tuple) {
+		} else if tuple.IsCons() {
 			parser.printObject(depth, tuple.List[1], out)
 			if _, ok = tuple.List[2].(Tuple); ok {
 				out (" ")
@@ -267,7 +256,7 @@ func (parser SExpressionParser) printObject(depth string, token interface{}, out
 			return
 		}
 		tuple1, ok := tuple.List[0].(Tuple)
-		cons := ok && parser.isCons(tuple1)
+		cons := ok && tuple1.IsCons()
 		if cons {
 			// TODO Need a way to differentiate between [] and {}
 			out(style.Open2)
@@ -298,10 +287,9 @@ func (parser SExpressionParser) printObject(depth string, token interface{}, out
 
 //  Converts the given object into a text string that can be parsed as an SExpression
 //  See the Grammar interface.
-func (parser SExpressionParser) Print(object interface{}, out StringFunction) {
-
-	parser.printObject("", object, out)
-	//PrintExpression(parser.style, "", object, out)  // TODO Use Printer
-	out (string(NEWLINE))
-}
+//func (parser SExpressionParser) Print(object interface{}, out StringFunction) {
+//	parser.printObject("", object, out)
+//	//PrintExpression(parser.style, "", object, out)  // TODO Use Printer
+//	out (string(NEWLINE))
+//}
 

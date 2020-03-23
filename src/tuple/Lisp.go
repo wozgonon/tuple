@@ -662,8 +662,13 @@ func (grammar JSONGrammar) Parse(context * ParserContext) {
 	grammar.parser.Parse(context)
 }
 
-func (grammar JSONGrammar) Print(token interface{}, next func(value string)) {
-	grammar.parser.Print(token, next)
+func (grammar JSONGrammar) Print(object interface{}, out func(value string)) {
+
+	grammar.parser.printObject("", object, out)
+	//PrintExpression(parser.style, "", object, out)  // TODO Use Printer
+	out (string(NEWLINE))
+
+	//grammar.parser.Print(token, next)
 }
 
 func NewJSONGrammar() Grammar {

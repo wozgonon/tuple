@@ -58,6 +58,10 @@ func (style Style) PrintSuffix(depth string, out StringFunction) {
 	out(string(NEWLINE))
 }
 
+func (style Style) PrintSeparator(depth string, out StringFunction) {
+	//out(style.Separator)
+}
+
 func (style Style) PrintEmptyTuple(depth string, out StringFunction) {
 	out(style.Open)
 	out(style.Close)
@@ -75,13 +79,21 @@ func (style Style) PrintBinaryOperator(depth string, atom Atom, value1 interface
 	PrintTuple(&style, depth, NewTuple(atom, value1, value2), out)
 }
 
-func (style Style) PrintOpenTuple(depth string, out StringFunction) string {
-	out(style.Open)
+func (style Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
+	if tuple.IsCons() {
+		out(style.Open2)
+	} else {
+		out(style.Open)
+	}
 	return depth + "  "
 }
 
-func (style Style) PrintCloseTuple(depth string, out StringFunction) {
-	out(style.Close)
+func (style Style) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {
+	if tuple.IsCons() {
+		out(style.Close2)
+	} else {
+		out(style.Close)
+	}
 }
 
 func (style Style) PrintAtom(depth string, atom Atom, out StringFunction) {

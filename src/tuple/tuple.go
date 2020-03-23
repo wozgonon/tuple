@@ -80,6 +80,17 @@ func (tuple *Tuple) Length() int {
 //	return Tuple{make([]interface{}, 0)}
 //}
 
+func (tuple *Tuple) IsCons() bool {
+	if tuple.Length() > 0 {
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		if ok && atom == CONS_ATOM {
+			return true
+		}
+	}
+	return false
+}
+
 func NewTuple(values...interface{}) Tuple {
 	return Tuple{values}
 }
