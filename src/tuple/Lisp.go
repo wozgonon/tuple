@@ -300,6 +300,71 @@ func (grammar Tcl) parseCommandShellTuple(context * ParserContext, tuple *Tuple)
 	}
 }
 
+func (grammar Tcl) printObject1(depth string, token interface{}, out func(value string)) {
+
+	parser := grammar.parser
+	style := parser.style
+	if tuple, ok := token.(Tuple); ok {
+
+		len := len(tuple.List)
+		out(depth)
+		if len == 0 {
+			out(style.Open)
+			out(style.Close)
+			return
+		}
+		newDepth := depth + style.Indent
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		first := ok // && style.indentOnly()
+		if first {
+			out(atom.Name)
+		} else if tuple.IsCons() {
+			grammar.printObject1(depth, tuple.List[1], out)
+			if _, ok = tuple.List[2].(Tuple); ok {
+				out (" ")
+				out(style.KeyValueSeparator)
+				out (style.LineBreak)
+				grammar.printObject1(newDepth, tuple.List[2], out)
+			} else {
+				out (" ")
+				out(style.KeyValueSeparator)
+				out (" ")
+				PrintScalar(style, "", token, out)
+				//grammar.parser.style.printScalar(tuple.List[2], out)
+			}
+			return
+		}
+		tuple1, ok := tuple.List[0].(Tuple)
+		cons := ok && tuple1.IsCons()
+		if cons {
+			// TODO Need a way to differentiate between [] and {}
+			out(style.Open2)
+		} else {
+			out(style.Open)
+		}
+		out(style.LineBreak)
+		for k, token := range tuple.List {
+			grammar.printObject1(newDepth, token, out)
+			if ! first && k < len-1 {
+				out(style.Separator)
+				out(style.LineBreak)
+			}
+		}
+		out(style.LineBreak)
+		out(depth)
+		if cons {
+			out(style.Close2)
+		} else {
+			out(style.Close)
+		}
+	} else {
+		out(depth)
+		out(style.ScalarPrefix)
+		PrintScalar (parser.style, "", token, out)
+	}
+}
+
 func (grammar Tcl) Parse(context * ParserContext) {
 
 	parser := grammar.parser
@@ -359,14 +424,14 @@ func (grammar Tcl) Print(token interface{}, out func(value string)) {
 	if tuple, ok := token.(Tuple); ok {
 		len := len(tuple.List)
 		for k, token := range tuple.List {
-			grammar.parser.printObject("", token, out)
+			grammar.printObject1("", token, out)
 			if k < len-1 {
 				out(style.Indent)
 				out(style.Separator)
 			}
 		}
 	} else {
-		grammar.parser.printObject("", token, out)
+		grammar.printObject1("", token, out)
 	}
 	out (string(NEWLINE))
 }
@@ -464,7 +529,13 @@ func (grammar Yaml) printObject(depth string, token interface{}, out func(value 
 	} else {
 		out(depth)
 		out(style.ScalarPrefix)
-		grammar.parser.printScalar(token, out)
+
+		switch token.(type) {
+		case Atom:
+			quote(token.(Atom).Name, out)
+		default:
+			PrintScalar(style, "", token, out)
+		}
 	}
 }
 
@@ -551,7 +622,7 @@ func (grammar Ini ) printObject(depth string, key string, token interface{}, out
 	} else {
 		out(key) // TODO just key
 		out(style.ScalarPrefix)
-		grammar.parser.printScalar(token, out)
+		PrintScalar(grammar.parser.style, "", token, out)
 	}
 }
 
@@ -626,7 +697,7 @@ func (grammar PropertyGrammar) printObject(depth string, token interface{}, out 
 	} else {
 		out(depth)
 		out(style.ScalarPrefix)
-		grammar.parser.printScalar(token, out)
+		PrintScalar(grammar.parser.style, "", token, out)
 	}
 }
 
