@@ -45,7 +45,7 @@ func (grammar LispGrammar) Print(object interface{}, out func(value string)) {
 
 func NewLispGrammar() Grammar {
 	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".",
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", CONS_OPERATOR,
 		"", "\n", "true", "false", ';', "")
 	return LispGrammar{NewSExpressionParser(style)}
 }
@@ -107,11 +107,11 @@ func (grammar LispWithInfixGrammar) Print(token interface{}, next func(value str
 
 func NewLispWithInfixGrammar() Grammar {
 	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", CONS_OPERATOR, 
 		"", "\n", "true", "false", ';', "")
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	operators.Add(".", 105) // CONS Operator
+	operators.Add(CONS_OPERATOR, 105) // CONS Operator
 	return LispWithInfixGrammar{style, operators}
 }
 
@@ -197,13 +197,9 @@ func NewInfixExpressionGrammar() Grammar {
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ":",
 		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
 
-
-	//style := NewStyle("", "", "  ",
-	//	OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
-	//	"", "\n", "true", "false", ';', ""}
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	operators.Add(".", 105) // CONS Operator
+	operators.Add(CONS_OPERATOR, 105) // CONS Operator
 
 	return InfixExpressionGrammar{style, operators}
 }

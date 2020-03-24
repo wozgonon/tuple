@@ -44,18 +44,6 @@ type Atom struct {
 	Name string
 }
 
-const OPEN_BRACKET = "("
-const CLOSE_BRACKET = ")"
-const OPEN_SQUARE_BRACKET = "["
-const CLOSE_SQUARE_BRACKET = "]"
-const OPEN_BRACE = "{"
-const CLOSE_BRACE = "}"
-
-var (
-	SPACE_ATOM = Atom{" "}
-	CONS_ATOM = Atom{"_cons"}
-)
-
 // A textual comment
 type Comment struct {
 	// TODO include location and source for editors

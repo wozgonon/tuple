@@ -29,6 +29,21 @@ const DOUBLE_QUOTE = "\""
 const UNKNOWN = "<???>"
 const WORLD = "世界"
 
+const OPEN_BRACKET = "("
+const CLOSE_BRACKET = ")"
+const OPEN_SQUARE_BRACKET = "["
+const CLOSE_SQUARE_BRACKET = "]"
+const OPEN_BRACE = "{"
+const CLOSE_BRACE = "}"
+
+// LISP cons operator (https://en.wikipedia.org/wiki/Cons)
+const CONS_OPERATOR = "."
+
+var (
+	SPACE_ATOM = Atom{" "}
+	CONS_ATOM = Atom{"cons"}
+)
+
 /////////////////////////////////////////////////////////////////////////////
 //  Style
 /////////////////////////////////////////////////////////////////////////////
