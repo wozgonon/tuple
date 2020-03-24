@@ -108,7 +108,7 @@ func readRune(context * ParserContext, style Style) (rune, error) {
 	return ch, nil
 }
 
-func (style Style) GetNext(context * ParserContext, nextAtom func(atom Atom), nextLiteral func (literal interface{})) error {
+func (style Style) GetNext(context * ParserContext, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error {
 
 	ch, err := readRune(context, style)
 	switch {
@@ -123,10 +123,10 @@ func (style Style) GetNext(context * ParserContext, nextAtom func(atom Atom), ne
 			return err
 		}
 		// TODO next.NextComment
-	case ch == style.openChar : nextAtom(Atom{style.Open})
-	case ch == style.closeChar : nextAtom(Atom{style.Close})
-	case ch == style.openChar2 : nextAtom(Atom{style.Open2})
-	case ch == style.closeChar2 : nextAtom(Atom{style.Close2})
+	case ch == style.openChar : open(style.Open)
+	case ch == style.closeChar : close(style.Close)
+	case ch == style.openChar2 : open(style.Open2)
+	case ch == style.closeChar2 : close(style.Close2)
 		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
 	case ch == '"' :
 		value, err := ReadCLanguageString(context)

@@ -40,8 +40,6 @@ type Printer interface {
 	PrintComment(depth string, value Comment, out StringFunction)
 }
 
-type StringFunction func(value string)
-
 func PrintScalar(printer Printer, depth string, token interface{}, out StringFunction) {
 	switch token.(type) {
 	case Atom:

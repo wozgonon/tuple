@@ -73,22 +73,21 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
 		err := grammar.style.GetNext(context,
+			func (open string) {
+				operatorGrammar.OpenBracket(Atom{open})
+			},
+			func (close string) {
+				operatorGrammar.CloseBracket(Atom{close})
+			},
 			func (atom Atom) {
-				token := atom.Name
-				if token == grammar.style.Open {
-					operatorGrammar.OpenBracket(Atom{grammar.style.Open})
-				} else if token == grammar.style.Close {
-					operatorGrammar.CloseBracket(Atom{grammar.style.Close})
+				if operators.Precedence(atom) != -1 {
+					operatorGrammar.PushOperator(atom)
+				} else if operators.IsOpenBracket(atom) {
+					operatorGrammar.OpenBracket(atom)
+				} else if operators.IsCloseBracket(atom) {
+					operatorGrammar.CloseBracket(atom)
 				} else {
-					if operators.Precedence(atom) != -1 {
-						operatorGrammar.PushOperator(atom)
-					} else if operators.IsOpenBracket(atom) {
-						operatorGrammar.OpenBracket(atom)
-					} else if operators.IsCloseBracket(atom) {
-						operatorGrammar.CloseBracket(atom)
-					} else {
-						operatorGrammar.PushValue(atom)
-					}
+					operatorGrammar.PushValue(atom)
 				}
 			},
 			func (literal interface{}) {
@@ -137,43 +136,41 @@ func (grammar InfixExpressionGrammar) FileSuffix() string {
 func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 
 	open := grammar.style.Open
-	close := grammar.style.Close
 	
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
 		err := grammar.style.GetNext(context,
+			func (open string) {
+				operatorGrammar.OpenBracket(Atom{open})
+			},
+			func (close string) {
+				operatorGrammar.CloseBracket(Atom{close})
+			},
 			func(atom Atom) {
-				token := atom.Name
-				if token == open {
-					operatorGrammar.OpenBracket(Atom{open})
-				} else if token == close {
-					operatorGrammar.CloseBracket(Atom{close})
+				if operators.Precedence(atom) != -1 {
+					operatorGrammar.PushOperator(atom)
+				} else if operators.IsOpenBracket(atom) {
+					operatorGrammar.OpenBracket(atom)
+				} else if operators.IsCloseBracket(atom) {
+					operatorGrammar.CloseBracket(atom)
 				} else {
-					if operators.Precedence(atom) != -1 {
-						operatorGrammar.PushOperator(atom)
-					} else if operators.IsOpenBracket(atom) {
-						operatorGrammar.OpenBracket(atom)
-					} else if operators.IsCloseBracket(atom) {
-						operatorGrammar.CloseBracket(atom)
-					} else {
-						ch, err := context.ReadRune()
-						if err == io.EOF {
-							operatorGrammar.PushValue(atom)
-							//operatorGrammar.EOF(context.next)
-							return // TODO eof
-						}
-						if err != nil {
-							// TODO
-							return
-						}
-						if ch == grammar.style.openChar {
-							operatorGrammar.OpenBracket(Atom{open})
-						} else {
-							context.UnreadRune()
-						}
+					ch, err := context.ReadRune()
+					if err == io.EOF {
 						operatorGrammar.PushValue(atom)
+						//operatorGrammar.EOF(context.next)
+						return // TODO eof
 					}
+					if err != nil {
+						// TODO
+						return
+					}
+					if ch == grammar.style.openChar {
+						operatorGrammar.OpenBracket(Atom{open})
+					} else {
+						context.UnreadRune()
+					}
+					operatorGrammar.PushValue(atom)
 				}
 			},
 			func (literal interface{}) {
@@ -498,6 +495,7 @@ func (grammar Yaml) Parse(context * ParserContext) {
 	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
+// TODO Replace with Printer
 func (grammar Yaml) printObject(depth string, token interface{}, out func(value string)) {
 
 	style := grammar.style

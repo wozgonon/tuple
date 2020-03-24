@@ -48,75 +48,71 @@ func NewSExpressionParser(lexer Style) SExpressionParser {
 	return SExpressionParser{lexer}
 }
 
+// Deal with a binary operator  a : b or cons cell a.b
+// TODO- should be done best by operator grammar
+func (parser SExpressionParser) parserKeyValueOperator(context * ParserContext, tuple *Tuple) {
+	if tuple.Length() == 0 {
+		context.Error("Unexpected operator '%s'", parser.style.KeyValueSeparator)
+		return // errors.New("Unexpected")
+	}
+	left := tuple.List[tuple.Length()-1]
+	context.Verbose("CONS %s : ... ", left)
+	var right interface{} = nil
+	for {
+		err := parser.style.GetNext(context,
+			func (open string) {
+				context.Verbose("** OPEN")
+				tuple1 := NewTuple()
+				parser.parseSExpressionTuple(context, &tuple1)
+				right = tuple1
+			},
+			func (close string) {
+				context.Error ("Unexpected close bracket '%s'", close)
+			},
+			func (atom Atom) {
+				context.Verbose("parse atom: %s", atom)
+				right = atom
+			},
+			func (literal interface{}) {
+				right = literal
+			})
+		if err != nil {
+			context.Verbose("** ERR")
+			return // err
+		}
+		if right == nil {
+			context.Verbose("RIGHT is NIL")
+		} else {
+			tuple.List[tuple.Length() -1] = NewTuple(CONS_ATOM, left, right)
+			return
+		}
+	}
+}
+
 func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, tuple *Tuple) error {
 
-	style := parser.style // lexer
 	closeBracketFound := false
 	for {
-		err := style.GetNext(context,
-			func (atom Atom) {
-				token := atom.Name
-				switch {
-				case token == style.Close, token == style.Close2:
-					closeBracketFound = true
-					return
-				case token == style.Open || token == style.Open2:
-					subTuple := NewTuple()
-					err := parser.parseSExpressionTuple(context, &subTuple)
-					if err == io.EOF {
-						// TODO context.Error ("Found EOF but expected a bracket to close '%s'", token)
-						tuple.Append(subTuple)
-						//return err
-						return
-					}
-					if err != nil {
-						return // err
-					}
+		err := parser.style.GetNext(context,
+			func (open string) {
+				subTuple := NewTuple()
+				err := parser.parseSExpressionTuple(context, &subTuple)
+				if err == io.EOF {
 					tuple.Append(subTuple)
-				case token == style.KeyValueSeparator:  // TODO check if it is an operator
-					if tuple.Length() == 0 {
-						context.Error("Unexpected operator '%s'", style.KeyValueSeparator)
-						return // errors.New("Unexpected")
-					}
-					left := tuple.List[tuple.Length()-1]
-					context.Verbose("CONS %s : ... ", left)
-					var right interface{} = nil
-					for {
-						err := style.GetNext(context,
-							func (atom Atom) {
-								context.Verbose("parse atom: %s", atom)
-								token := atom.Name
-								switch {
-								case token == style.Close, token == style.Close2:
-									context.Error ("Unexpected close bracket '%s'", token)
-									return
-									//return nil, errors.New("Unexpected")
-								case token == style.Open || token == style.Open2:
-									context.Verbose("** OPEN")
-									tuple1 := NewTuple()
-									parser.parseSExpressionTuple(context, &tuple1)
-									right = tuple1
-									return
-								default:
-									right = atom
-									return
-								}
-							},
-							func (literal interface{}) {
-								right = literal
-							})
-						if err != nil {
-							context.Verbose("** ERR")
-							return // err
-						}
-						if right == nil {
-							context.Verbose("RIGHT is NIL")
-						} else {
-							tuple.List[tuple.Length() -1] = NewTuple(CONS_ATOM, left, right)
-							return
-						}
-					}
-				default:
+					return
+				}
+				if err != nil {
+					return
+				}
+				tuple.Append(subTuple)
+			},
+			func (close string) {
+				closeBracketFound = true
+			},
+			func (atom Atom) {
+				if atom.Name == parser.style.KeyValueSeparator {
+					parser.parserKeyValueOperator(context, tuple)
+				} else {
 					tuple.Append(atom)
 				}
 			},
@@ -141,29 +137,22 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 
 func (parser SExpressionParser) parse(context * ParserContext, next Next) (error) {
 
-	context.Verbose("*** parse:")
-	style := parser.style
-	err := style.GetNext(context,
+	err := parser.style.GetNext(context,
+		func (open string) {
+			tuple := NewTuple()
+			parser.parseSExpressionTuple(context, &tuple)
+			next(tuple)
+		},
+		func (close string) {
+			context.Error ("Unexpected close bracket '%s'", close)
+		},
 		func (atom Atom) {
-			context.Verbose("parse atom: %s", atom)
-			token := atom.Name
-			switch {
-			case token == style.Close, token == style.Close2:
-				context.Error ("Unexpected close bracket '%s'", token)
-				//return nil, errors.New("Unexpected")
-			case token == style.Open || token == style.Open2:
-				tuple := NewTuple()
-				parser.parseSExpressionTuple(context, &tuple)
-				next(tuple)
-			default:
-				next(atom)
-			}
+			next(atom)
 		},
 		func (literal interface{}) {
 			context.Verbose("parse literal: %s", literal)
 			next(literal)
 		})
-	context.Verbose("*** parse: err=%s", err)
 	return err
 }
 
