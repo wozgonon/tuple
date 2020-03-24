@@ -242,14 +242,20 @@ type Operators struct {
 	precedence map[string]int
 	unary map[string]Atom
 	brackets map[string]string
+	closeBrackets map[string]string
 }
 
 func NewOperators(style Style) Operators {
-	return Operators{style, make(map[string]int, 0), make(map[string]Atom, 0), make(map[string]string, 0)}
+	return Operators{style, make(map[string]int, 0), make(map[string]Atom, 0), make(map[string]string, 0), make(map[string]string, 0)}
 }
 
 func (operators *Operators) Add(operator string, precedence int) {
 	(*operators).precedence[operator] = precedence
+}
+
+func (operators *Operators) AddBracket(open string, close string) {
+	(*operators).brackets[open] = close
+	(*operators).closeBrackets[close] = open
 }
 
 func (operators *Operators) Precedence(token Atom) int {
@@ -269,7 +275,8 @@ func (operators *Operators) IsOpenBracket(atom Atom) bool {
 
 func (operators *Operators) IsCloseBracket(atom Atom) bool {
 	token := atom.Name
-	return token == ")" || token == "}" || token == "]"
+	_, ok := operators.closeBrackets[token]
+	return ok
 }
 
 func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
@@ -286,9 +293,9 @@ func (operators *Operators) IsUnaryPrefix(token string) bool {
 func (operators *Operators) AddStandardCOperators() {
 	operators.unary["-"] = Atom{"_unary_minus"}
 	operators.unary["+"] = Atom{"_unary_plus"}
-	operators.brackets[OPEN_BRACKET] = CLOSE_BRACKET
-	operators.brackets[OPEN_SQUARE_BRACKET] = CLOSE_SQUARE_BRACKET
-	operators.brackets[OPEN_BRACE] = CLOSE_BRACE
+	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
+	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
+	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
 	operators.Add("_unary_plus", 110)
 	operators.Add("_unary_minus", 110)
 	operators.Add("^", 100)
