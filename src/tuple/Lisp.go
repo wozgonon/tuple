@@ -44,9 +44,9 @@ func (grammar LispGrammar) Print(object interface{}, out func(value string)) {
 }
 
 func NewLispGrammar() Grammar {
-	style := Style{"", "", "  ",
+	style := NewStyle("", "", "  ",
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".",
-		"", "\n", "true", "false", ';', ""}
+		"", "\n", "true", "false", ';', "")
 	return LispGrammar{NewSExpressionParser(style)}
 }
 
@@ -72,7 +72,7 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
-		err := grammar.parser.GetNext(context,
+		err := grammar.parser.style.GetNext(context,
 			func (atom Atom) {
 				token := atom.Name
 				if token == grammar.parser.style.Open {
@@ -107,9 +107,9 @@ func (grammar LispWithInfixGrammar) Print(token interface{}, next func(value str
 }
 
 func NewLispWithInfixGrammar() Grammar {
-	style := Style{"", "", "  ",
+	style := NewStyle("", "", "  ",
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
-		"", "\n", "true", "false", ';', ""}
+		"", "\n", "true", "false", ';', "")
 	operators := NewOperators(style)
 	operators.AddStandardCOperators()
 	operators.Add(".", 105) // CONS Operator
@@ -142,7 +142,7 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
-		err := grammar.parser.GetNext(context,
+		err := grammar.parser.style.GetNext(context,
 			func(atom Atom) {
 				token := atom.Name
 				if token == open {
@@ -167,7 +167,7 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 							// TODO
 							return
 						}
-						if ch == grammar.parser.openChar {
+						if ch == grammar.parser.style.openChar {
 							operatorGrammar.OpenBracket(Atom{open})
 						} else {
 							context.UnreadRune()
@@ -196,12 +196,12 @@ func (grammar InfixExpressionGrammar) Print(token interface{}, next func(value s
 }
 
 func NewInfixExpressionGrammar() Grammar {
-	style := Style{"", "", "  ",
+	style := NewStyle("", "", "  ",
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ":",
-		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
+		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
 
 
-	//style := Style{"", "", "  ",
+	//style := NewStyle("", "", "  ",
 	//	OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
 	//	"", "\n", "true", "false", ';', ""}
 	operators := NewOperators(style)
@@ -252,7 +252,7 @@ func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, er
 
 	parser := grammar.parser
 	for {
-		ch, err := readRune(context, grammar.parser)
+		ch, err := readRune(context, grammar.parser.style)
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
@@ -261,8 +261,8 @@ func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, er
 		case ch == parser.style.OneLineComment:
 			// TODO ignore for now
 			//return string(ch), nil
-		case ch == parser.openChar : return parser.style.Open, nil
-		case ch == parser.closeChar : return parser.style.Close, nil
+		case ch == parser.style.openChar : return parser.style.Open, nil
+		case ch == parser.style.closeChar : return parser.style.Close, nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
 		case ch == '$':
@@ -444,9 +444,9 @@ func (grammar Tcl) Print(token interface{}, out func(value string)) {
 }
 
 func NewTclGrammar() Grammar {
-	style := Style{"", "", "  ",
+	style := NewStyle("", "", "  ",
 		OPEN_BRACE, CLOSE_BRACE, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, ":",
-		"", "\n", "true", "false", '#', ""}
+		"", "\n", "true", "false", '#', "")
 	return Tcl{NewSExpressionParser(style)}
 }
 
@@ -475,7 +475,7 @@ func (grammar Jml) Print(token interface{}, next func(value string)) {
 }
 
 func NewJmlGrammar() Grammar {
-	style := Style{"\n", "", "  ", OPEN_BRACE, CLOSE_BRACE, "", "\n", "true", "false", '#'}
+	style := NewStyle("\n", "", "  ", OPEN_BRACE, CLOSE_BRACE, "", "\n", "true", "false", '#'}
 	return Jml{NewSExpressionParser(style)}
 }*/
 
@@ -552,9 +552,9 @@ func (grammar Yaml) Print(token interface{}, out func(value string)) {
 }
 
 func NewYamlGrammar() Grammar {
-	style := Style{"---\n", "...\n", "  ", 
+	style := NewStyle("---\n", "...\n", "  ", 
 		":", "", OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, "",
-		"", "\n", "true", "false", '#', "- "}
+		"", "\n", "true", "false", '#', "- ")
 	return Yaml{NewSExpressionParser(style)}
 }
 
@@ -640,9 +640,9 @@ func (grammar Ini) Print(token interface{}, out func(value string)) {
 
 func NewIniGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/INI_file
-	style := Style{"", "", "",
+	style := NewStyle("", "", "",
 		"", "", "", "", "",
-		"= ", "\n", "true", "false", '#', "="}
+		"= ", "\n", "true", "false", '#', "=")
 	return Ini{NewSExpressionParser(style)}
 }
 
@@ -715,9 +715,9 @@ func (grammar PropertyGrammar) Print(token interface{}, out func(value string)) 
 
 func NewPropertyGrammar() Grammar {
 	// https://en.wikipedia.org/wiki/.properties
-	style := Style{"", "", "",
+	style := NewStyle("", "", "",
 		"", "", "", "", "",
-		" = ", "\n", "true", "false", '#', " = "}
+		" = ", "\n", "true", "false", '#', " = ")
 	return PropertyGrammar{NewSExpressionParser(style)}
 }
 
@@ -729,7 +729,6 @@ func NewPropertyGrammar() Grammar {
 
 type JSONGrammar struct {
 	Style
-	parser SExpressionParser
 }
 
 func (grammar JSONGrammar) Name() string {
@@ -741,7 +740,8 @@ func (grammar JSONGrammar) FileSuffix() string {
 }
 
 func (grammar JSONGrammar) Parse(context * ParserContext) {
-	grammar.parser.Parse(context)
+	parser := NewSExpressionParser(grammar.Style)
+	parser.Parse(context)
 }
 
 func (grammar JSONGrammar) Print(object interface{}, out func(value string)) {
@@ -749,10 +749,10 @@ func (grammar JSONGrammar) Print(object interface{}, out func(value string)) {
 }
 
 func NewJSONGrammar() Grammar {
-	style := Style{"", "", "  ",
+	style := NewStyle("", "", "  ",
 		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
-		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
-	return JSONGrammar{style, NewSExpressionParser(style)}
+		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
+	return JSONGrammar{style}
 }
 
 func (printer JSONGrammar) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {

@@ -17,8 +17,8 @@
 package tuple
 
 import "io"
-import "unicode"
-import "unicode/utf8"
+//import "unicode"
+//import "unicode/utf8"
 //import "errors"
 
 // A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
@@ -34,123 +34,26 @@ import "unicode/utf8"
 //  TODO Cons cells
 //  https://www.gnu.org/software/emacs/manual/html_node/elisp/Dotted-Pair-Notation.html#Dotted-Pair-Notation
 //
-type SExpressionParser struct {
-	style Style
-	openChar rune
-	closeChar rune
-	openChar2 rune
-	closeChar2 rune
-	KeyValueSeparator rune
-}
-
-func NewSExpressionParser(style Style) SExpressionParser {
-
-	openChar, _ := utf8.DecodeRuneInString(style.Open)
-	closeChar, _ := utf8.DecodeRuneInString(style.Close)
-	openChar2, _ := utf8.DecodeRuneInString(style.Open2)
-	closeChar2, _ := utf8.DecodeRuneInString(style.Close2)
-	KeyValueSeparator, _ := utf8.DecodeRuneInString(style.KeyValueSeparator)
-	return SExpressionParser{style,openChar,closeChar,openChar2,closeChar2,KeyValueSeparator}
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Lexer
-/////////////////////////////////////////////////////////////////////////////
-
-func readRune(context * ParserContext, parser SExpressionParser) (rune, error) {
-	ch, err := context.ReadRune()
-	switch {
-	case err != nil: return ch, err
-	case ch == parser.openChar, ch == parser.openChar2  :
-		context.Open()
-	case ch == parser.closeChar, ch == parser.closeChar2 :
-		context.Close()
-	}
-	return ch, nil
-
-}
-
-func (parser SExpressionParser) GetNext(context * ParserContext, nextAtom func(atom Atom), nextLiteral func (literal interface{})) error {
-
-	style := parser.style
-//	for {
-		ch, err := readRune(context, parser)
-		switch {
-		case err != nil: return err
-		case err == io.EOF:
-			//next.NextEOF()
-			return err
-		case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
-		case ch == style.OneLineComment:
-			_, err = ReadUntilEndOfLine(context)
-			if err != nil {
-				return err
-			}
-			// TODO next.NextComment
-		case ch == parser.openChar : nextAtom(Atom{style.Open})
-		case ch == parser.closeChar : nextAtom(Atom{style.Close})
-		case ch == parser.openChar2 : nextAtom(Atom{style.Open2})
-		case ch == parser.closeChar2 : nextAtom(Atom{style.Close2})
-		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
-		case ch == '"' :
-			value, err := ReadCLanguageString(context)
-			if err != nil {
-				return err
-			}
-			nextLiteral(value)
-		case ch == '.' || unicode.IsNumber(ch):
-			value, err := ReadNumber(context, string(ch))    // TODO minus
-			if err != nil {
-				return err
-			}
-			if atom, ok := value.(Atom); ok {
-				nextAtom(atom)
-			} else {
-				nextLiteral(value)
-			}
-		case ch == parser.KeyValueSeparator :
-			nextAtom(Atom{style.KeyValueSeparator})
-		case IsArithmetic(ch): nextAtom(Atom{string(ch)}) // }, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
-		case IsCompare(ch):
-			value, err := (ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) }))
-			if err != nil {
-				return err
-			}
-			if atom, ok := value.(Atom); ok {
-				nextAtom(atom)
-			} else {
-				nextLiteral(value)
-			}
-		case ch == '_' || unicode.IsLetter(ch):
-			value, err :=(ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) }))
-			if err != nil {
-				return err
-			}
-			if atom, ok := value.(Atom); ok {
-				nextAtom(atom)
-			} else {
-				nextLiteral(value)
-			}
-			
-		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
-		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
-		default: context.Error("Error character not recognised '%d'", ch)
-		}
-	//}
-	return nil
-}
 
 /////////////////////////////////////////////////////////////////////////////
 //  Parsing
 /////////////////////////////////////////////////////////////////////////////
 
+type SExpressionParser struct {
+	style Style
+	//lexer Lexer
+}
+
+func NewSExpressionParser(lexer Style) SExpressionParser {
+	return SExpressionParser{lexer}
+}
 
 func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, tuple *Tuple) error {
 
-	style := parser.style
+	style := parser.style // lexer
 	closeBracketFound := false
 	for {
-		err := parser.GetNext(context,
+		err := style.GetNext(context,
 			func (atom Atom) {
 				token := atom.Name
 				switch {
@@ -179,7 +82,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, t
 					context.Verbose("CONS %s : ... ", left)
 					var right interface{} = nil
 					for {
-						err := parser.GetNext(context,
+						err := style.GetNext(context,
 							func (atom Atom) {
 								context.Verbose("parse atom: %s", atom)
 								token := atom.Name
@@ -240,7 +143,7 @@ func (parser SExpressionParser) parse(context * ParserContext, next Next) (error
 
 	context.Verbose("*** parse:")
 	style := parser.style
-	err := parser.GetNext(context,
+	err := style.GetNext(context,
 		func (atom Atom) {
 			context.Verbose("parse atom: %s", atom)
 			token := atom.Name
@@ -262,31 +165,6 @@ func (parser SExpressionParser) parse(context * ParserContext, next Next) (error
 		})
 	context.Verbose("*** parse: err=%s", err)
 	return err
-	/*
-	switch {
-	case err == io.EOF:
-		return nil, err
-	case err != nil:
-		context.Error ("'%s'", err)
-		return nil, err
-	case token == style.Close, token == style.Close2:
-		context.Error ("Unexpected close bracket '%s'", style.Close)
-		return nil, errors.New("Unexpected")
-		return token, nil
-	case token == style.Open || token == style.Open2:
-		tuple := NewTuple()
-		err := parser.parseSExpressionTuple(context, &tuple)
-		if err != nil {
-			return nil, err
-		}
-		return tuple, nil
-	default:
-		//if _,ok := token.(Comment); ok {
-			// TODO Ignore ???
-		//} else {
-			return token, nil
-		//}
-	}*/
 }
 
 // Reads a given text and produces an Asbstract Syntax Tree (AST)
@@ -301,15 +179,5 @@ func (parser SExpressionParser) Parse(context * ParserContext) {
 			return
 		}
 	}
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//  Printing
-/////////////////////////////////////////////////////////////////////////////
-
-func quote(value string, out func(value string)) {
-	out(DOUBLE_QUOTE)
-	out(value)   // TODO Escape
-	out(DOUBLE_QUOTE)
 }
 
