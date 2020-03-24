@@ -110,7 +110,7 @@ func NewLispWithInfixGrammar() Grammar {
 		OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
 		"", "\n", "true", "false", ';', "")
 	operators := NewOperators(style)
-	operators.AddStandardCOperators()
+	AddStandardCOperators(&operators)
 	operators.Add(".", 105) // CONS Operator
 	return LispWithInfixGrammar{style, operators}
 }
@@ -202,7 +202,7 @@ func NewInfixExpressionGrammar() Grammar {
 	//	OPEN_BRACKET, CLOSE_BRACKET, "", "", ".", 
 	//	"", "\n", "true", "false", ';', ""}
 	operators := NewOperators(style)
-	operators.AddStandardCOperators()
+	AddStandardCOperators(&operators)
 	operators.Add(".", 105) // CONS Operator
 
 	return InfixExpressionGrammar{style, operators}

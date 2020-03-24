@@ -342,6 +342,32 @@ func IsCompare(ch rune) bool {
 	}
 }
 
+func AddStandardCOperators(operators *Operators) {
+	operators.unary["-"] = Atom{"_unary_minus"}
+	operators.unary["+"] = Atom{"_unary_plus"}
+	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
+	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
+	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
+	operators.Add("_unary_plus", 110)
+	operators.Add("_unary_minus", 110)
+	operators.Add("^", 100)
+	operators.Add("*", 90)
+	operators.Add("/", 90)
+	operators.Add("+", 80)
+	operators.Add("-", 80)
+	operators.Add("<", 60)
+	operators.Add(">", 60)
+	operators.Add("<=", 60)
+	operators.Add(">=", 60)
+	operators.Add("==", 60)
+	operators.Add("!=", 60)
+	operators.Add("&&", 50)
+	operators.Add("||", 50)
+	//operators.Add(",", 40)
+	//operators.Add(";", 30)
+	operators.Add(SPACE_ATOM.Name, 10)  // TODO space???
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Printer
 /////////////////////////////////////////////////////////////////////////////
