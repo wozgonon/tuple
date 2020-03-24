@@ -72,28 +72,32 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
-		token, err := grammar.parser.GetNext(context)
+		err := grammar.parser.GetNext(context,
+			func (atom Atom) {
+				token := atom.Name
+				if token == grammar.parser.style.Open {
+					operatorGrammar.OpenBracket(Atom{grammar.parser.style.Open})
+				} else if token == grammar.parser.style.Close {
+					operatorGrammar.CloseBracket(Atom{grammar.parser.style.Close})
+				} else {
+					if operators.Precedence(atom) != -1 {
+						operatorGrammar.PushOperator(atom)
+					} else if operators.IsOpenBracket(atom) {
+						operatorGrammar.OpenBracket(atom)
+					} else if operators.IsCloseBracket(atom) {
+						operatorGrammar.CloseBracket(atom)
+					} else {
+						operatorGrammar.PushValue(atom)
+					}
+				}
+			},
+			func (literal interface{}) {
+				operatorGrammar.PushValue(literal)
+			})
+		
 		if err == io.EOF {
 			operatorGrammar.EOF(context.next)
 			break
-		}
-		if token == grammar.parser.style.Open {
-			operatorGrammar.OpenBracket(Atom{grammar.parser.style.Open})
-		} else if token == grammar.parser.style.Close {
-			operatorGrammar.CloseBracket(Atom{grammar.parser.style.Close})
-		} else if atom, ok := token.(Atom); ok {
-			if operators.Precedence(atom) != -1 {
-				operatorGrammar.PushOperator(atom)
-			} else if operators.IsOpenBracket(atom) {
-				operatorGrammar.OpenBracket(atom)
-			} else if operators.IsCloseBracket(atom) {
-				operatorGrammar.CloseBracket(atom)
-			} else {
-				
-				operatorGrammar.PushValue(atom)
-			}
-		} else {
-			operatorGrammar.PushValue(token)
 		}
 	}
 }
@@ -138,7 +142,44 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
-		token, err := grammar.parser.GetNext(context)
+		err := grammar.parser.GetNext(context,
+			func(atom Atom) {
+				token := atom.Name
+				if token == open {
+					operatorGrammar.OpenBracket(Atom{open})
+				} else if token == close {
+					operatorGrammar.CloseBracket(Atom{close})
+				} else {
+					if operators.Precedence(atom) != -1 {
+						operatorGrammar.PushOperator(atom)
+					} else if operators.IsOpenBracket(atom) {
+						operatorGrammar.OpenBracket(atom)
+					} else if operators.IsCloseBracket(atom) {
+						operatorGrammar.CloseBracket(atom)
+					} else {
+						ch, err := context.ReadRune()
+						if err == io.EOF {
+							operatorGrammar.PushValue(atom)
+							//operatorGrammar.EOF(context.next)
+							return // TODO eof
+						}
+						if err != nil {
+							// TODO
+							return
+						}
+						if ch == grammar.parser.openChar {
+							operatorGrammar.OpenBracket(Atom{open})
+						} else {
+							context.UnreadRune()
+						}
+						operatorGrammar.PushValue(atom)
+					}
+				}
+			},
+			func (literal interface{}) {
+				operatorGrammar.PushValue(literal)
+			})
+	
 		if err == io.EOF {
 			operatorGrammar.EOF(context.next)
 			break
@@ -146,40 +187,6 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 		if err != nil {
 			// TODO 
 			break
-		}
-
-		if token == open {
-			operatorGrammar.OpenBracket(Atom{open})
-		} else if token == close {
-			operatorGrammar.CloseBracket(Atom{close})
-
-		} else if atom, ok := token.(Atom); ok {
-			if operators.Precedence(atom) != -1 {
-				operatorGrammar.PushOperator(atom)
-			} else if operators.IsOpenBracket(atom) {
-				operatorGrammar.OpenBracket(atom)
-			} else if operators.IsCloseBracket(atom) {
-				operatorGrammar.CloseBracket(atom)
-			} else {
-				ch, err := context.ReadRune()
-				if err == io.EOF {
-					operatorGrammar.PushValue(atom)
-					operatorGrammar.EOF(context.next)
-					break
-				}
-				if err != nil {
-					// TODO 
-					break
-				}
-				if ch == grammar.parser.openChar {
-					operatorGrammar.OpenBracket(Atom{open})
-				} else {
-					context.UnreadRune()
-				}
-				operatorGrammar.PushValue(atom)
-			}
-		} else {
-			operatorGrammar.PushValue(token)
 		}
 	}
 }

@@ -19,7 +19,7 @@ package tuple
 import "io"
 import "unicode"
 import "unicode/utf8"
-import "errors"
+//import "errors"
 
 // A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
 //
@@ -70,90 +70,199 @@ func readRune(context * ParserContext, parser SExpressionParser) (rune, error) {
 
 }
 
-func (parser SExpressionParser) GetNext(context * ParserContext) (interface{}, error) {
+func (parser SExpressionParser) GetNext(context * ParserContext, nextAtom func(atom Atom), nextLiteral func (literal interface{})) error {
 
 	style := parser.style
-	for {
+//	for {
 		ch, err := readRune(context, parser)
 		switch {
-		case err != nil: return "", err
-		case err == io.EOF: return "", nil
+		case err != nil: return err
+		case err == io.EOF:
+			//next.NextEOF()
+			return err
 		case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
 		case ch == style.OneLineComment:
 			_, err = ReadUntilEndOfLine(context)
 			if err != nil {
-				return nil, err
+				return err
 			}
-		case ch == parser.openChar : return style.Open, nil
-		case ch == parser.closeChar : return style.Close, nil
-		case ch == parser.openChar2 : return style.Open2, nil
-		case ch == parser.closeChar2 : return style.Close2, nil
+			// TODO next.NextComment
+		case ch == parser.openChar : nextAtom(Atom{style.Open})
+		case ch == parser.closeChar : nextAtom(Atom{style.Close})
+		case ch == parser.openChar2 : nextAtom(Atom{style.Open2})
+		case ch == parser.closeChar2 : nextAtom(Atom{style.Close2})
 		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
-		case ch == '"' :  return ReadCLanguageString(context)
-		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
-		case ch == parser.KeyValueSeparator : return style.KeyValueSeparator, nil
-		case IsArithmetic(ch): return Atom{string(ch)}, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
-		case IsCompare(ch): return ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) })
-		case ch == '_' || unicode.IsLetter(ch):  return ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) })
+		case ch == '"' :
+			value, err := ReadCLanguageString(context)
+			if err != nil {
+				return err
+			}
+			nextLiteral(value)
+		case ch == '.' || unicode.IsNumber(ch):
+			value, err := ReadNumber(context, string(ch))    // TODO minus
+			if err != nil {
+				return err
+			}
+			if atom, ok := value.(Atom); ok {
+				nextAtom(atom)
+			} else {
+				nextLiteral(value)
+			}
+		case ch == parser.KeyValueSeparator :
+			nextAtom(Atom{style.KeyValueSeparator})
+		case IsArithmetic(ch): nextAtom(Atom{string(ch)}) // }, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
+		case IsCompare(ch):
+			value, err := (ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) }))
+			if err != nil {
+				return err
+			}
+			if atom, ok := value.(Atom); ok {
+				nextAtom(atom)
+			} else {
+				nextLiteral(value)
+			}
+		case ch == '_' || unicode.IsLetter(ch):
+			value, err :=(ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) }))
+			if err != nil {
+				return err
+			}
+			if atom, ok := value.(Atom); ok {
+				nextAtom(atom)
+			} else {
+				nextLiteral(value)
+			}
+			
 		case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
 		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
 		default: context.Error("Error character not recognised '%d'", ch)
 		}
-	}
+	//}
+	return nil
 }
 
 /////////////////////////////////////////////////////////////////////////////
 //  Parsing
 /////////////////////////////////////////////////////////////////////////////
 
-func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, tuple *Tuple) (error) {
+
+func (parser SExpressionParser) parseSExpressionTuple(context * ParserContext, tuple *Tuple) error {
 
 	style := parser.style
+	closeBracketFound := false
 	for {
-		token, err := parser.GetNext(context)
-		switch {
-		case err != nil:
-			context.Error("parsing %s", err);
+		err := parser.GetNext(context,
+			func (atom Atom) {
+				token := atom.Name
+				switch {
+				case token == style.Close, token == style.Close2:
+					closeBracketFound = true
+					return
+				case token == style.Open || token == style.Open2:
+					subTuple := NewTuple()
+					err := parser.parseSExpressionTuple(context, &subTuple)
+					if err == io.EOF {
+						// TODO context.Error ("Found EOF but expected a bracket to close '%s'", token)
+						tuple.Append(subTuple)
+						//return err
+						return
+					}
+					if err != nil {
+						return // err
+					}
+					tuple.Append(subTuple)
+				case token == style.KeyValueSeparator:  // TODO check if it is an operator
+					if tuple.Length() == 0 {
+						context.Error("Unexpected operator '%s'", style.KeyValueSeparator)
+						return // errors.New("Unexpected")
+					}
+					left := tuple.List[tuple.Length()-1]
+					context.Verbose("CONS %s : ... ", left)
+					var right interface{} = nil
+					for {
+						err := parser.GetNext(context,
+							func (atom Atom) {
+								context.Verbose("parse atom: %s", atom)
+								token := atom.Name
+								switch {
+								case token == style.Close, token == style.Close2:
+									context.Error ("Unexpected close bracket '%s'", token)
+									return
+									//return nil, errors.New("Unexpected")
+								case token == style.Open || token == style.Open2:
+									context.Verbose("** OPEN")
+									tuple1 := NewTuple()
+									parser.parseSExpressionTuple(context, &tuple1)
+									right = tuple1
+									return
+								default:
+									right = atom
+									return
+								}
+							},
+							func (literal interface{}) {
+								right = literal
+							})
+						if err != nil {
+							context.Verbose("** ERR")
+							return // err
+						}
+						if right == nil {
+							context.Verbose("RIGHT is NIL")
+						} else {
+							tuple.List[tuple.Length() -1] = NewTuple(CONS_ATOM, left, right)
+							return
+						}
+					}
+				default:
+					tuple.Append(atom)
+				}
+			},
+			func (literal interface{}) {
+				tuple.Append(literal)
+			})
+		
+		if err != nil {
+			if err != io.EOF {
+				context.Error("parsing %s", err);
+			}
+			if ! closeBracketFound {
+				context.Error ("Found EOF but expected a close bracket")
+			}
 			return err /// ??? Any need to return
-		case token == style.Close, token == style.Close2:
+		}
+		if closeBracketFound {
 			return nil
-		case token == style.Open || token == style.Open2:
-			subTuple := NewTuple()
-			err := parser.parseSExpressionTuple(context, &subTuple)
-			if err == io.EOF {
-				context.Error ("Missing close bracket")
-				return err
-			}
-			if err != nil {
-				return err
-			}
-			tuple.Append(subTuple)
-		case token == style.KeyValueSeparator:  // TODO check if it is an operator
-			if tuple.Length() == 0 {
-				context.Error("Unexpected operator '%s'", style.KeyValueSeparator)
-				return errors.New("Unexpected")
-			}
-			left := tuple.List[tuple.Length()-1]
-			right, err := parser.parse(context)
-			if err != nil {
-				return err
-			}
-			if right == style.Close || right == style.Close2 {
-				context.Error ("Unexpected close bracket '%s'", token)
-				return errors.New("Unexpected")
-
-			}
-			tuple.List[tuple.Length() -1] = NewTuple(CONS_ATOM, left, right)
-		default:
-			tuple.Append(token)
 		}
 	}
 }
 
-func (parser SExpressionParser) parse(context * ParserContext) (interface{}, error) {
+func (parser SExpressionParser) parse(context * ParserContext, next Next) (error) {
 
+	context.Verbose("*** parse:")
 	style := parser.style
-	token, err := parser.GetNext(context)
+	err := parser.GetNext(context,
+		func (atom Atom) {
+			context.Verbose("parse atom: %s", atom)
+			token := atom.Name
+			switch {
+			case token == style.Close, token == style.Close2:
+				context.Error ("Unexpected close bracket '%s'", token)
+				//return nil, errors.New("Unexpected")
+			case token == style.Open || token == style.Open2:
+				tuple := NewTuple()
+				parser.parseSExpressionTuple(context, &tuple)
+				next(tuple)
+			default:
+				next(atom)
+			}
+		},
+		func (literal interface{}) {
+			context.Verbose("parse literal: %s", literal)
+			next(literal)
+		})
+	context.Verbose("*** parse: err=%s", err)
+	return err
+	/*
 	switch {
 	case err == io.EOF:
 		return nil, err
@@ -177,7 +286,7 @@ func (parser SExpressionParser) parse(context * ParserContext) (interface{}, err
 		//} else {
 			return token, nil
 		//}
-	}
+	}*/
 }
 
 // Reads a given text and produces an Asbstract Syntax Tree (AST)
@@ -185,10 +294,10 @@ func (parser SExpressionParser) parse(context * ParserContext) (interface{}, err
 func (parser SExpressionParser) Parse(context * ParserContext) {
 
 	for {
-		value, err := parser.parse(context)
-		if err == nil {
+		err := parser.parse(context, func (value interface{}) {
 			context.next(value)
-		} else {
+		})
+		if err != nil {
 			return
 		}
 	}

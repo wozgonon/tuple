@@ -18,8 +18,12 @@ package tuple
 
 /////////////////////////////////////////////////////////////////////////////
 
-type Token interface {
+type Lexer interface {
+	GetNext(context * ParserContext, nextAtom func(atom Atom), nextLiteral func (literal interface{})) error
+}
 
+type Token interface {
+	Print(next StringFunction)
 }
 
 type String struct {

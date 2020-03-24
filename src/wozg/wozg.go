@@ -21,6 +21,8 @@ import (
 	"os"
 	"fmt"
 	"flag"
+	"strings"
+	"bufio"
 )
 
 func main() {
@@ -36,6 +38,7 @@ func main() {
 	var eval = flag.Bool("eval", false, "Run 'eval' interpretter.")
 	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
 	var version = flag.Bool("version", false, "Print version of this software.")
+	var command = flag.Bool("command", false, "Execute command lines arguments rather than files.")
 
 	flag.Parse()
 
@@ -74,23 +77,42 @@ func main() {
 	//  Set up the translator pipeline.
 	//
 	pipeline := tuple.SimplePipeline (*eval, *queryPattern, outputGrammar)
-	
-	//
-	//  Run the translators over all the input files.
-	//
 
-	args := len(os.Args)
-	numberOfFiles := flag.NArg()
-	files := os.Args[args-numberOfFiles:]
- 
-	errors := tuple.RunParser(files, *loggerGrammar, *verbose, inputGrammar, &grammars, pipeline)
+	if *command {
+		//
+		//  Get the input expression from the command line
+		//
+		argsLength := len(os.Args)
+		numberOfFiles := flag.NArg()
+		args := os.Args[argsLength-numberOfFiles:]
+		expression := strings.Join(args, " ")
 
+		//
+		//  Set up the translator pipeline.
+		//
+		reader := bufio.NewReader(strings.NewReader(expression))
+		context := tuple.NewParserContext("<cli>", reader, *loggerGrammar, *verbose, pipeline)
+		grammar := grammars.FindBySuffixOrPanic(*in)
 
-	//
-	//  Exit with non-zero response code if any errors occurred.
-	//
-	if errors > 0 {
-		os.Exit(1)
+		(*grammar).Parse(&context)
+		if context.Errors > 0 {
+			os.Exit(1)
+		}
+
+	} else {
+		//
+		//  Run the translators over all the input files.
+		//
+		args := len(os.Args)
+		numberOfFiles := flag.NArg()
+		files := os.Args[args-numberOfFiles:]
+		errors := tuple.RunParser(files, *loggerGrammar, *verbose, inputGrammar, &grammars, pipeline)
+		//
+		//  Exit with non-zero response code if any errors occurred.
+		//
+		if errors > 0 {
+			os.Exit(1)
+		}
 	}
 
 }
