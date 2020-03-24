@@ -40,7 +40,7 @@ func (grammar LispGrammar) Parse(context * ParserContext) {
 }
 
 func (grammar LispGrammar) Print(object interface{}, out func(value string)) {
-	PrintExpression(&(grammar.parser.style), "", object, out)
+	PrintExpression(grammar.parser.style, "", object, out)
 }
 
 func NewLispGrammar() Grammar {
@@ -55,7 +55,7 @@ func NewLispGrammar() Grammar {
 /////////////////////////////////////////////////////////////////////////////
 
 type LispWithInfixGrammar struct {
-	parser SExpressionParser
+	style Style
 	operators Operators
 }
 
@@ -72,13 +72,13 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
-		err := grammar.parser.style.GetNext(context,
+		err := grammar.style.GetNext(context,
 			func (atom Atom) {
 				token := atom.Name
-				if token == grammar.parser.style.Open {
-					operatorGrammar.OpenBracket(Atom{grammar.parser.style.Open})
-				} else if token == grammar.parser.style.Close {
-					operatorGrammar.CloseBracket(Atom{grammar.parser.style.Close})
+				if token == grammar.style.Open {
+					operatorGrammar.OpenBracket(Atom{grammar.style.Open})
+				} else if token == grammar.style.Close {
+					operatorGrammar.CloseBracket(Atom{grammar.style.Close})
 				} else {
 					if operators.Precedence(atom) != -1 {
 						operatorGrammar.PushOperator(atom)
@@ -113,7 +113,7 @@ func NewLispWithInfixGrammar() Grammar {
 	operators := NewOperators(style)
 	operators.AddStandardCOperators()
 	operators.Add(".", 105) // CONS Operator
-	return LispWithInfixGrammar{NewSExpressionParser(style), operators}
+	return LispWithInfixGrammar{style, operators}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -122,7 +122,7 @@ func NewLispWithInfixGrammar() Grammar {
 /////////////////////////////////////////////////////////////////////////////
 
 type InfixExpressionGrammar struct {
-	parser SExpressionParser
+	style Style
 	operators Operators
 }
 
@@ -136,13 +136,13 @@ func (grammar InfixExpressionGrammar) FileSuffix() string {
 
 func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 
-	open := grammar.parser.style.Open
-	close := grammar.parser.style.Close
+	open := grammar.style.Open
+	close := grammar.style.Close
 	
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
-		err := grammar.parser.style.GetNext(context,
+		err := grammar.style.GetNext(context,
 			func(atom Atom) {
 				token := atom.Name
 				if token == open {
@@ -167,7 +167,7 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 							// TODO
 							return
 						}
-						if ch == grammar.parser.style.openChar {
+						if ch == grammar.style.openChar {
 							operatorGrammar.OpenBracket(Atom{open})
 						} else {
 							context.UnreadRune()
@@ -208,7 +208,7 @@ func NewInfixExpressionGrammar() Grammar {
 	operators.AddStandardCOperators()
 	operators.Add(".", 105) // CONS Operator
 
-	return InfixExpressionGrammar{NewSExpressionParser(style), operators}
+	return InfixExpressionGrammar{style, operators}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -230,7 +230,7 @@ func NewInfixExpressionGrammar() Grammar {
 // * DOS has a special version of the SET command 'SET /a c=a+b'
 //
 type Tcl struct {
-	parser SExpressionParser
+	style Style
 }
 
 func (grammar Tcl) Name() string {
@@ -242,27 +242,26 @@ func (grammar Tcl) FileSuffix() string {
 }
 
 func (grammar Tcl ) readCommandString(context * ParserContext, token string) (string, error) {
-	parser := grammar.parser
 	return ReadString(context, token, true, func (ch rune) bool {
-		return ! unicode.IsSpace(ch) && string(ch) != parser.style.Close && string(ch) != parser.style.Open && ch != '$'
+		return ! unicode.IsSpace(ch) && string(ch) != grammar.style.Close && string(ch) != grammar.style.Open && ch != '$'
 	})
 }
 
 func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, error) {
 
-	parser := grammar.parser
+	style := grammar.style
 	for {
-		ch, err := readRune(context, grammar.parser.style)
+		ch, err := readRune(context, grammar.style)
 		switch {
 		case err != nil: return "", err
 		case err == io.EOF: return "", nil
 		case ch == NEWLINE: return string(NEWLINE), nil
 		case unicode.IsSpace(ch): break
-		case ch == parser.style.OneLineComment:
+		case ch == style.OneLineComment:
 			// TODO ignore for now
 			//return string(ch), nil
-		case ch == parser.style.openChar : return parser.style.Open, nil
-		case ch == parser.style.closeChar : return parser.style.Close, nil
+		case ch == style.openChar : return style.Open, nil
+		case ch == style.closeChar : return style.Close, nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
 		case ch == '$':
@@ -280,16 +279,16 @@ func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, er
 
 func (grammar Tcl) parseCommandShellTuple(context * ParserContext, tuple *Tuple) (error) {
 
-	parser := grammar.parser
+	style := grammar.style
 	for {
 		token, err := grammar.getNextCommandShell(context)
 		switch {
 		case err != nil:
 			context.Error("parsing %s", err);
 			return err /// ??? Any need to return
-		case token == parser.style.Close:
+		case token == style.Close:
 			return nil
-		case token == parser.style.Open:
+		case token == style.Open:
 			subTuple := NewTuple()
 			err := grammar.parseCommandShellTuple(context, &subTuple)
 			if err == io.EOF {
@@ -309,8 +308,7 @@ func (grammar Tcl) parseCommandShellTuple(context * ParserContext, tuple *Tuple)
 
 func (grammar Tcl) printObject1(depth string, token interface{}, out func(value string)) {
 
-	parser := grammar.parser
-	style := parser.style
+	style := grammar.style
 	if tuple, ok := token.(Tuple); ok {
 
 		len := len(tuple.List)
@@ -338,7 +336,7 @@ func (grammar Tcl) printObject1(depth string, token interface{}, out func(value 
 				out(style.KeyValueSeparator)
 				out (" ")
 				PrintScalar(style, "", token, out)
-				//grammar.parser.style.printScalar(tuple.List[2], out)
+				//grammar.style.printScalar(tuple.List[2], out)
 			}
 			return
 		}
@@ -368,13 +366,13 @@ func (grammar Tcl) printObject1(depth string, token interface{}, out func(value 
 	} else {
 		out(depth)
 		out(style.ScalarPrefix)
-		PrintScalar (parser.style, "", token, out)
+		PrintScalar (grammar.style, "", token, out)
 	}
 }
 
 func (grammar Tcl) Parse(context * ParserContext) {
 
-	parser := grammar.parser
+	style := grammar.style
 
 	resultTuple := NewTuple()
 	for {
@@ -401,15 +399,15 @@ func (grammar Tcl) Parse(context * ParserContext) {
 				context.next(resultTuple)
 			}
 			resultTuple = NewTuple()
-		case token == parser.style.OneLineComment:
+		case token == style.OneLineComment:
 			comment, err := ReadUntilEndOfLine(context)
 			if err != nil {
 				return
 			}
 			context.next(comment)
-		case token == parser.style.Close:
-			context.UnexpectedCloseBracketError (parser.style.Close)
-		case token == parser.style.Open:
+		case token == style.Close:
+			context.UnexpectedCloseBracketError (style.Close)
+		case token == style.Open:
 			subTuple := NewTuple()
 			err := grammar.parseCommandShellTuple(context, &subTuple)
 			if err != nil {
@@ -418,16 +416,16 @@ func (grammar Tcl) Parse(context * ParserContext) {
 			resultTuple.Append(subTuple)
 		default:
 			context.Verbose("Add token: '%s'", token)
-			resultTuple.Append(token)
+			resultTuple.Append(token) 
 		}
 	}
 }
 
 func (grammar Tcl) Print(token interface{}, out func(value string)) {
 
-	//PrintExpression(grammar.parser.style, "", object, out)  // TODO Use Printer
+	//PrintExpression(grammar.style, "", object, out)  // TODO Use Printer
 	
-	style := grammar.parser.style
+	style := grammar.style
 	if tuple, ok := token.(Tuple); ok {
 		len := len(tuple.List)
 		for k, token := range tuple.List {
@@ -447,7 +445,7 @@ func NewTclGrammar() Grammar {
 	style := NewStyle("", "", "  ",
 		OPEN_BRACE, CLOSE_BRACE, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, ":",
 		"", "\n", "true", "false", '#', "")
-	return Tcl{NewSExpressionParser(style)}
+	return Tcl{style}
 }
 
 /*/////////////////////////////////////////////////////////////////////////////
@@ -455,7 +453,7 @@ func NewTclGrammar() Grammar {
 /////////////////////////////////////////////////////////////////////////////
 
 type Jml struct {
-	parser SExpressionParser
+	style Style
 }
 
 func (grammar Jml) Name() string {
@@ -485,7 +483,7 @@ func NewJmlGrammar() Grammar {
 
 // http://www.yamllint.com/
 type Yaml struct {
-	parser SExpressionParser
+	style Style
 }
 
 func (grammar Yaml) Name() string {
@@ -502,7 +500,7 @@ func (grammar Yaml) Parse(context * ParserContext) {
 
 func (grammar Yaml) printObject(depth string, token interface{}, out func(value string)) {
 
-	style := grammar.parser.style
+	style := grammar.style
 	if tuple, ok := token.(Tuple); ok {
 
 		out(depth)
@@ -555,7 +553,7 @@ func NewYamlGrammar() Grammar {
 	style := NewStyle("---\n", "...\n", "  ", 
 		":", "", OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, "",
 		"", "\n", "true", "false", '#', "- ")
-	return Yaml{NewSExpressionParser(style)}
+	return Yaml{style}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -563,7 +561,7 @@ func NewYamlGrammar() Grammar {
 /////////////////////////////////////////////////////////////////////////////
 
 type Ini struct {
-	parser SExpressionParser
+	style Style
 }
 
 func (grammar Ini) Name() string {
@@ -581,7 +579,7 @@ func (grammar Ini) Parse(context * ParserContext) {
 // TODO 
 func (grammar Ini ) printObject(depth string, key string, token interface{}, out func(value string)) {
 
-	style := grammar.parser.style
+	style := grammar.style
 	
 	if tuple, ok := token.(Tuple); ok {
 
@@ -629,7 +627,7 @@ func (grammar Ini ) printObject(depth string, key string, token interface{}, out
 	} else {
 		out(key) // TODO just key
 		out(style.ScalarPrefix)
-		PrintScalar(grammar.parser.style, "", token, out)
+		PrintScalar(grammar.style, "", token, out)
 	}
 }
 
@@ -643,7 +641,7 @@ func NewIniGrammar() Grammar {
 	style := NewStyle("", "", "",
 		"", "", "", "", "",
 		"= ", "\n", "true", "false", '#', "=")
-	return Ini{NewSExpressionParser(style)}
+	return Ini{style}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -651,7 +649,7 @@ func NewIniGrammar() Grammar {
 /////////////////////////////////////////////////////////////////////////////
 
 type PropertyGrammar struct {
-	parser SExpressionParser
+	style Style
 }
 
 func (grammar PropertyGrammar) Name() string {
@@ -667,7 +665,7 @@ func (grammar PropertyGrammar) Parse(context * ParserContext) {
 }
 
 func (grammar PropertyGrammar) printObject(depth string, token interface{}, out func(value string)) {
-	style := grammar.parser.style
+	style := grammar.style
 	
 	if tuple, ok := token.(Tuple); ok {
 		len := len(tuple.List)
@@ -704,7 +702,7 @@ func (grammar PropertyGrammar) printObject(depth string, token interface{}, out 
 	} else {
 		out(depth)
 		out(style.ScalarPrefix)
-		PrintScalar(grammar.parser.style, "", token, out)
+		PrintScalar(grammar.style, "", token, out)
 	}
 }
 
@@ -718,7 +716,7 @@ func NewPropertyGrammar() Grammar {
 	style := NewStyle("", "", "",
 		"", "", "", "", "",
 		" = ", "\n", "true", "false", '#', " = ")
-	return PropertyGrammar{NewSExpressionParser(style)}
+	return PropertyGrammar{style}
 }
 
 // TODO json xml postfix

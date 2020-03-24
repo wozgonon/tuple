@@ -19,6 +19,7 @@ package tuple
 /////////////////////////////////////////////////////////////////////////////
 
 type Lexer interface {
+	Printer
 	GetNext(context * ParserContext, nextAtom func(atom Atom), nextLiteral func (literal interface{})) error
 }
 
