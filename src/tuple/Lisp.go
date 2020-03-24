@@ -82,10 +82,6 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 			func (atom Atom) {
 				if operators.Precedence(atom) != -1 {
 					operatorGrammar.PushOperator(atom)
-				} else if operators.IsOpenBracket(atom) {
-					operatorGrammar.OpenBracket(atom)
-				} else if operators.IsCloseBracket(atom) {
-					operatorGrammar.CloseBracket(atom)
 				} else {
 					operatorGrammar.PushValue(atom)
 				}
@@ -136,7 +132,6 @@ func (grammar InfixExpressionGrammar) FileSuffix() string {
 func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 
 	open := grammar.style.Open
-	
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	for {
@@ -150,10 +145,6 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 			func(atom Atom) {
 				if operators.Precedence(atom) != -1 {
 					operatorGrammar.PushOperator(atom)
-				} else if operators.IsOpenBracket(atom) {
-					operatorGrammar.OpenBracket(atom)
-				} else if operators.IsCloseBracket(atom) {
-					operatorGrammar.CloseBracket(atom)
 				} else {
 					ch, err := context.ReadRune()
 					if err == io.EOF {
