@@ -223,7 +223,7 @@ func (parser SExpressionParser) printScalar(token interface{}, out func(value st
 }
 
 func (parser SExpressionParser) printObject(depth string, token interface{}, out func(value string)) {
-
+	
 	style := parser.style
 	if tuple, ok := token.(Tuple); ok {
 

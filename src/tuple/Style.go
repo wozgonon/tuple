@@ -17,6 +17,7 @@
 package tuple
 
 import "fmt"
+//import "log"
 import "strconv"
 import "math"
 
@@ -79,8 +80,17 @@ func (style Style) PrintBinaryOperator(depth string, atom Atom, value1 interface
 	PrintTuple(&style, depth, NewTuple(atom, value1, value2), out)
 }
 
+func isCons(tuple Tuple) bool {
+	cons := false
+	if tuple.Length() > 0 {
+		t, ok := tuple.List[0].(Tuple)
+		cons = ok && t.IsCons()
+	}
+	return cons
+}
+
 func (style Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
-	if tuple.IsCons() {
+	if isCons(tuple) {
 		out(style.Open2)
 	} else {
 		out(style.Open)
@@ -89,7 +99,7 @@ func (style Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction)
 }
 
 func (style Style) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {
-	if tuple.IsCons() {
+	if isCons(tuple) {
 		out(style.Close2)
 	} else {
 		out(style.Close)

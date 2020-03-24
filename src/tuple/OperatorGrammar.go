@@ -313,32 +313,32 @@ func (operators *Operators) AddStandardCOperators() {
 // Printer
 /////////////////////////////////////////////////////////////////////////////
 
-func (operators Operators) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
-	PrintTuple(&operators, depth, NewTuple(atom), out)
+func (printer Operators) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(atom), out)
 }
 
-func (operators Operators) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
-	PrintTuple(&operators, depth, NewTuple(atom, value), out)
+func (printer Operators) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(atom, value), out)
 }
 
-func (operators Operators) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
 
-	if _, ok := operators.precedence[atom.Name]; ok {
-		out(operators.Style.Open)
+	if _, ok := printer.precedence[atom.Name]; ok {
+		out(printer.Style.Open)
 		newDepth := depth + "  "
-		operators.PrintSuffix(newDepth, out)
+		printer.PrintSuffix(newDepth, out)
 		
-		PrintExpression(operators, newDepth, value1, out)
+		PrintExpression(printer, newDepth, value1, out)
 
-		operators.PrintIndent(newDepth, out)
+		printer.PrintIndent(newDepth, out)
 		out(atom.Name)
-		operators.PrintSuffix(newDepth, out)
+		printer.PrintSuffix(newDepth, out)
 
-		PrintExpression(operators, newDepth, value2, out)
+		PrintExpression(printer, newDepth, value2, out)
 
-		operators.PrintIndent(depth, out)
-		out(operators.Style.Close)
+		printer.PrintIndent(depth, out)
+		out(printer.Style.Close)
 	} else {
-		PrintTuple(&operators, depth, NewTuple(atom, value1, value2), out)
+		PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
 	}
 }

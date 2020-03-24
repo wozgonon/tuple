@@ -352,6 +352,9 @@ func (grammar Tcl) Parse(context * ParserContext) {
 }
 
 func (grammar Tcl) Print(token interface{}, out func(value string)) {
+
+	//PrintExpression(grammar.parser.style, "", object, out)  // TODO Use Printer
+	
 	style := grammar.parser.style
 	if tuple, ok := token.(Tuple); ok {
 		len := len(tuple.List)
@@ -629,7 +632,7 @@ func (grammar PropertyGrammar) printObject(depth string, token interface{}, out 
 
 func (grammar PropertyGrammar) Print(token interface{}, out func(value string)) {
 	grammar.printObject("", token, out)
-	out (string(NEWLINE))
+	//out (string(NEWLINE))
 }
 
 func NewPropertyGrammar() Grammar {
@@ -647,6 +650,7 @@ func NewPropertyGrammar() Grammar {
 /////////////////////////////////////////////////////////////////////////////
 
 type JSONGrammar struct {
+	Style
 	parser SExpressionParser
 }
 
@@ -663,18 +667,43 @@ func (grammar JSONGrammar) Parse(context * ParserContext) {
 }
 
 func (grammar JSONGrammar) Print(object interface{}, out func(value string)) {
-
-	grammar.parser.printObject("", object, out)
-	//PrintExpression(parser.style, "", object, out)  // TODO Use Printer
-	out (string(NEWLINE))
-
-	//grammar.parser.Print(token, next)
+	PrintExpression(grammar, "", object, out)  // TODO Use Printer
 }
 
 func NewJSONGrammar() Grammar {
 	style := Style{"", "", "  ",
 		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
 		",", "\n", "true", "false", '%', ""} // prolog, sql '--' for 
-	return JSONGrammar{NewSExpressionParser(style)}
+	return JSONGrammar{style, NewSExpressionParser(style)}
 }
 
+func (printer JSONGrammar) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(atom), out)
+}
+
+func (printer JSONGrammar) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(atom, value), out)
+}
+
+func (printer JSONGrammar) PrintSeparator(depth string, out StringFunction) {
+	out(printer.Style.Separator)
+}
+
+func (printer JSONGrammar) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+
+	if atom == CONS_ATOM {
+		newDepth := depth + "  "
+		printer.PrintIndent(depth, out)
+		PrintExpression1(printer, newDepth, value1, out)
+		out(" :")
+		if _, ok := value2.(Tuple); ok {
+			printer.PrintSuffix(newDepth, out)
+			printer.PrintIndent(newDepth, out)
+		} else {
+			out (" ")
+		}
+		PrintExpression1(printer, newDepth, value2, out)
+	} else {
+		PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
+	}
+}
