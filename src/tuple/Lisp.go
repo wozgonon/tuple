@@ -122,7 +122,7 @@ type InfixExpressionGrammar struct {
 }
 
 func (grammar InfixExpressionGrammar) Name() string {
-	return "Lisp with infix"
+	return "Expression with infix operators"
 }
 
 func (grammar InfixExpressionGrammar) FileSuffix() string {

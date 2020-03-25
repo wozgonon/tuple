@@ -187,6 +187,12 @@ func NewGrammars() Grammars{
 	return Grammars{make(map[string]Grammar)}
 }
 
+func (syntaxes * Grammars) Forall(next func(grammar Grammar)) {
+	for _, grammar := range syntaxes.all {
+		next (grammar)
+	}
+}
+
 func (syntaxes * Grammars) Add(syntax Grammar) {
 	suffix := syntax.FileSuffix()
 	syntaxes.all[suffix] = syntax

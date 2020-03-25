@@ -39,6 +39,7 @@ func main() {
 	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
 	var version = flag.Bool("version", false, "Print version of this software.")
 	var command = flag.Bool("command", false, "Execute command lines arguments rather than files.")
+	var listGrammars = flag.Bool("list-grammars", false, "List supported grammars.")
 
 	flag.Parse()
 
@@ -66,6 +67,14 @@ func main() {
 	grammars.Add((tuple.NewPropertyGrammar()))
 	grammars.Add((tuple.NewJSONGrammar()))
 
+	if *listGrammars {
+		grammars.Forall(func (grammar tuple.Grammar) {
+			fmt.Printf("%s\t%s\n", grammar.FileSuffix(), grammar.Name())
+			})
+		return
+	}
+
+	
 	outputGrammar := grammars.FindBySuffixOrPanic(*out)
 	loggerGrammar := grammars.FindBySuffixOrPanic(*loggerGrammarSuffix)
 	logger := tuple.GetLogger(loggerGrammar)
