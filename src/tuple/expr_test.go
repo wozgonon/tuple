@@ -8,19 +8,16 @@ import (
 
 var grammar = tuple.NewInfixExpressionGrammar()
 
-func TestEval1(t *testing.T) {
-	val := tuple.Eval(grammar, "1+1")
-	if val != tuple.Float64(2) {
-		t.Errorf("1+1=%s", val)
-	}
+func TestExpr1(t *testing.T) {
+	testFloatExpression(t, grammar, "1+1", 2)
 }
 
-func TestEvalToInt64(t *testing.T) {
+func TestExprToInt64(t *testing.T) {
 	tests := map[string]float64{
 		"1+1" : 2,
 		"1." : 1,
-		"-1" : -1,
-		"(((-1)))" : -1,
+		"-1." : -1,
+		"(((-1.)))" : -1,
 		"1+2*3" : 7,
 		"(1+2)*3" : 9,
 		"((1+2)*3)" : 9,
@@ -33,9 +30,19 @@ func TestEvalToInt64(t *testing.T) {
 		"acos(cos(PI))" : math.Pi,
 	}
 	for k, v := range tests {
-		val := tuple.Eval(grammar, k)
-		if val != tuple.Float64(v) {
-			t.Errorf("%s=%d   %s", k, int64(v), val)
-		}
+		testFloatExpression(t, grammar, k, v)
 	}
+}
+
+func testFloatExpressionFailParse(t *testing.T, grammar tuple.Grammar, formula string) {
+	val := tuple.Eval(grammar, formula)
+	f,ok := val.(tuple.Float64);
+	if !ok || (ok && ! math.IsNaN(float64(f))) {
+		t.Errorf("%s != %s", grammar, val)
+	}
+}
+
+
+func TestExpr(t *testing.T) {
+	testFloatExpressionFailParse(t, grammar, "-")
 }
