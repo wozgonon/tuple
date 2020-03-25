@@ -34,7 +34,7 @@ func main () {
 	outputGrammar := tuple.NewInfixExpressionGrammar()
 	pipeline := tuple.SimplePipeline (!*ast, *queryPattern, outputGrammar)
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := tuple.NewParserContext("<cli>", reader, tuple.GetLogger(nil), *verbose)
+	context := tuple.NewRunnerContext("<cli>", reader, tuple.GetLogger(nil), *verbose)
 	grammar := tuple.NewInfixExpressionGrammar()
 
 	//

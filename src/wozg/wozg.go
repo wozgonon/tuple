@@ -92,7 +92,7 @@ func main() {
 		//  Set up the translator pipeline.
 		//
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := tuple.NewParserContext("<cli>", reader, logger, *verbose)
+		context := tuple.NewRunnerContext("<cli>", reader, logger, *verbose)
 		grammar := grammars.FindBySuffixOrPanic(*in)
 
 		grammar.Parse(&context, pipeline)
@@ -107,7 +107,7 @@ func main() {
 		args := len(os.Args)
 		numberOfFiles := flag.NArg()
 		files := os.Args[args-numberOfFiles:]
-		errors := tuple.RunParser(files, logger, *verbose, inputGrammar, &grammars, pipeline)
+		errors := tuple.RunFiles(files, logger, *verbose, inputGrammar, &grammars, pipeline)
 		//
 		//  Exit with non-zero response code if any errors occurred.
 		//

@@ -18,9 +18,10 @@ package tuple
 
 /////////////////////////////////////////////////////////////////////////////
 
-//type Token interface {
-//	Print(next StringFunction)
-//}
+// https://en.wikipedia.org/wiki/Arity
+type Value interface {
+	Arity() int
+}
 
 type String struct {
 	value string
@@ -37,6 +38,11 @@ type Atom struct {
 	Name string
 }
 
+func (atom Atom) Arity() int { return 0 }
+func (number Number) Arity() int { return 0 }
+func (number String) Arity() int { return 0 }
+func (comment Comment) Arity() int { return 0 }
+
 // A textual comment
 type Comment struct {
 	// TODO include location and source for editors
@@ -46,6 +52,8 @@ type Comment struct {
 func NewComment(_ Context, token string) Comment {
 	return Comment{token}
 }
+
+func (tuple Tuple) Arity() int { return len(tuple.List) }
 
 /////////////////////////////////////////////////////////////////////////////
 // Tuple

@@ -22,9 +22,13 @@ import 	"fmt"
 import 	"bufio"
 import 	"os"
 
+/////////////////////////////////////////////////////////////////////////////
+// For running the language translations
+/////////////////////////////////////////////////////////////////////////////
+
 const PROMPT = "$ "
 
-type ParserContext struct {
+type RunnerContext struct {
 	sourceName string
 	line int64
 	column int64
@@ -35,39 +39,39 @@ type ParserContext struct {
 	verbose bool
 }
 
-func NewParserContext(sourceName string, scanner io.RuneScanner, logger Logger, verbose bool) ParserContext {
-	context :=  ParserContext{sourceName, 1, 0, 0, 0, scanner, logger, verbose}
+func NewRunnerContext(sourceName string, scanner io.RuneScanner, logger Logger, verbose bool) RunnerContext {
+	context :=  RunnerContext{sourceName, 1, 0, 0, 0, scanner, logger, verbose}
 	Verbose(context,"Parsing file [%s] suffix [%s]", sourceName, Suffix(context))
 	return context
 }
 
-func (context ParserContext) Line() int64 {
+func (context RunnerContext) Line() int64 {
 	return context.line
 }
-func (context ParserContext) Column() int64 {
+func (context RunnerContext) Column() int64 {
 	return context.column
 }
-func (context ParserContext) Depth() int {
+func (context RunnerContext) Depth() int {
 	return context.depth
 }
 
-func (context ParserContext) Errors() int64 {
+func (context RunnerContext) Errors() int64 {
 	return context.errors
 }
 
-func (context ParserContext) SourceName() string {
+func (context RunnerContext) SourceName() string {
 	return context.sourceName
 }
 
-func (context ParserContext) Open() {
+func (context RunnerContext) Open() {
 	context.depth += 1
 }
 
-func (context ParserContext) Close() {
+func (context RunnerContext) Close() {
 	context.depth -= 1
 }
 
-func (context ParserContext) prompt() {
+func (context RunnerContext) prompt() {
 	if IsInteractive(context) {
 		fmt.Print (context.SourceName)
 		if context.depth > 0 {
@@ -78,7 +82,7 @@ func (context ParserContext) prompt() {
 	}
 }
 
-func (context ParserContext) ReadRune() (rune, error) {
+func (context RunnerContext) ReadRune() (rune, error) {
 	ch, _, err := context.scanner.ReadRune()
 	switch {
 	case err != nil: return ch, err
@@ -93,7 +97,7 @@ func (context ParserContext) ReadRune() (rune, error) {
 	return ch, nil
 }
 
-func (context ParserContext) UnreadRune() {
+func (context RunnerContext) UnreadRune() {
 	context.scanner.UnreadRune()
 	if context.column == 0 {
 		context.line --
@@ -102,7 +106,7 @@ func (context ParserContext) UnreadRune() {
 	}
 }
 
-func (context ParserContext) Log(format string, level string, args ...interface{}) {
+func (context RunnerContext) Log(format string, level string, args ...interface{}) {
 
 	switch level {
 	case "VERBOSE":
@@ -136,7 +140,7 @@ func GetLogger(logGrammar Grammar) Logger {
 	}
 }
 
-func RunParser(args []string, logger Logger, verbose bool, inputGrammar Grammar, grammars *Grammars, next Next) int64 {
+func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, grammars *Grammars, next Next) int64 {
 
 	errors := int64(0)
 	// TODO this can be improved
@@ -157,7 +161,7 @@ func RunParser(args []string, logger Logger, verbose bool, inputGrammar Grammar,
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
-		context := NewParserContext(STDIN, reader, logger, verbose)
+		context := NewRunnerContext(STDIN, reader, logger, verbose)
 		context.prompt()
 		parse(context)
 		errors += context.errors
@@ -169,7 +173,7 @@ func RunParser(args []string, logger Logger, verbose bool, inputGrammar Grammar,
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, logger, verbose)
+			context := NewRunnerContext(fileName, reader, logger, verbose)
 			parse(context)
 			errors += context.errors
 			file.Close()
