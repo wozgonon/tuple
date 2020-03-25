@@ -24,6 +24,11 @@ import "strconv"
 import "math"
 import "unicode/utf8"
 
+/////////////////////////////////////////////////////////////////////////////
+//  A lexer similar to that used by UNIX/C based languages
+//  such as C, C#, C++, Java, Go and also bash
+/////////////////////////////////////////////////////////////////////////////
+
 const NEWLINE = '\n'
 const DOUBLE_QUOTE = "\""
 const UNKNOWN = "<???>"
