@@ -213,6 +213,9 @@ func NewInfixExpressionGrammar() Grammar {
 // * Bash one can use an external 'expr(1)' tool:  'expr 8.3 + 6'
 // * DOS has a special version of the SET command 'SET /a c=a+b'
 //
+// It would be nice not to have to put quotes around strings, in particular working interactice on the command line (CLI) with a shell such as bash or
+// dos command line.  It is very nice not to have to include any boiler plate when just entering commands but this quickly becomes very awkward to add any more complex syntax.
+
 type Tcl struct {
 	style Style
 }

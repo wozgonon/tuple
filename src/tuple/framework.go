@@ -19,7 +19,8 @@ package tuple
 import "strings"
 import "log"
 import "reflect"
-import 	"path"
+import "path"
+import "math"
 
 const STDIN = "<stdin>"
 
@@ -50,6 +51,8 @@ type String string
 type Float64 float64
 type Int64 int64
 type Bool bool
+
+var NAN Float64 = Float64(math.NaN())
 
 // An Atom - a name for something, an identifier or operator
 // TODO include location and source for editors

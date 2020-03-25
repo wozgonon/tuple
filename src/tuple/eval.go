@@ -19,34 +19,17 @@ package tuple
 import "math"
 import "strings"
 
-//  A simple toy evaluator
-
-var NAN Float64 = Float64(math.NaN())
-
-
-func toFloat64(value Value) float64 {
-	switch val := value.(type) {
-	case Int64: return float64(val)
-	case Float64: return float64(val)
-	case Atom: return math.NaN() // TODO Nullary(val)
-	//case bool: return float64(val)
-	default:
-		return math.NaN()
-	}
-}
-
-
-func Nullary(val Atom) Value {
-	switch val.Name {
-	case "PI": return Float64(math.Pi)
-	case "PHI": return Float64(math.Phi)
-	case "E": return Float64(math.E)
-	case "true": return Bool(true)
-	case "false": return Bool(false)
-	default: return NAN   // TODO look up variable
-	}
-}
-
+//  A simple toy evaluator.
+//
+//  Treats the data produced by parsing and treats it as an executable program
+//  (code can be accessed and treated as if it is data and data can be treated as code).
+//  This is normal for LISP but will work for any of the input grammars.
+//
+//  See:
+//  * [Homoiconic](https://en.wikipedia.org/wiki/Homoiconicity) language treats "code as data".
+//  * [Eval](https://en.wikipedia.org/wiki/Eval)
+//  * [Meta-circular_evaluator](https://en.wikipedia.org/wiki/Meta-circular_evaluator)
+//  
 func SimpleEval(expression Value, next Next) {
 	result := eval(expression)
 	next(result)
@@ -141,4 +124,33 @@ func eval(expression Value) Value {
 	}
 		
 }
+func toString(value Value) string {
+	switch val := value.(type) {
+	case Atom: return val.Name
+	case String: return string(val)
+	default:
+		return ""
+	}
+}
 
+func toFloat64(value Value) float64 {
+	switch val := value.(type) {
+	case Int64: return float64(val)
+	case Float64: return float64(val)
+	case Atom: return math.NaN() // TODO Nullary(val)
+	//case bool: return float64(val)
+	default:
+		return math.NaN()
+	}
+}
+
+func Nullary(val Atom) Value {
+	switch val.Name {
+	case "PI": return Float64(math.Pi)
+	case "PHI": return Float64(math.Phi)
+	case "E": return Float64(math.E)
+	case "true": return Bool(true)
+	case "false": return Bool(false)
+	default: return NAN   // TODO look up variable
+	}
+}
