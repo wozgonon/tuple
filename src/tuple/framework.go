@@ -29,6 +29,7 @@ const STDIN = "<stdin>"
 
 type StringFunction func(value string)
 type Next func(value interface{})
+type Logger func(context Context, level string, message string)
 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer
@@ -48,6 +49,9 @@ type Lexer interface {
 // It can provide: the name of the input and current depth and number of errors
 type Context interface {
 	SourceName() string
+	Line() int64
+	Column() int64
+	Depth() int
 	Open()
 	Close()
 	ReadRune() (rune, error)
@@ -121,15 +125,15 @@ func (syntaxes * Grammars) Add(syntax Grammar) {
 	syntaxes.all[suffix] = syntax
 }
 
-func (syntaxes * Grammars) FindBySuffix(suffix string) (*Grammar, bool) {
+func (syntaxes * Grammars) FindBySuffix(suffix string) (Grammar, bool) {
 	if ! strings.HasPrefix(suffix, ".") {
 		suffix = "." + suffix
 	}
 	syntax, ok := syntaxes.all[suffix]
-	return &syntax, ok
+	return syntax, ok
 }
 
-func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) *Grammar {
+func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
 	syntax, ok := syntaxes.FindBySuffix(suffix)
 	if ! ok {
 		panic("Unsupported file suffix: '" + suffix + "'")

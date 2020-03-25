@@ -32,12 +32,10 @@ func main () {
 	//  Set up the translator pipeline.
 	//
 	outputGrammar := tuple.NewInfixExpressionGrammar()
-	pipeline := tuple.SimplePipeline (!*ast, *queryPattern, &outputGrammar)
+	pipeline := tuple.SimplePipeline (!*ast, *queryPattern, outputGrammar)
 	reader := bufio.NewReader(strings.NewReader(expression))
-	logGrammar := tuple.NewLispGrammar()
-	context := tuple.NewParserContext("<cli>", reader, logGrammar, *verbose)
+	context := tuple.NewParserContext("<cli>", reader, tuple.GetLogger(nil), *verbose)
 	grammar := tuple.NewInfixExpressionGrammar()
-	//grammar := tuple.InfixGrammar()
 
 	//
 	//  Set up the translator pipeline.

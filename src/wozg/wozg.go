@@ -33,7 +33,7 @@ func main() {
 	
 	var in = flag.String("in", ".l", "The format of the input.")
 	var out = flag.String("out", ".l", "The format of the output.")
-	var logger = flag.String("log", ".l", "The format of the error logging.")
+	var loggerGrammarSuffix = flag.String("log", ".l", "The format of the error logging.")
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
 	var eval = flag.Bool("eval", false, "Run 'eval' interpretter.")
 	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
@@ -67,8 +67,9 @@ func main() {
 	grammars.Add((tuple.NewJSONGrammar()))
 
 	outputGrammar := grammars.FindBySuffixOrPanic(*out)
-	loggerGrammar := grammars.FindBySuffixOrPanic(*logger)
-	var inputGrammar *tuple.Grammar = nil
+	loggerGrammar := grammars.FindBySuffixOrPanic(*loggerGrammarSuffix)
+	logger := tuple.GetLogger(loggerGrammar)
+	var inputGrammar tuple.Grammar = nil
 	if *in != "" {
 		inputGrammar = grammars.FindBySuffixOrPanic(*in)
 	}
@@ -91,10 +92,10 @@ func main() {
 		//  Set up the translator pipeline.
 		//
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := tuple.NewParserContext("<cli>", reader, *loggerGrammar, *verbose)
+		context := tuple.NewParserContext("<cli>", reader, logger, *verbose)
 		grammar := grammars.FindBySuffixOrPanic(*in)
 
-		(*grammar).Parse(&context, pipeline)
+		grammar.Parse(&context, pipeline)
 		if context.Errors() > 0 {
 			os.Exit(1)
 		}
@@ -106,7 +107,7 @@ func main() {
 		args := len(os.Args)
 		numberOfFiles := flag.NArg()
 		files := os.Args[args-numberOfFiles:]
-		errors := tuple.RunParser(files, *loggerGrammar, *verbose, inputGrammar, &grammars, pipeline)
+		errors := tuple.RunParser(files, logger, *verbose, inputGrammar, &grammars, pipeline)
 		//
 		//  Exit with non-zero response code if any errors occurred.
 		//

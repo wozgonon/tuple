@@ -24,7 +24,6 @@ import 	"os"
 
 const PROMPT = "$ "
 
-
 type ParserContext struct {
 	sourceName string
 	line int64
@@ -32,14 +31,24 @@ type ParserContext struct {
 	depth int
 	errors int64
 	scanner io.RuneScanner
-	logGrammar Grammar
+	logger Logger
 	verbose bool
 }
 
-func NewParserContext(sourceName string, scanner io.RuneScanner, logGrammar Grammar, verbose bool) ParserContext {
-	context :=  ParserContext{sourceName, 1, 0, 0, 0, scanner, logGrammar, verbose}
+func NewParserContext(sourceName string, scanner io.RuneScanner, logger Logger, verbose bool) ParserContext {
+	context :=  ParserContext{sourceName, 1, 0, 0, 0, scanner, logger, verbose}
 	Verbose(context,"Parsing file [%s] suffix [%s]", sourceName, Suffix(context))
 	return context
+}
+
+func (context ParserContext) Line() int64 {
+	return context.line
+}
+func (context ParserContext) Column() int64 {
+	return context.column
+}
+func (context ParserContext) Depth() int {
+	return context.depth
 }
 
 func (context ParserContext) Errors() int64 {
@@ -103,29 +112,37 @@ func (context ParserContext) Log(format string, level string, args ...interface{
 	case "ERROR": context.errors += 1
 	default:
 	}
-	
-	prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': ", level, context.line, context.column, context.depth, context.SourceName)
 	suffix := fmt.Sprintf(format, args...)
-	log.Print(prefix + suffix)
-
-	tuple := NewTuple()
-	tuple.Append(level)
-	tuple.Append(context.line)
-	tuple.Append(context.column)
-	tuple.Append(int64(context.depth))
-	tuple.Append(context.SourceName)
-	tuple.Append(suffix)
-	// TODO context.logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
-
+	context.logger(context, level, suffix)
 }
 
-func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * Grammar, grammars *Grammars, next Next) int64 {
+func GetLogger(logGrammar Grammar) Logger {
+	if logGrammar == nil {
+		return func (context Context, level string, message string) {
+			prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': ", level, context.Line(), context.Column(), context.Depth(), context.SourceName(), message)
+			log.Print(prefix)
+		}
+	} else {
+		return func(context Context, level string, message string) {
+			tuple := NewTuple()
+			tuple.Append(level)
+			tuple.Append(context.Line())
+			tuple.Append(context.Column())
+			tuple.Append(int64(context.Depth()))
+			tuple.Append(context.SourceName())
+			tuple.Append(message)
+			logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
+		}
+	}
+}
+
+func RunParser(args []string, logger Logger, verbose bool, inputGrammar Grammar, grammars *Grammars, next Next) int64 {
 
 	errors := int64(0)
 	// TODO this can be improved
 	parse := func (context Context) {
 		suffix := Suffix(context)
-		var grammar *Grammar
+		var grammar Grammar
 		if suffix == "" {
 			if inputGrammar == nil {
 				panic("Input grammar for '" + context.SourceName() + "' not given, use -in ...")
@@ -134,13 +151,13 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 		} else {
 			grammar = grammars.FindBySuffixOrPanic(suffix)
 		}
-		Verbose(context,"source [%s] suffix [%s]", context.SourceName(), (*grammar).FileSuffix ())
-		(*grammar).Parse(context, next)
+		Verbose(context,"source [%s] suffix [%s]", context.SourceName(), grammar.FileSuffix ())
+		grammar.Parse(context, next)
 	}
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
-		context := NewParserContext(STDIN, reader, logGrammar, verbose)
+		context := NewParserContext(STDIN, reader, logger, verbose)
 		context.prompt()
 		parse(context)
 		errors += context.errors
@@ -152,7 +169,7 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, logGrammar, verbose)
+			context := NewParserContext(fileName, reader, logger, verbose)
 			parse(context)
 			errors += context.errors
 			file.Close()
@@ -164,10 +181,10 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 //
 //  Set up the translator pipeline.
 //
-func SimplePipeline (eval bool, queryPattern string, outputGrammar * Grammar) Next {
+func SimplePipeline (eval bool, queryPattern string, outputGrammar Grammar) Next {
 
 	prettyPrint := func(tuple interface{}) {
-		(*outputGrammar).Print(tuple, func(value string) {
+		outputGrammar.Print(tuple, func(value string) {
 			fmt.Printf ("%s", value)
 		})
 	}
