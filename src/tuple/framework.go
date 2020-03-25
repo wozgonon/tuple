@@ -32,7 +32,7 @@ type Next func(value Value)
 type Logger func(context Context, level string, message string)
 
 /////////////////////////////////////////////////////////////////////////////
-//  Lexer
+//  Lexer and Values
 /////////////////////////////////////////////////////////////////////////////
 
 type Lexer interface {
@@ -40,10 +40,77 @@ type Lexer interface {
 	GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error
 }
 
+// The Value interface must be implected by any of the small number of types that can be produced by the lexer
+type Value interface {
+	// See: https://en.wikipedia.org/wiki/Arity
+	Arity() int
+}
+
+type String string
+type Float64 float64
+type Int64 int64
+type Bool bool
+
+// An Atom - a name for something, an identifier or operator
+// TODO include location and source for editors
+type Atom struct {
+	Name string
+}
+
+func (atom Atom) Arity() int { return 0 }
+func (value String) Arity() int { return 0 }
+func (comment Comment) Arity() int { return 0 }
+func (value Float64) Arity() int { return 0 }
+func (value Int64) Arity() int { return 0 }
+func (value Bool) Arity() int { return 0 }
+
+// A textual comment
+type Comment struct {
+	// TODO include location and source for editors
+	Comment string
+}
+
+func NewComment(_ Context, token string) Comment {
+	return Comment{token}
+}
+
+func (tuple Tuple) Arity() int { return len(tuple.List) }
+
+/////////////////////////////////////////////////////////////////////////////
+// Tuple
+/////////////////////////////////////////////////////////////////////////////
+
+type Tuple struct {
+	// TODO include location and source for editors
+	List []Value
+}
+
+func (tuple *Tuple) Append(token Value) {
+	tuple.List = append(tuple.List, token)
+}
+
+func (tuple *Tuple) Length() int {
+	return len(tuple.List)
+}
+
+func (tuple *Tuple) IsCons() bool {
+	if tuple.Length() > 0 {
+		head := tuple.List[0]
+		atom, ok := head.(Atom)
+		if ok && atom == CONS_ATOM {
+			return true
+		}
+	}
+	return false
+}
+
+func NewTuple(values...Value) Tuple {
+	return Tuple{values}
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //  Context
 /////////////////////////////////////////////////////////////////////////////
-
 
 // The Context interface represents the current state of parsing and translation.
 // It can provide: the name of the input and current depth and number of errors

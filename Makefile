@@ -23,7 +23,7 @@ wexpr: tuple src/wexpr/wexpr.go ${VERSION_FILE}
 wozg: tuple src/wozg/wozg.go ${VERSION_FILE}
 	go install $@
 
-tuple: src/tuple/tuple.go
+tuple: src/tuple/*.go
 	go install $@
 
 #############################################################################
