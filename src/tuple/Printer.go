@@ -25,6 +25,7 @@ type Printer interface {
 
 	PrintIndent(depth string, out StringFunction)
 	PrintSuffix(depth string, out StringFunction)
+	PrintScalarPrefix(depth string, out StringFunction)
 	PrintSeparator(depth string, out StringFunction)
 	PrintEmptyTuple(depth string, out StringFunction)
 	PrintNullaryOperator(depth string, atom Atom, out StringFunction)
@@ -32,6 +33,7 @@ type Printer interface {
 	PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction)
 	PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string
 	PrintCloseTuple(depth string, tuple Tuple, out StringFunction)
+	PrintHeadAtom(value Atom, out StringFunction)
 	PrintAtom(depth string, value Atom, out StringFunction)
 	PrintInt64(depth string, value int64, out StringFunction)
 	PrintFloat64(depth string, value float64, out StringFunction)
@@ -41,6 +43,7 @@ type Printer interface {
 }
 
 func PrintScalar(printer Printer, depth string, token interface{}, out StringFunction) {
+	printer.PrintScalarPrefix(depth, out)
 	switch token.(type) {
 	case Atom:
 		printer.PrintAtom(depth, token.(Atom), out)
@@ -63,16 +66,22 @@ func PrintTuple(printer Printer, depth string, tuple Tuple, out StringFunction) 
 	newDepth := printer.PrintOpenTuple(depth, tuple, out)
 	printer.PrintSuffix(depth, out)
 	ll := len(tuple.List)
+	first := false
+	if ll > 0 {
+		_, first = tuple.List[0].(Atom)
+	}
 	for k, value := range tuple.List {
 		printer.PrintIndent(newDepth, out)
-		PrintExpression1(printer, newDepth, value, out)
+		if first && k == 0 {
+			printer.PrintHeadAtom(value.(Atom), out)
+		} else {
+			PrintExpression1(printer, newDepth, value, out)
+		}
 		if k < ll-1 {
 			printer.PrintSeparator(newDepth, out)
 		}
 		printer.PrintSuffix(depth, out)
-
 	}
-	printer.PrintIndent(depth, out)
 	printer.PrintCloseTuple(depth, tuple, out)
 }
 
@@ -89,6 +98,7 @@ func PrintExpression1(printer Printer, depth string, token interface{}, out Stri
 		tuple := token.(Tuple)
 		len := len(tuple.List)
 		if len == 0 {
+			printer.PrintScalarPrefix(depth, out)
 			printer.PrintEmptyTuple(depth, out)
 		} else {
 			head := tuple.List[0]

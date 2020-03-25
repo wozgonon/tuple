@@ -91,11 +91,11 @@ func main() {
 		//  Set up the translator pipeline.
 		//
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := tuple.NewParserContext("<cli>", reader, *loggerGrammar, *verbose, pipeline)
+		context := tuple.NewParserContext("<cli>", reader, *loggerGrammar, *verbose)
 		grammar := grammars.FindBySuffixOrPanic(*in)
 
-		(*grammar).Parse(&context)
-		if context.Errors > 0 {
+		(*grammar).Parse(&context, pipeline)
+		if context.Errors() > 0 {
 			os.Exit(1)
 		}
 

@@ -20,7 +20,7 @@ package tuple
 
 type Lexer interface {
 	Printer
-	GetNext(context * ParserContext, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error
+	GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error
 }
 
 type StringFunction func(value string)
@@ -50,7 +50,7 @@ type Comment struct {
 	Comment string
 }
 
-func NewComment(_ ParserContext, token string) Comment {
+func NewComment(_ Context, token string) Comment {
 	return Comment{token}
 }
 

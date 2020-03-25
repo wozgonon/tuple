@@ -32,7 +32,7 @@ type Grammar interface {
 	
 	// Parses an input stream of characters into an internal representation (AST)
 	// The output ought to be printable by the 'print' method.
-	Parse(context * ParserContext) // , next func(tuple Tuple)) (interface{}, error)
+	Parse(context Context, next Next) // , next func(tuple Tuple)) (interface{}, error)
 	
 	// Pretty prints the objects in the given syntax.
 	// The output ought to be parsable by the 'parse' method.

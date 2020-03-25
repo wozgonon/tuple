@@ -28,43 +28,76 @@ const STDIN = "<stdin>"
 
 type Next func(value interface{})
 
+// TODO
+type Context interface {
+	SourceName() string
+	Open()
+	Close()
+	ReadRune() (rune, error)
+	UnreadRune()
+	Log(format string, level string, args ...interface{})
+	Errors() int64
+}
+
+func Verbose(context Context, format string, args ...interface{}) {
+	context.Log(format, "VERBOSE", args...)
+}
+
+func Error(context Context, format string, args ...interface{}) {
+	context.Log(format, "ERROR", args...)
+}
+
+func UnexpectedCloseBracketError(context Context, token string) {
+	Error(context,"Unexpected close bracket '%s'", token)
+}
+
+func UnexpectedEndOfInputErrorBracketError(context Context) {
+	Error(context,"Unexpected end of input")
+}
+
+func IsInteractive(context Context) bool {
+	return context.SourceName() == STDIN
+}
+
+func Suffix(context Context) string {
+	return path.Ext(context.SourceName())
+}
+
 type ParserContext struct {
-	SourceName string
+	sourceName string
 	line int64
 	column int64
 	depth int
-	Errors int64
+	errors int64
 	scanner io.RuneScanner
 	logGrammar Grammar
 	verbose bool
-	next Next
-
 }
 
-func NewParserContext(sourceName string, scanner io.RuneScanner, logGrammar Grammar, verbose bool, next Next) ParserContext {
-	context :=  ParserContext{sourceName, 1, 0, 0, 0, scanner, logGrammar, verbose, next}
-	context.Verbose("Parsing file [%s] suffix [%s]", sourceName, context.Suffix())
+func NewParserContext(sourceName string, scanner io.RuneScanner, logGrammar Grammar, verbose bool) ParserContext {
+	context :=  ParserContext{sourceName, 1, 0, 0, 0, scanner, logGrammar, verbose}
+	Verbose(context,"Parsing file [%s] suffix [%s]", sourceName, Suffix(context))
 	return context
 }
 
-func (context * ParserContext) Open() {
+func (context ParserContext) Errors() int64 {
+	return context.errors
+}
+
+func (context ParserContext) SourceName() string {
+	return context.sourceName
+}
+
+func (context ParserContext) Open() {
 	context.depth += 1
 }
 
-func (context * ParserContext) Close() {
+func (context ParserContext) Close() {
 	context.depth -= 1
 }
 
-func (context * ParserContext) IsInteractive() bool {
-	return context.SourceName == STDIN
-}
-
-func (context * ParserContext) Suffix() string {
-	return path.Ext(context.SourceName)
-}
-
-func (context * ParserContext) prompt() {
-	if context.IsInteractive() {
+func (context ParserContext) prompt() {
+	if IsInteractive(context) {
 		fmt.Print (context.SourceName)
 		if context.depth > 0 {
 			fmt.Printf (" %d%s", context.depth, PROMPT)
@@ -74,14 +107,14 @@ func (context * ParserContext) prompt() {
 	}
 }
 
-func (context * ParserContext) ReadRune() (rune, error) {
+func (context ParserContext) ReadRune() (rune, error) {
 	ch, _, err := context.scanner.ReadRune()
 	switch {
 	case err != nil: return ch, err
 	case ch == '\n':
 		context.line ++
 		context.column = 0
-		context.Verbose("New line")
+		Verbose(context,"New line")
 		context.prompt()
 	default:
 		context.column ++
@@ -89,7 +122,7 @@ func (context * ParserContext) ReadRune() (rune, error) {
 	return ch, nil
 }
 
-func (context * ParserContext) UnreadRune() {
+func (context ParserContext) UnreadRune() {
 	context.scanner.UnreadRune()
 	if context.column == 0 {
 		context.line --
@@ -98,7 +131,17 @@ func (context * ParserContext) UnreadRune() {
 	}
 }
 
-func (context * ParserContext) log(format string, level string, args ...interface{}) {
+func (context ParserContext) Log(format string, level string, args ...interface{}) {
+
+	switch level {
+	case "VERBOSE":
+		if ! context.verbose {
+			return
+		}
+	case "ERROR": context.errors += 1
+	default:
+	}
+	
 	prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': ", level, context.line, context.column, context.depth, context.SourceName)
 	suffix := fmt.Sprintf(format, args...)
 	log.Print(prefix + suffix)
@@ -114,50 +157,31 @@ func (context * ParserContext) log(format string, level string, args ...interfac
 
 }
 
-func (context * ParserContext) Error(format string, args ...interface{}) {
-	context.log(format, "ERROR", args...)
-	context.Errors ++
-}
-
-func (context * ParserContext) UnexpectedCloseBracketError(token string) {
-	context.Error ("Unexpected close bracket '%s'", token)
-}
-
-func (context * ParserContext) UnexpectedEndOfInputErrorBracketError() {
-	context.Error ("Unexpected end of input")
-}
-
-func (context * ParserContext) Verbose(format string, args ...interface{}) {
-	if context.verbose {
-		context.log(format, "VERBOSE", args...)
-	}
-}
-
 func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * Grammar, grammars *Grammars, next Next) int64 {
 
 	errors := int64(0)
 	// TODO this can be improved
-	parse := func (context * ParserContext) {
-		suffix := context.Suffix()
+	parse := func (context Context) {
+		suffix := Suffix(context)
 		var grammar *Grammar
 		if suffix == "" {
 			if inputGrammar == nil {
-				panic("Input grammar for '" + context.SourceName + "' not given, use -in ...")
+				panic("Input grammar for '" + context.SourceName() + "' not given, use -in ...")
 			}
 			grammar = inputGrammar
 		} else {
 			grammar = grammars.FindBySuffixOrPanic(suffix)
 		}
-		context.Verbose("source [%s] suffix [%s]", context.SourceName, (*grammar).FileSuffix ())
-		(*grammar).Parse(context)
+		Verbose(context,"source [%s] suffix [%s]", context.SourceName(), (*grammar).FileSuffix ())
+		(*grammar).Parse(context, next)
 	}
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
-		context := NewParserContext(STDIN, reader, logGrammar, verbose, next)
+		context := NewParserContext(STDIN, reader, logGrammar, verbose)
 		context.prompt()
-		parse(&context)
-		errors += context.Errors
+		parse(context)
+		errors += context.errors
 		
 	} else {
 		for _, fileName := range args {
@@ -166,9 +190,9 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, logGrammar, verbose, next)
-			parse(&context)
-			errors += context.Errors
+			context := NewParserContext(fileName, reader, logGrammar, verbose)
+			parse(context)
+			errors += context.errors
 			file.Close()
 		}
 	}

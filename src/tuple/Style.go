@@ -111,7 +111,7 @@ func NewStyle(
 // Lexer
 /////////////////////////////////////////////////////////////////////////////
 
-func readRune(context * ParserContext, style Style) (rune, error) {
+func readRune(context Context, style Style) (rune, error) {
 	ch, err := context.ReadRune()
 	switch {
 	case err != nil: return ch, err
@@ -119,11 +119,11 @@ func readRune(context * ParserContext, style Style) (rune, error) {
 		context.Open()
 	case ch == style.closeChar, ch == style.closeChar2 :
 		context.Close()
-	}
+	} 
 	return ch, nil
 }
 
-func (style Style) GetNext(context * ParserContext, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error {
+func (style Style) GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error {
 
 	ch, err := readRune(context, style)
 	switch {
@@ -183,9 +183,9 @@ func (style Style) GetNext(context * ParserContext, open func(open string), clos
 			nextLiteral(value)
 		}
 		
-	case unicode.IsGraphic(ch): context.Error("Error graphic character not recognised '%s'", string(ch))
-	case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
-	default: context.Error("Error character not recognised '%d'", ch)
+	case unicode.IsGraphic(ch): Error(context,"Error graphic character not recognised '%s'", string(ch))
+	case unicode.IsControl(ch): Error(context,"Error control character not recognised '%d'", ch)
+	default: Error(context,"Error character not recognised '%d'", ch)
 	}
 	return nil
 }
@@ -196,11 +196,11 @@ func (style Style) GetNext(context * ParserContext, open func(open string), clos
 //  Go language defines the word rune as an alias for the type int32, so programs can be clear when an integer value represents a code point.
 //  Moreover, what you might think of as a character constant is called a rune constant in Go. 
 
-func ReadString (context * ParserContext, token string, unReadLast bool, test func(r rune) bool) (string, error) {
+func ReadString (context Context, token string, unReadLast bool, test func(r rune) bool) (string, error) {
 	for {
 		ch, err := context.ReadRune()
 		if err == io.EOF {
-			//context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
+			//Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 			return token, nil
 		} else if err != nil {
 			//log.Printf("ERROR nil")
@@ -217,7 +217,7 @@ func ReadString (context * ParserContext, token string, unReadLast bool, test fu
 	}
 }
 
-func ReadAtom(context * ParserContext, prefix string, test func(rune) bool) (interface{}, error) {
+func ReadAtom(context Context, prefix string, test func(rune) bool) (interface{}, error) {
 	atom, err := ReadString(context, prefix, true, test)
 	if err != nil {
 		return Atom{""}, err
@@ -229,7 +229,7 @@ func ReadAtom(context * ParserContext, prefix string, test func(rune) bool) (int
 	}
 }
 
-func ReadNumber(context * ParserContext, token string) (interface{}, error) {  // Number
+func ReadNumber(context Context, token string) (interface{}, error) {  // Number
 	var dots int
 	if token == "." {
 		dots = 1
@@ -266,25 +266,25 @@ func ReadNumber(context * ParserContext, token string) (interface{}, error) {  /
 	} 
 }
 
-func ReadUntilEndOfLine(context * ParserContext) (Comment, error) {
+func ReadUntilEndOfLine(context Context) (Comment, error) {
 	token := ""
 	for {
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
-			return NewComment(*context, token), nil
+			return NewComment(context, token), nil
 		case err != nil:
-			return NewComment(*context, token), err
+			return NewComment(context, token), err
 		case ch == NEWLINE:
 			context.UnreadRune()
-			return NewComment(*context, token), err
+			return NewComment(context, token), err
 		default:
 			token = token + string(ch)
 		}
 	}
 }
 
-func ReadUntilSpace(context * ParserContext, token string) (string, error) {
+func ReadUntilSpace(context Context, token string) (string, error) {
 	for {
 		ch, err := context.ReadRune()
 		switch {
@@ -301,20 +301,20 @@ func ReadUntilSpace(context * ParserContext, token string) (string, error) {
 	}
 }
 
-func ReadCLanguageString(context * ParserContext) (string, error) {
+func ReadCLanguageString(context Context) (string, error) {
 	token := ""
 	for {
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
-			context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
+			Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 			return token, nil
 		case err != nil: return "", err
 		case ch == '"': return token, nil
 		case ch == '\\':
 			ch, err := context.ReadRune()
 			if err == io.EOF {
-				context.Error("ERROR missing close quote: '%s'", DOUBLE_QUOTE)
+				Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 				return token, nil
 			}
 			token = token + string(cLanguageEscapeCharacters(ch))
@@ -387,33 +387,33 @@ func AddStandardCOperators(operators *Operators) {
 // Printer
 /////////////////////////////////////////////////////////////////////////////
 
-func (style Style) PrintIndent(depth string, out StringFunction) {
+func (printer Style) PrintIndent(depth string, out StringFunction) {
 	out(depth)
 }
 
-func (style Style) PrintSuffix(depth string, out StringFunction) {
+func (printer Style) PrintSuffix(depth string, out StringFunction) {
 	out(string(NEWLINE))
 }
 
-func (style Style) PrintSeparator(depth string, out StringFunction) {
-	//out(style.Separator)
+func (printer Style) PrintSeparator(depth string, out StringFunction) {
+	//out(printer.Separator)
 }
 
-func (style Style) PrintEmptyTuple(depth string, out StringFunction) {
-	out(style.Open)
-	out(style.Close)
+func (printer Style) PrintEmptyTuple(depth string, out StringFunction) {
+	out(printer.Open)
+	out(printer.Close)
 }
 
-func (style Style) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
-	PrintTuple(&style, depth, NewTuple(atom), out)
+func (printer Style) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(atom), out)
 }
 
-func (style Style) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
-	PrintTuple(&style, depth, NewTuple(atom, value), out)
+func (printer Style) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(atom, value), out)
 }
 
-func (style Style) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
-	PrintTuple(&style, depth, NewTuple(atom, value1, value2), out)
+func (printer Style) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
 }
 
 func isCons(tuple Tuple) bool {
@@ -425,32 +425,37 @@ func isCons(tuple Tuple) bool {
 	return cons
 }
 
-func (style Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
+func (printer Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
 	if isCons(tuple) {
-		out(style.Open2)
+		out(printer.Open2)
 	} else {
-		out(style.Open)
+		out(printer.Open)
 	}
 	return depth + "  "
 }
 
-func (style Style) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {
+func (printer Style) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {
+	printer.PrintIndent(depth, out)
 	if isCons(tuple) {
-		out(style.Close2)
+		out(printer.Close2)
 	} else {
-		out(style.Close)
+		out(printer.Close)
 	}
 }
 
-func (style Style) PrintAtom(depth string, atom Atom, out StringFunction) {
+func (printer Style) PrintHeadAtom(atom Atom, out StringFunction) {
 	out(atom.Name)
 }
 
-func (style Style) PrintInt64(depth string, value int64, out StringFunction) {
+func (printer Style) PrintAtom(depth string, atom Atom, out StringFunction) {
+	out(atom.Name)
+}
+
+func (printer Style) PrintInt64(depth string, value int64, out StringFunction) {
 	out(strconv.FormatInt(value, 10))
 }
 
-func (style Style) PrintFloat64(depth string, value float64, out StringFunction) {
+func (printer Style) PrintFloat64(depth string, value float64, out StringFunction) {
 	if math.IsInf(value, 64) {
 		out("Inf") // style.INF)  // Do not print +Inf
 	} else {
@@ -466,22 +471,23 @@ func quote(value string, out func(value string)) {
 }
 
 
-func (style Style) PrintString(depth string, value string, out StringFunction) {
+func (printer Style) PrintString(depth string, value string, out StringFunction) {
 	out(DOUBLE_QUOTE)
 	out(value)   // TODO Escape
 	out(DOUBLE_QUOTE)
 }
 
-func (style Style) PrintBool(depth string, value bool, out StringFunction) {
+func (printer Style) PrintBool(depth string, value bool, out StringFunction) {
 	if value {
-		out(style.True)
+		out(printer.True)
 	} else {
-		out(style.False)
+		out(printer.False)
 	}				
 }
 
-func (style Style) PrintComment(depth string, value Comment, out StringFunction) {
-	out(string(style.OneLineComment))
+func (printer Style) PrintComment(depth string, value Comment, out StringFunction) {
+	out(string(printer.OneLineComment))
 	out(value.Comment)
 }
 
+func (printer Style) PrintScalarPrefix(depth string, out StringFunction) {}

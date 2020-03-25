@@ -35,8 +35,8 @@ func (grammar LispGrammar) FileSuffix() string {
 	return ".l"
 }
 
-func (grammar LispGrammar) Parse(context * ParserContext) {
-	grammar.parser.Parse(context)
+func (grammar LispGrammar) Parse(context Context, next Next) {
+	grammar.parser.Parse(context, next)
 }
 
 func (grammar LispGrammar) Print(object interface{}, out func(value string)) {
@@ -67,7 +67,7 @@ func (grammar LispWithInfixGrammar) FileSuffix() string {
 	return ".infix"
 }
 
-func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
+func (grammar LispWithInfixGrammar) Parse(context Context, next Next) {
 
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
@@ -91,7 +91,7 @@ func (grammar LispWithInfixGrammar) Parse(context * ParserContext) {
 			})
 		
 		if err == io.EOF {
-			operatorGrammar.EOF(context.next)
+			operatorGrammar.EOF(next)
 			break
 		}
 	}
@@ -129,7 +129,7 @@ func (grammar InfixExpressionGrammar) FileSuffix() string {
 	return ".expr"
 }
 
-func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
+func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 
 	open := grammar.style.Open
 	operators := grammar.operators
@@ -149,7 +149,7 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 					ch, err := context.ReadRune()
 					if err == io.EOF {
 						operatorGrammar.PushValue(atom)
-						//operatorGrammar.EOF(context.next)
+						//operatorGrammar.EOF(next)
 						return // TODO eof
 					}
 					if err != nil {
@@ -169,7 +169,7 @@ func (grammar InfixExpressionGrammar) Parse(context * ParserContext) {
 			})
 	
 		if err == io.EOF {
-			operatorGrammar.EOF(context.next)
+			operatorGrammar.EOF(next)
 			break
 		}
 		if err != nil {
@@ -225,13 +225,13 @@ func (grammar Tcl) FileSuffix() string {
 	return ".tcl"
 }
 
-func (grammar Tcl ) readCommandString(context * ParserContext, token string) (string, error) {
+func (grammar Tcl ) readCommandString(context Context, token string) (string, error) {
 	return ReadString(context, token, true, func (ch rune) bool {
 		return ! unicode.IsSpace(ch) && string(ch) != grammar.style.Close && string(ch) != grammar.style.Open && ch != '$'
 	})
 }
 
-func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, error) {
+func (grammar Tcl) getNextCommandShell(context Context) (interface{}, error) {
 
 	style := grammar.style
 	for {
@@ -255,20 +255,20 @@ func (grammar Tcl) getNextCommandShell(context * ParserContext) (interface{}, er
 			}
 			return Atom{value}, nil
 		case unicode.IsGraphic(ch): return grammar.readCommandString(context, string(ch))
-		case unicode.IsControl(ch): context.Error("Error control character not recognised '%d'", ch)
-		default: context.Error("Error character not recognised '%d'", ch)
+		case unicode.IsControl(ch): Error(context, "Error control character not recognised '%d'", ch)
+		default: Error(context, "Error character not recognised '%d'", ch)
 		}
 	}
 }
 
-func (grammar Tcl) parseCommandShellTuple(context * ParserContext, tuple *Tuple) (error) {
+func (grammar Tcl) parseCommandShellTuple(context Context, tuple *Tuple) (error) {
 
 	style := grammar.style
 	for {
 		token, err := grammar.getNextCommandShell(context)
 		switch {
 		case err != nil:
-			context.Error("parsing %s", err);
+			Error(context, "parsing %s", err);
 			return err /// ??? Any need to return
 		case token == style.Close:
 			return nil
@@ -276,7 +276,7 @@ func (grammar Tcl) parseCommandShellTuple(context * ParserContext, tuple *Tuple)
 			subTuple := NewTuple()
 			err := grammar.parseCommandShellTuple(context, &subTuple)
 			if err == io.EOF {
-				context.Error ("Missing close bracket")
+				Error(context,"Missing close bracket")
 				return err
 			}
 			if err != nil {
@@ -354,7 +354,7 @@ func (grammar Tcl) printObject1(depth string, token interface{}, out func(value 
 	}
 }
 
-func (grammar Tcl) Parse(context * ParserContext) {
+func (grammar Tcl) Parse(context Context, next Next) {
 
 	style := grammar.style
 
@@ -365,22 +365,22 @@ func (grammar Tcl) Parse(context * ParserContext) {
 		case err == io.EOF:
 			return
 		case err != nil:
-			context.Error ("'%s'", err)
+			Error(context,"'%s'", err)
 			return
 		case token == string(NEWLINE):
 			l := resultTuple.Length()
-			context.Verbose ("Newline length of tuple=%d", l)
+			Verbose(context,  "Newline length of tuple=%d", l)
 			switch l {
 			case 0: // Ignore
 			case 1:
 				first := resultTuple.List[0]
 				if _, ok := first.(Atom); ok {
-					context.next(resultTuple)
+					next(resultTuple)
 				} else {
-					context.next(token)
+					next(token)
 				}
 			default:
-				context.next(resultTuple)
+				next(resultTuple)
 			}
 			resultTuple = NewTuple()
 		case token == style.OneLineComment:
@@ -388,9 +388,9 @@ func (grammar Tcl) Parse(context * ParserContext) {
 			if err != nil {
 				return
 			}
-			context.next(comment)
+			next(comment)
 		case token == style.Close:
-			context.UnexpectedCloseBracketError (style.Close)
+			UnexpectedCloseBracketError(context,style.Close)
 		case token == style.Open:
 			subTuple := NewTuple()
 			err := grammar.parseCommandShellTuple(context, &subTuple)
@@ -399,7 +399,7 @@ func (grammar Tcl) Parse(context * ParserContext) {
 			}
 			resultTuple.Append(subTuple)
 		default:
-			context.Verbose("Add token: '%s'", token)
+			Verbose(context, "Add token: '%s'", token)
 			resultTuple.Append(token) 
 		}
 	}
@@ -448,7 +448,7 @@ func (grammar Jml) FileSuffix() string {
 	return ".jml"
 }
 
-func (grammar Jml) Parse(context * ParserContext) {
+func (grammar Jml) Parse(context Context, next Next) {
 	grammar.parser.ParseSExpression(context)
 }
 
@@ -467,7 +467,7 @@ func NewJmlGrammar() Grammar {
 
 // http://www.yamllint.com/
 type Yaml struct {
-	style Style
+	Style
 }
 
 func (grammar Yaml) Name() string {
@@ -478,14 +478,14 @@ func (grammar Yaml) FileSuffix() string {
 	return ".yaml"
 }
 
-func (grammar Yaml) Parse(context * ParserContext) {
-	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
+func (grammar Yaml) Parse(context Context, _ Next) {
+	Error(context, "Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
 // TODO Replace with Printer
 func (grammar Yaml) printObject(depth string, token interface{}, out func(value string)) {
 
-	style := grammar.style
+	style := grammar.Style
 	if tuple, ok := token.(Tuple); ok {
 
 		out(depth)
@@ -529,8 +529,9 @@ func (grammar Yaml) printObject(depth string, token interface{}, out func(value 
 	}
 }
 
-func (grammar Yaml) Print(token interface{}, out func(value string)) {
-	grammar.printObject("", token, out)
+func (grammar Yaml) Print(object interface{}, out func(value string)) {
+	// TODO PrintExpression(grammar, "", object, out)  // TODO Use Printer
+	grammar.printObject("", object, out)
 	out (string(NEWLINE))
 }
 
@@ -539,6 +540,53 @@ func NewYamlGrammar() Grammar {
 		":", "", OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, "",
 		"", "\n", "true", "false", '#', "- ")
 	return Yaml{style}
+}
+
+
+func (parser Yaml) PrintIndent(depth string, out StringFunction) {
+	out(depth)
+}
+
+func (parser Yaml) PrintSuffix(depth string, out StringFunction) {
+	out(string(NEWLINE))
+}
+
+func (parser Yaml) PrintSeparator(depth string, out StringFunction) {}
+
+func (parser Yaml) PrintEmptyTuple(depth string, out StringFunction) {
+	out("[]")
+}
+func (parser Yaml) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
+	out("- ")
+	return depth + "  "
+}
+
+func (parser Yaml) PrintHeadAtom(atom Atom, out StringFunction) {
+	quote(atom.Name, out)
+	out(": ")
+}
+
+func (parser Yaml) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {}
+
+func (parser Yaml) PrintAtom(depth string, atom Atom, out StringFunction) {
+	quote(atom.Name, out)
+	//bout(atom.Name)
+}
+
+func (parser Yaml) PrintScalarPrefix(depth string, out StringFunction) {
+	out ("- ")
+}
+
+func (parser Yaml) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
+	PrintTuple(&parser, depth, NewTuple(atom), out)
+}
+
+func (parser Yaml) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+	PrintTuple(&parser, depth, NewTuple(atom, value), out)
+}
+
+func (parser Yaml) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+	PrintTuple(&parser, depth, NewTuple(atom, value1, value2), out)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -557,8 +605,8 @@ func (grammar Ini) FileSuffix() string {
 	return ".ini"
 }
 
-func (grammar Ini) Parse(context * ParserContext) {
-	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
+func (grammar Ini) Parse(context Context, _ Next) {
+	Error(context, "Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
 // TODO 
@@ -645,8 +693,8 @@ func (grammar PropertyGrammar) FileSuffix() string {
 	return ".properties"
 }
 
-func (grammar PropertyGrammar) Parse(context * ParserContext) {
-	context.Error("Not implemented file suffix: '%s'", grammar.FileSuffix())
+func (grammar PropertyGrammar) Parse(context Context, _ Next) {
+	Error(context, "Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
 func (grammar PropertyGrammar) printObject(depth string, token interface{}, out func(value string)) {
@@ -722,9 +770,9 @@ func (grammar JSONGrammar) FileSuffix() string {
 	return ".json"
 }
 
-func (grammar JSONGrammar) Parse(context * ParserContext) {
+func (grammar JSONGrammar) Parse(context Context, next Next) {
 	parser := NewSExpressionParser(grammar.Style)
-	parser.Parse(context)
+	parser.Parse(context, next)
 }
 
 func (grammar JSONGrammar) Print(object interface{}, out func(value string)) {
