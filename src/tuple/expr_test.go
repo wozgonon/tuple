@@ -6,8 +6,10 @@ import (
 	"math"
 )
 
+var grammar = tuple.NewInfixExpressionGrammar()
+
 func TestEval1(t *testing.T) {
-	val := tuple.Eval("1+1")
+	val := tuple.Eval(grammar, "1+1")
 	if val != tuple.Float64(2) {
 		t.Errorf("1+1=%s", val)
 	}
@@ -31,7 +33,7 @@ func TestEvalToInt64(t *testing.T) {
 		"acos(cos(PI))" : math.Pi,
 	}
 	for k, v := range tests {
-		val := tuple.Eval(k)
+		val := tuple.Eval(grammar, k)
 		if val != tuple.Float64(v) {
 			t.Errorf("%s=%d   %s", k, int64(v), val)
 		}

@@ -141,7 +141,7 @@ func GetLogger(logGrammar Grammar) Logger {
 	}
 }
 
-func Eval(expression string) Value {
+func Eval(grammar Grammar, expression string) Value {
 	var result Value = NAN
 	pipeline := func(value Value) {
 		SimpleEval(value, func(value Value) {
@@ -151,7 +151,6 @@ func Eval(expression string) Value {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := NewRunnerContext("<eval>", reader, GetLogger(nil), false)
-	grammar := NewInfixExpressionGrammar()
 	grammar.Parse(context, pipeline)
 	return result
 }
