@@ -40,26 +40,27 @@ import "io"
 /////////////////////////////////////////////////////////////////////////////
 
 type SExpressionParser struct {
-	style Style
+	lexer Lexer
+	keyValueSeparator string
 	//lexer Lexer
 }
 
-func NewSExpressionParser(lexer Style) SExpressionParser {
-	return SExpressionParser{lexer}
+func NewSExpressionParser(style Style) SExpressionParser {
+	return SExpressionParser{style,style.KeyValueSeparator}
 }
 
 // Deal with a binary operator  a : b or cons cell a.b
 // TODO- should be done best by operator grammar
 func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *Tuple) {
 	if tuple.Length() == 0 {
-		Error(context,"Unexpected operator '%s'", parser.style.KeyValueSeparator)
+		Error(context,"Unexpected operator '%s'", parser.keyValueSeparator)
 		return // errors.New("Unexpected")
 	}
 	left := tuple.List[tuple.Length()-1]
 	Verbose(context,"CONS %s : ... ", left)
 	var right interface{} = nil
 	for {
-		err := parser.style.GetNext(context,
+		err := parser.lexer.GetNext(context,
 			func (open string) {
 				Verbose(context,"** OPEN")
 				tuple1 := NewTuple()
@@ -93,7 +94,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 
 	closeBracketFound := false
 	for {
-		err := parser.style.GetNext(context,
+		err := parser.lexer.GetNext(context,
 			func (open string) {
 				subTuple := NewTuple()
 				err := parser.parseSExpressionTuple(context, &subTuple)
@@ -110,7 +111,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 				closeBracketFound = true
 			},
 			func (atom Atom) {
-				if atom.Name == parser.style.KeyValueSeparator {
+				if atom.Name == parser.keyValueSeparator {
 					parser.parserKeyValueOperator(context, tuple)
 				} else {
 					tuple.Append(atom)
@@ -137,7 +138,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 
 func (parser SExpressionParser) parse(context Context, next Next) (error) {
 
-	err := parser.style.GetNext(context,
+	err := parser.lexer.GetNext(context,
 		func (open string) {
 			tuple := NewTuple()
 			parser.parseSExpressionTuple(context, &tuple)

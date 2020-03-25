@@ -18,16 +18,9 @@ package tuple
 
 /////////////////////////////////////////////////////////////////////////////
 
-type Lexer interface {
-	Printer
-	GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error
-}
-
-type StringFunction func(value string)
-
-type Token interface {
-	Print(next StringFunction)
-}
+//type Token interface {
+//	Print(next StringFunction)
+//}
 
 type String struct {
 	value string

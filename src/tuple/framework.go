@@ -16,9 +16,130 @@
 */
 package tuple
 
+import "strings"
 import "log"
 import "reflect"
+import 	"path"
 
+const STDIN = "<stdin>"
+
+/////////////////////////////////////////////////////////////////////////////
+//  Callback signatures
+/////////////////////////////////////////////////////////////////////////////
+
+type StringFunction func(value string)
+type Next func(value interface{})
+
+/////////////////////////////////////////////////////////////////////////////
+//  Lexer
+/////////////////////////////////////////////////////////////////////////////
+
+type Lexer interface {
+	Printer
+	GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//  Context
+/////////////////////////////////////////////////////////////////////////////
+
+
+// The Context interface represents the current state of parsing and translation.
+// It can provide: the name of the input and current depth and number of errors
+type Context interface {
+	SourceName() string
+	Open()
+	Close()
+	ReadRune() (rune, error)
+	UnreadRune()
+	Log(format string, level string, args ...interface{})
+	Errors() int64
+}
+
+func Verbose(context Context, format string, args ...interface{}) {
+	context.Log(format, "VERBOSE", args...)
+}
+
+func Error(context Context, format string, args ...interface{}) {
+	context.Log(format, "ERROR", args...)
+}
+
+func UnexpectedCloseBracketError(context Context, token string) {
+	Error(context,"Unexpected close bracket '%s'", token)
+}
+
+func UnexpectedEndOfInputErrorBracketError(context Context) {
+	Error(context,"Unexpected end of input")
+}
+
+func IsInteractive(context Context) bool {
+	return context.SourceName() == STDIN
+}
+
+func Suffix(context Context) string {
+	return path.Ext(context.SourceName())
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//  Grammar
+/////////////////////////////////////////////////////////////////////////////
+
+// The Grammar interface represents a particular language Grammar or Grammar or File Format.
+//
+// The print and parse method ought to be inverse functions of each other
+// so the output of parse can be passed to print which in principle should be parsable by the parse function.
+//
+type Grammar interface {
+	// A friendly name for the syntax
+	Name() string
+
+	// A standard suffix for source files.
+	FileSuffix() string
+	
+	// Parses an input stream of characters into an internal representation (AST)
+	// The output ought to be printable by the 'print' method.
+	Parse(context Context, next Next) // , next func(tuple Tuple)) (interface{}, error)
+	
+	// Pretty prints the objects in the given syntax.
+	// The output ought to be parsable by the 'parse' method.
+	Print(token interface{}, next func(value string))
+}
+
+// A set of Grammars
+type Grammars struct {
+	all map[string]Grammar
+}
+
+// Returns a new empty set of syntaxes
+func NewGrammars() Grammars{
+	return Grammars{make(map[string]Grammar)}
+}
+
+func (syntaxes * Grammars) Add(syntax Grammar) {
+	suffix := syntax.FileSuffix()
+	syntaxes.all[suffix] = syntax
+}
+
+func (syntaxes * Grammars) FindBySuffix(suffix string) (*Grammar, bool) {
+	if ! strings.HasPrefix(suffix, ".") {
+		suffix = "." + suffix
+	}
+	syntax, ok := syntaxes.all[suffix]
+	return &syntax, ok
+}
+
+func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) *Grammar {
+	syntax, ok := syntaxes.FindBySuffix(suffix)
+	if ! ok {
+		panic("Unsupported file suffix: '" + suffix + "'")
+	}
+	return syntax
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//  Printer
 /////////////////////////////////////////////////////////////////////////////
 
 type Printer interface {

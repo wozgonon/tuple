@@ -21,47 +21,9 @@ import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
-import 	"path"
 
 const PROMPT = "$ "
-const STDIN = "<stdin>"
 
-type Next func(value interface{})
-
-// TODO
-type Context interface {
-	SourceName() string
-	Open()
-	Close()
-	ReadRune() (rune, error)
-	UnreadRune()
-	Log(format string, level string, args ...interface{})
-	Errors() int64
-}
-
-func Verbose(context Context, format string, args ...interface{}) {
-	context.Log(format, "VERBOSE", args...)
-}
-
-func Error(context Context, format string, args ...interface{}) {
-	context.Log(format, "ERROR", args...)
-}
-
-func UnexpectedCloseBracketError(context Context, token string) {
-	Error(context,"Unexpected close bracket '%s'", token)
-}
-
-func UnexpectedEndOfInputErrorBracketError(context Context) {
-	Error(context,"Unexpected end of input")
-}
-
-func IsInteractive(context Context) bool {
-	return context.SourceName() == STDIN
-}
-
-func Suffix(context Context) string {
-	return path.Ext(context.SourceName())
-}
 
 type ParserContext struct {
 	sourceName string
@@ -198,7 +160,6 @@ func RunParser(args []string, logGrammar Grammar, verbose bool, inputGrammar * G
 	}
 	return errors
 }
-
 
 //
 //  Set up the translator pipeline.

@@ -40,7 +40,7 @@ func (grammar LispGrammar) Parse(context Context, next Next) {
 }
 
 func (grammar LispGrammar) Print(object interface{}, out func(value string)) {
-	PrintExpression(grammar.parser.style, "", object, out)
+	PrintExpression(grammar.parser.lexer, "", object, out)
 }
 
 func NewLispGrammar() Grammar {
