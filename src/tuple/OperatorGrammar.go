@@ -118,7 +118,7 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 	return 0
 }
 
-func (stack * OperatorGrammar) PushValue(value interface{}) {
+func (stack * OperatorGrammar) PushValue(value Value) {
 	if ! (*stack).wasOperator {
 		stack.PushOperator(SPACE_ATOM)
 	}
@@ -298,11 +298,11 @@ func (printer Operators) PrintNullaryOperator(depth string, atom Atom, out Strin
 	PrintTuple(&printer, depth, NewTuple(atom), out)
 }
 
-func (printer Operators) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+func (printer Operators) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
 	PrintTuple(&printer, depth, NewTuple(atom, value), out)
 }
 
-func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
 
 	if _, ok := printer.precedence[atom.Name]; ok {
 		out(printer.Style.Open)

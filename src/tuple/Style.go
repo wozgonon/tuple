@@ -123,7 +123,7 @@ func readRune(context Context, style Style) (rune, error) {
 	return ch, nil
 }
 
-func (style Style) GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error {
+func (style Style) GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error {
 
 	ch, err := readRune(context, style)
 	switch {
@@ -217,19 +217,19 @@ func ReadString (context Context, token string, unReadLast bool, test func(r run
 	}
 }
 
-func ReadAtom(context Context, prefix string, test func(rune) bool) (interface{}, error) {
+func ReadAtom(context Context, prefix string, test func(rune) bool) (Value, error) {
 	atom, err := ReadString(context, prefix, true, test)
 	if err != nil {
 		return Atom{""}, err
 	}
 	switch atom {
-	case "NaN": return math.NaN(), nil
-	case "Inf": return math.Inf(1), nil // TODO "+Inf", and "-Inf" 
+	case "NaN": return Float64(math.NaN()), nil
+	case "Inf": return Float64(math.Inf(1)), nil // TODO "+Inf", and "-Inf" 
 	default: return Atom{atom}, err
 	}
 }
 
-func ReadNumber(context Context, token string) (interface{}, error) {  // Number
+func ReadNumber(context Context, token string) (Value, error) {  // Number
 	var dots int
 	if token == "." {
 		dots = 1
@@ -241,7 +241,7 @@ func ReadNumber(context Context, token string) (interface{}, error) {  // Number
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return "", err
+			return nil, err
 		} else if ch == '.' && dots == 0 {
 			dots += 1
 			token = token + "." // TODO not efficient
@@ -259,10 +259,19 @@ func ReadNumber(context Context, token string) (interface{}, error) {  // Number
 	if token == "." {
 		return Atom{"."}, nil
 	}
-	//return Number{dots=true,token}
 	switch dots {
-	case 0: return strconv.ParseInt(token, 10, 0)
-	default: return strconv.ParseFloat(token, 64)
+	case 0:
+		value, err := strconv.ParseInt(token, 10, 0)  // TODO no need to parse as int64, could treat as bigint
+		if err != nil {
+			return Int64(0), err
+		}
+		return Int64(value), nil
+	default:
+		value, err := strconv.ParseFloat(token, 64)
+		if err != nil {
+			return Float64(0), err
+		}
+		return Float64(value), nil
 	} 
 }
 
@@ -284,38 +293,38 @@ func ReadUntilEndOfLine(context Context) (Comment, error) {
 	}
 }
 
-func ReadUntilSpace(context Context, token string) (string, error) {
+func ReadUntilSpace(context Context, token string) (String, error) {
 	for {
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
-			return token, nil
+			return String(token), nil
 		case err != nil:
-			return token, err
+			return String(token), err
 		case unicode.IsSpace(ch), ch == NEWLINE:
 			context.UnreadRune()
-			return token, nil
+			return String(token), nil
 		default:
 			token = token + string(ch)
 		}
 	}
 }
 
-func ReadCLanguageString(context Context) (string, error) {
+func ReadCLanguageString(context Context) (String, error) {
 	token := ""
 	for {
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
 			Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
-			return token, nil
-		case err != nil: return "", err
-		case ch == '"': return token, nil
+			return String(token), nil
+		case err != nil: return String(""), err
+		case ch == '"': return String(token), nil
 		case ch == '\\':
 			ch, err := context.ReadRune()
 			if err == io.EOF {
 				Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
-				return token, nil
+				return String(token), nil
 			}
 			token = token + string(cLanguageEscapeCharacters(ch))
 		default:
@@ -408,11 +417,11 @@ func (printer Style) PrintNullaryOperator(depth string, atom Atom, out StringFun
 	PrintTuple(&printer, depth, NewTuple(atom), out)
 }
 
-func (printer Style) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+func (printer Style) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
 	PrintTuple(&printer, depth, NewTuple(atom, value), out)
 }
 
-func (printer Style) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+func (printer Style) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
 	PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
 }
 

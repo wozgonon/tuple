@@ -129,12 +129,12 @@ func GetLogger(logGrammar Grammar) Logger {
 	} else {
 		return func(context Context, level string, message string) {
 			tuple := NewTuple()
-			tuple.Append(level)
-			tuple.Append(context.Line())
-			tuple.Append(context.Column())
-			tuple.Append(int64(context.Depth()))
-			tuple.Append(context.SourceName())
-			tuple.Append(message)
+			tuple.Append(String(level))
+			tuple.Append(Int64(context.Line()))
+			tuple.Append(Int64(context.Column()))
+			tuple.Append(Int64(context.Depth()))
+			tuple.Append(String(context.SourceName()))
+			tuple.Append(String(message))
 			logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
 		}
 	}
@@ -187,7 +187,7 @@ func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, 
 //
 func SimplePipeline (eval bool, queryPattern string, outputGrammar Grammar) Next {
 
-	prettyPrint := func(tuple interface{}) {
+	prettyPrint := func(tuple Value) {
 		outputGrammar.Print(tuple, func(value string) {
 			fmt.Printf ("%s", value)
 		})
@@ -195,14 +195,14 @@ func SimplePipeline (eval bool, queryPattern string, outputGrammar Grammar) Next
 	pipeline := prettyPrint
 	if eval {
 		next := pipeline
-		pipeline = func(value interface{}) {
+		pipeline = func(value Value) {
 			SimpleEval(value, next)
 		}
 	}
 	if queryPattern != "" {
 		next := pipeline
 		query := NewQuery(queryPattern)
-		pipeline = func(value interface{}) {
+		pipeline = func(value Value) {
 			query.Match(value, next)
 		}
 	}

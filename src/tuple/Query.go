@@ -13,7 +13,7 @@ func NewQuery(query string) Query {
 	return Query{query, components, 0}
 }
 
-func (query Query) match(depth int, token interface{}, next Next) {
+func (query Query) match(depth int, token Value, next Next) {
 	if tuple, ok := token.(Tuple); ok {
 
 		if len(tuple.List) == 0 {
@@ -46,7 +46,7 @@ func (query Query) match(depth int, token interface{}, next Next) {
 }
 
 
-func (query Query) Match(expression interface{}, next Next) {
+func (query Query) Match(expression Value, next Next) {
 
 	query.match(0, expression, next)
 }

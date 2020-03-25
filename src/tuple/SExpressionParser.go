@@ -58,7 +58,7 @@ func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *T
 	}
 	left := tuple.List[tuple.Length()-1]
 	Verbose(context,"CONS %s : ... ", left)
-	var right interface{} = nil
+	var right Value = nil
 	for {
 		err := parser.lexer.GetNext(context,
 			func (open string) {
@@ -74,7 +74,7 @@ func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *T
 				Verbose(context,"parse atom: %s", atom)
 				right = atom
 			},
-			func (literal interface{}) {
+			func (literal Value) {
 				right = literal
 			})
 		if err != nil {
@@ -117,7 +117,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 					tuple.Append(atom)
 				}
 			},
-			func (literal interface{}) {
+			func (literal Value) {
 				tuple.Append(literal)
 			})
 		
@@ -150,7 +150,7 @@ func (parser SExpressionParser) parse(context Context, next Next) (error) {
 		func (atom Atom) {
 			next(atom)
 		},
-		func (literal interface{}) {
+		func (literal Value) {
 			Verbose(context,"parse literal: %s", literal)
 			next(literal)
 		})
@@ -162,7 +162,7 @@ func (parser SExpressionParser) parse(context Context, next Next) (error) {
 func (parser SExpressionParser) Parse(context Context, next Next) {
 
 	for {
-		err := parser.parse(context, func (value interface{}) {
+		err := parser.parse(context, func (value Value) {
 			next(value)
 		})
 		if err != nil {

@@ -23,25 +23,23 @@ type Value interface {
 	Arity() int
 }
 
-type String struct {
-	value string
-}
-
-type Number struct {
-	float bool
-	value string
-}
+type String string
+type Float64 float64
+type Int64 int64
+type Bool bool
 
 // An Atom - a name for something, an identifier or operator
+// TODO include location and source for editors
 type Atom struct {
-	// TODO include location and source for editors
 	Name string
 }
 
 func (atom Atom) Arity() int { return 0 }
-func (number Number) Arity() int { return 0 }
-func (number String) Arity() int { return 0 }
+func (value String) Arity() int { return 0 }
 func (comment Comment) Arity() int { return 0 }
+func (value Float64) Arity() int { return 0 }
+func (value Int64) Arity() int { return 0 }
+func (value Bool) Arity() int { return 0 }
 
 // A textual comment
 type Comment struct {
@@ -61,20 +59,16 @@ func (tuple Tuple) Arity() int { return len(tuple.List) }
 
 type Tuple struct {
 	// TODO include location and source for editors
-	List []interface{}
+	List []Value
 }
 
-func (tuple *Tuple) Append(token interface{}) {
+func (tuple *Tuple) Append(token Value) {
 	tuple.List = append(tuple.List, token)
 }
 
 func (tuple *Tuple) Length() int {
 	return len(tuple.List)
 }
-
-//func NewTuple() Tuple {
-//	return Tuple{make([]interface{}, 0)}
-//}
 
 func (tuple *Tuple) IsCons() bool {
 	if tuple.Length() > 0 {
@@ -87,7 +81,7 @@ func (tuple *Tuple) IsCons() bool {
 	return false
 }
 
-func NewTuple(values...interface{}) Tuple {
+func NewTuple(values...Value) Tuple {
 	return Tuple{values}
 }
 

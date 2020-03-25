@@ -39,7 +39,7 @@ func (grammar LispGrammar) Parse(context Context, next Next) {
 	grammar.parser.Parse(context, next)
 }
 
-func (grammar LispGrammar) Print(object interface{}, out func(value string)) {
+func (grammar LispGrammar) Print(object Value, out func(value string)) {
 	PrintExpression(grammar.parser.lexer, "", object, out)
 }
 
@@ -86,7 +86,7 @@ func (grammar LispWithInfixGrammar) Parse(context Context, next Next) {
 					operatorGrammar.PushValue(atom)
 				}
 			},
-			func (literal interface{}) {
+			func (literal Value) {
 				operatorGrammar.PushValue(literal)
 			})
 		
@@ -97,7 +97,7 @@ func (grammar LispWithInfixGrammar) Parse(context Context, next Next) {
 	}
 }
 
-func (grammar LispWithInfixGrammar) Print(token interface{}, next func(value string)) {
+func (grammar LispWithInfixGrammar) Print(token Value, next func(value string)) {
 	PrintExpression(&(grammar.operators), "", token, next)
 }
 
@@ -164,7 +164,7 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 					operatorGrammar.PushValue(atom)
 				}
 			},
-			func (literal interface{}) {
+			func (literal Value) {
 				operatorGrammar.PushValue(literal)
 			})
 	
@@ -179,7 +179,7 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 	}
 }
 
-func (grammar InfixExpressionGrammar) Print(token interface{}, next func(value string)) {
+func (grammar InfixExpressionGrammar) Print(token Value, next func(value string)) {
 	PrintExpression(&(grammar.operators), "", token, next)
 }
 
@@ -231,21 +231,21 @@ func (grammar Tcl ) readCommandString(context Context, token string) (string, er
 	})
 }
 
-func (grammar Tcl) getNextCommandShell(context Context) (interface{}, error) {
+func (grammar Tcl) getNextCommandShell(context Context) (Value, error) {
 
 	style := grammar.style
 	for {
 		ch, err := readRune(context, grammar.style)
 		switch {
-		case err != nil: return "", err
-		case err == io.EOF: return "", nil
-		case ch == NEWLINE: return string(NEWLINE), nil
+		case err != nil: return nil, err
+		case err == io.EOF: return nil, nil
+		case ch == NEWLINE: return String(NEWLINE), nil
 		case unicode.IsSpace(ch): break
 		case ch == style.OneLineComment:
 			// TODO ignore for now
 			//return string(ch), nil
-		case ch == style.openChar : return style.Open, nil
-		case ch == style.closeChar : return style.Close, nil
+		case ch == style.openChar : return String(style.Open), nil  // Atom???
+		case ch == style.closeChar : return String(style.Close), nil
 		case ch == '"' :  return ReadCLanguageString(context)
 		case ch == '.' || unicode.IsNumber(ch): return ReadNumber(context, string(ch))    // TODO minus
 		case ch == '$':
@@ -254,7 +254,12 @@ func (grammar Tcl) getNextCommandShell(context Context) (interface{}, error) {
 				return nil, err
 			}
 			return Atom{value}, nil
-		case unicode.IsGraphic(ch): return grammar.readCommandString(context, string(ch))
+		case unicode.IsGraphic(ch):
+			value, err := grammar.readCommandString(context, string(ch))
+			if err != nil {
+				return nil, err
+			}
+			return String(value), nil
 		case unicode.IsControl(ch): Error(context, "Error control character not recognised '%d'", ch)
 		default: Error(context, "Error character not recognised '%d'", ch)
 		}
@@ -270,9 +275,9 @@ func (grammar Tcl) parseCommandShellTuple(context Context, tuple *Tuple) (error)
 		case err != nil:
 			Error(context, "parsing %s", err);
 			return err /// ??? Any need to return
-		case token == style.Close:
+		case token == String(style.Close):
 			return nil
-		case token == style.Open:
+		case token == String(style.Open):
 			subTuple := NewTuple()
 			err := grammar.parseCommandShellTuple(context, &subTuple)
 			if err == io.EOF {
@@ -283,14 +288,14 @@ func (grammar Tcl) parseCommandShellTuple(context Context, tuple *Tuple) (error)
 				return err
 			}
 			tuple.Append(subTuple)
-		case token == string(NEWLINE):
+		case token == String(string(NEWLINE)):
 		default:
 			tuple.Append(token)
 		}
 	}
 }
 
-func (grammar Tcl) printObject1(depth string, token interface{}, out func(value string)) {
+func (grammar Tcl) printObject1(depth string, token Value, out func(value string)) {
 
 	style := grammar.style
 	if tuple, ok := token.(Tuple); ok {
@@ -367,7 +372,7 @@ func (grammar Tcl) Parse(context Context, next Next) {
 		case err != nil:
 			Error(context,"'%s'", err)
 			return
-		case token == string(NEWLINE):
+		case token == String(string(NEWLINE)):
 			l := resultTuple.Length()
 			Verbose(context,  "Newline length of tuple=%d", l)
 			switch l {
@@ -383,15 +388,15 @@ func (grammar Tcl) Parse(context Context, next Next) {
 				next(resultTuple)
 			}
 			resultTuple = NewTuple()
-		case token == style.OneLineComment:
+		case token == String(string(style.OneLineComment)):
 			comment, err := ReadUntilEndOfLine(context)
 			if err != nil {
 				return
 			}
 			next(comment)
-		case token == style.Close:
+		case token == String(style.Close):
 			UnexpectedCloseBracketError(context,style.Close)
-		case token == style.Open:
+		case token == String(style.Open):
 			subTuple := NewTuple()
 			err := grammar.parseCommandShellTuple(context, &subTuple)
 			if err != nil {
@@ -405,7 +410,7 @@ func (grammar Tcl) Parse(context Context, next Next) {
 	}
 }
 
-func (grammar Tcl) Print(token interface{}, out func(value string)) {
+func (grammar Tcl) Print(token Value, out func(value string)) {
 
 	//PrintExpression(grammar.style, "", object, out)  // TODO Use Printer
 	
@@ -452,7 +457,7 @@ func (grammar Jml) Parse(context Context, next Next) {
 	grammar.parser.ParseSExpression(context)
 }
 
-func (grammar Jml) Print(token interface{}, next func(value string)) {
+func (grammar Jml) Print(token Value, next func(value string)) {
 	grammar.parser.Print(token, next)
 }
 
@@ -483,7 +488,7 @@ func (grammar Yaml) Parse(context Context, _ Next) {
 }
 
 // TODO Replace with Printer
-func (grammar Yaml) printObject(depth string, token interface{}, out func(value string)) {
+func (grammar Yaml) printObject(depth string, token Value, out func(value string)) {
 
 	style := grammar.Style
 	if tuple, ok := token.(Tuple); ok {
@@ -529,7 +534,7 @@ func (grammar Yaml) printObject(depth string, token interface{}, out func(value 
 	}
 }
 
-func (grammar Yaml) Print(object interface{}, out func(value string)) {
+func (grammar Yaml) Print(object Value, out func(value string)) {
 	// TODO PrintExpression(grammar, "", object, out)  // TODO Use Printer
 	grammar.printObject("", object, out)
 	out (string(NEWLINE))
@@ -581,11 +586,11 @@ func (parser Yaml) PrintNullaryOperator(depth string, atom Atom, out StringFunct
 	PrintTuple(&parser, depth, NewTuple(atom), out)
 }
 
-func (parser Yaml) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+func (parser Yaml) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
 	PrintTuple(&parser, depth, NewTuple(atom, value), out)
 }
 
-func (parser Yaml) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+func (parser Yaml) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
 	PrintTuple(&parser, depth, NewTuple(atom, value1, value2), out)
 }
 
@@ -610,7 +615,7 @@ func (grammar Ini) Parse(context Context, _ Next) {
 }
 
 // TODO 
-func (grammar Ini ) printObject(depth string, key string, token interface{}, out func(value string)) {
+func (grammar Ini ) printObject(depth string, key string, token Value, out func(value string)) {
 
 	style := grammar.style
 	
@@ -664,7 +669,7 @@ func (grammar Ini ) printObject(depth string, key string, token interface{}, out
 	}
 }
 
-func (grammar Ini) Print(token interface{}, out func(value string)) {
+func (grammar Ini) Print(token Value, out func(value string)) {
 	grammar.printObject("", "", token, out)
 	out (string(NEWLINE))
 }
@@ -697,7 +702,7 @@ func (grammar PropertyGrammar) Parse(context Context, _ Next) {
 	Error(context, "Not implemented file suffix: '%s'", grammar.FileSuffix())
 }
 
-func (grammar PropertyGrammar) printObject(depth string, token interface{}, out func(value string)) {
+func (grammar PropertyGrammar) printObject(depth string, token Value, out func(value string)) {
 	style := grammar.style
 	
 	if tuple, ok := token.(Tuple); ok {
@@ -739,7 +744,7 @@ func (grammar PropertyGrammar) printObject(depth string, token interface{}, out 
 	}
 }
 
-func (grammar PropertyGrammar) Print(token interface{}, out func(value string)) {
+func (grammar PropertyGrammar) Print(token Value, out func(value string)) {
 	grammar.printObject("", token, out)
 	//out (string(NEWLINE))
 }
@@ -775,7 +780,7 @@ func (grammar JSONGrammar) Parse(context Context, next Next) {
 	parser.Parse(context, next)
 }
 
-func (grammar JSONGrammar) Print(object interface{}, out func(value string)) {
+func (grammar JSONGrammar) Print(object Value, out func(value string)) {
 	PrintExpression(grammar, "", object, out)  // TODO Use Printer
 }
 
@@ -790,7 +795,7 @@ func (printer JSONGrammar) PrintNullaryOperator(depth string, atom Atom, out Str
 	PrintTuple(&printer, depth, NewTuple(atom), out)
 }
 
-func (printer JSONGrammar) PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction) {
+func (printer JSONGrammar) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
 	PrintTuple(&printer, depth, NewTuple(atom, value), out)
 }
 
@@ -798,7 +803,7 @@ func (printer JSONGrammar) PrintSeparator(depth string, out StringFunction) {
 	out(printer.Style.Separator)
 }
 
-func (printer JSONGrammar) PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction) {
+func (printer JSONGrammar) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
 
 	if atom == CONS_ATOM {
 		newDepth := depth + "  "

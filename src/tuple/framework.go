@@ -28,7 +28,7 @@ const STDIN = "<stdin>"
 /////////////////////////////////////////////////////////////////////////////
 
 type StringFunction func(value string)
-type Next func(value interface{})
+type Next func(value Value)
 type Logger func(context Context, level string, message string)
 
 /////////////////////////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@ type Logger func(context Context, level string, message string)
 
 type Lexer interface {
 	Printer
-	GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal interface{})) error
+	GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -103,11 +103,11 @@ type Grammar interface {
 	
 	// Parses an input stream of characters into an internal representation (AST)
 	// The output ought to be printable by the 'print' method.
-	Parse(context Context, next Next) // , next func(tuple Tuple)) (interface{}, error)
+	Parse(context Context, next Next) // , next func(tuple Tuple)) (Value, error)
 	
 	// Pretty prints the objects in the given syntax.
 	// The output ought to be parsable by the 'parse' method.
-	Print(token interface{}, next func(value string))
+	Print(token Value, next func(value string))
 }
 
 // A set of Grammars
@@ -154,8 +154,8 @@ type Printer interface {
 	PrintSeparator(depth string, out StringFunction)
 	PrintEmptyTuple(depth string, out StringFunction)
 	PrintNullaryOperator(depth string, atom Atom, out StringFunction)
-	PrintUnaryOperator(depth string, atom Atom, value interface{}, out StringFunction)
-	PrintBinaryOperator(depth string, atom Atom, value1 interface{}, value2 interface{}, out StringFunction)
+	PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction)
+	PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction)
 	PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string
 	PrintCloseTuple(depth string, tuple Tuple, out StringFunction)
 	PrintHeadAtom(value Atom, out StringFunction)
@@ -167,21 +167,21 @@ type Printer interface {
 	PrintComment(depth string, value Comment, out StringFunction)
 }
 
-func PrintScalar(printer Printer, depth string, token interface{}, out StringFunction) {
+func PrintScalar(printer Printer, depth string, token Value, out StringFunction) {
 	printer.PrintScalarPrefix(depth, out)
 	switch token.(type) {
 	case Atom:
 		printer.PrintAtom(depth, token.(Atom), out)
-	case string:
-		printer.PrintString(depth, token.(string), out)
-	case bool:
-		printer.PrintBool(depth, token.(bool), out)
+	case String:
+		printer.PrintString(depth, string(token.(String)), out)
+	case Bool:
+		printer.PrintBool(depth, bool(token.(Bool)), out)
 	case Comment:
 		printer.PrintComment(depth, token.(Comment), out)
-	case int64:
-		printer.PrintInt64(depth, token.(int64), out)
-	case float64:
-		printer.PrintFloat64(depth, token.(float64), out)
+	case Int64:
+		printer.PrintInt64(depth, int64(token.(Int64)), out)
+	case Float64:
+		printer.PrintFloat64(depth, float64(token.(Float64)), out)
 	default:
 		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);
 	}
@@ -210,13 +210,13 @@ func PrintTuple(printer Printer, depth string, tuple Tuple, out StringFunction) 
 	printer.PrintCloseTuple(depth, tuple, out)
 }
 
-func PrintExpression(printer Printer, depth string, token interface{}, out StringFunction) {
+func PrintExpression(printer Printer, depth string, token Value, out StringFunction) {
 	printer.PrintIndent(depth, out)
 	PrintExpression1(printer, depth, token, out)
 	printer.PrintSuffix(depth, out)
 }
 
-func PrintExpression1(printer Printer, depth string, token interface{}, out StringFunction) {
+func PrintExpression1(printer Printer, depth string, token Value, out StringFunction) {
 
 	switch token.(type) {
 	case Tuple:

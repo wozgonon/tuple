@@ -21,10 +21,13 @@ import "strings"
 
 //  A simple toy evaluator
 
-func toFloat64(value interface{}) float64 {
+var NAN Float64 = Float64(math.NaN())
+
+
+func toFloat64(value Value) float64 {
 	switch val := value.(type) {
-	case int64: return float64(val)
-	case float64: return val
+	case Int64: return float64(val)
+	case Float64: return float64(val)
 	case Atom: return math.NaN() // TODO Nullary(val)
 	//case bool: return float64(val)
 	default:
@@ -32,23 +35,24 @@ func toFloat64(value interface{}) float64 {
 	}
 }
 
-func Nullary(val Atom) interface{} {
+
+func Nullary(val Atom) Value {
 	switch val.Name {
-	case "PI": return math.Pi
-	case "PHI": return math.Phi
-	case "E": return math.E
-	case "true": return true
-	case "false": return false
-	default: return math.NaN()   // TODO look up variable
+	case "PI": return Float64(math.Pi)
+	case "PHI": return Float64(math.Phi)
+	case "E": return Float64(math.E)
+	case "true": return Bool(true)
+	case "false": return Bool(false)
+	default: return NAN   // TODO look up variable
 	}
 }
 
-func SimpleEval(expression interface{}, next Next) {
+func SimpleEval(expression Value, next Next) {
 	result := eval(expression)
 	next(result)
 }
 
-func eval(expression interface{}) interface{} {
+func eval(expression Value) Value {
 
 	switch val := expression.(type) {
 	case Tuple:
@@ -64,7 +68,7 @@ func eval(expression interface{}) interface{} {
 		if ! ok {
 			// TODO Handle case of list: (1 2 3)
 		}
-		evaluated := make([]interface{}, ll-1)
+		evaluated := make([]Value, ll-1)
 		for k, v := range val.List[1:] {
 			evaluated[k] = eval(v)
 		}
@@ -72,68 +76,68 @@ func eval(expression interface{}) interface{} {
 		name := atom.Name
 		switch ll {
 		case 2:
-			if str, ok := evaluated[0].(string); ok {
+			if str, ok := evaluated[0].(String); ok {
 				switch name {
-				case "len": return len(str)
-				case "lower": return strings.ToLower(str)
-				case "upper": return strings.ToUpper(str)
-				default: return math.NaN()
+				case "len": return Int64(len(str))
+				case "lower": return String(strings.ToLower(string(str)))
+				case "upper": return String(strings.ToUpper(string(str)))
+				default: return NAN // Float64math.NaN()
 				}
 			}
 			
 			aa := toFloat64(evaluated[0])
 			switch name {
 			case "log":
-				return math.Log(aa)
-			case "exp": return math.Exp(aa)
-			case "sin": return math.Sin(aa)
-			case "cos": return math.Cos(aa)
-			case "tan": return math.Tan(aa)
-			case "acos": return math.Acos(aa)
-			case "asin": return math.Asin(aa)
-			case "atan": return math.Atan(aa)
-			case "round": return math.Round(aa)
-			case "-": return -aa
-			case "+": return aa
+				return Float64(math.Log(aa))
+			case "exp": return Float64(math.Exp(aa))
+			case "sin": return Float64(math.Sin(aa))
+			case "cos": return Float64(math.Cos(aa))
+			case "tan": return Float64(math.Tan(aa))
+			case "acos": return Float64(math.Acos(aa))
+			case "asin": return Float64(math.Asin(aa))
+			case "atan": return Float64(math.Atan(aa))
+			case "round": return Float64(math.Round(aa))
+			case "-": return Float64(-aa)
+			case "+": return Float64(aa)
 			//case "_unary_minus": return -aa
 			//case "_unary_plus": return aa
-			default: return math.NaN()
+			default: return NAN // math.NaN()
 			}
 		case 3:
 			aa := toFloat64(evaluated[0])
 			bb := toFloat64(evaluated[1])
 			switch name {
 				//case ":=": 
-			case "^": return math.Pow(aa,bb)
-			case "+": return aa+bb
-			case "-": return aa-bb
-			case "*": return aa*bb
-			case "/": return aa/bb
-			case "==": return aa==bb
-			case "!=": return aa!=bb
-			case ">=": return aa>=bb
-			case "<=": return aa<=bb
-			case ">": return aa>bb
-			case "<": return aa<bb
-			case "atan2": return math.Atan2(aa,bb)
-			default: return math.NaN()
+			case "^": return Float64(math.Pow(aa,bb))
+			case "+": return Float64(aa+bb)
+			case "-": return Float64(aa-bb)
+			case "*": return Float64(aa*bb)
+			case "/": return Float64(aa/bb)
+			case "==": return Bool(aa==bb)
+			case "!=": return Bool(aa!=bb)
+			case ">=": return Bool(aa>=bb)
+			case "<=": return Bool(aa<=bb)
+			case ">": return Bool(aa>bb)
+			case "<": return Bool(aa<bb)
+			case "atan2": return Float64(math.Atan2(aa,bb))
+			default: return NAN
 			}
 		default:
-			return math.NaN()
+			return NAN
 			// TODO
 		}
-	case int64:
+	case Int64:
 		return expression
-	case float64:
+	case Float64:
 		return expression
-	case string:
+	case String:
 		return expression
-	case bool:
+	case Bool:
 		return expression
 	case Atom:
 		return Nullary(expression.(Atom))
 	default:
-		return math.NaN()
+		return NAN
 	}
 		
 }
