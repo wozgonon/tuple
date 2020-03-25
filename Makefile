@@ -50,7 +50,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version test_basic test_arithmetic test_expr test_tcl test_yaml test_query test_json test_wexpr test_infix
+test: version go_test test_basic test_arithmetic test_expr test_tcl test_yaml test_query test_json test_wexpr test_infix
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -60,6 +60,9 @@ DIFF=" -y --suppress-common-lines "
 
 version: wozg
 	bin/wozg --version
+
+go_test: all
+	go test tuple
 
 test_dirs: 
 	mkdir -p ${T1DIR}${TDIR} ${T2DIR}${TDIR}

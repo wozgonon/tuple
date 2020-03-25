@@ -21,6 +21,7 @@ import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
+import 	"strings"
 
 /////////////////////////////////////////////////////////////////////////////
 // For running the language translations
@@ -73,7 +74,7 @@ func (context RunnerContext) Close() {
 
 func (context RunnerContext) prompt() {
 	if IsInteractive(context) {
-		fmt.Print (context.SourceName)
+		fmt.Print (context.SourceName())
 		if context.depth > 0 {
 			fmt.Printf (" %d%s", context.depth, PROMPT)
 		} else {
@@ -123,7 +124,7 @@ func (context RunnerContext) Log(format string, level string, args ...interface{
 func GetLogger(logGrammar Grammar) Logger {
 	if logGrammar == nil {
 		return func (context Context, level string, message string) {
-			prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': ", level, context.Line(), context.Column(), context.Depth(), context.SourceName(), message)
+			prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': %s", level, context.Line(), context.Column(), context.Depth(), context.SourceName(), message)
 			log.Print(prefix)
 		}
 	} else {
@@ -138,6 +139,21 @@ func GetLogger(logGrammar Grammar) Logger {
 			logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
 		}
 	}
+}
+
+func Eval(expression string) Value {
+	var result Value = NAN
+	pipeline := func(value Value) {
+		SimpleEval(value, func(value Value) {
+			result = value
+		})
+	}
+
+	reader := bufio.NewReader(strings.NewReader(expression))
+	context := NewRunnerContext("<eval>", reader, GetLogger(nil), false)
+	grammar := NewInfixExpressionGrammar()
+	grammar.Parse(context, pipeline)
+	return result
 }
 
 func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, grammars *Grammars, next Next) int64 {
