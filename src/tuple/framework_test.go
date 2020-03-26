@@ -4,6 +4,7 @@ import (
 	"testing"
 	"tuple"
 	"strings"
+	"math"
 )
 
 
@@ -33,16 +34,29 @@ func TestGrammars(t *testing.T) {
 		if g, ok := grammars.FindBySuffix(suffix); ! ok || g.Name() != name {
 			t.Errorf("Expected find by suffix '%s' to return grammar: '%s'", suffix, name)
 		}
-		
-		smoke := 123
-		printed := ""
-		grammar.Print(tuple.Int64(smoke), func (value string) {
-			printed += value
-		})
 
-		if ! strings.Contains(printed, "123") {
-			t.Errorf("Expected '%d' in output", smoke)
+		suffixWithoutDot := strings.Replace(suffix, ".", "", 999)
+		if g, ok := grammars.FindBySuffix(suffixWithoutDot); ! ok || g.Name() != name {
+			t.Errorf("Expected find by suffix '%s' to return grammar: '%s'", suffixWithoutDot, name)
 		}
+
+		test := func (value tuple.Value, expected string) {
+			printed := ""
+			grammar.Print(value, func (value string) {
+				printed += value
+			})
+			if ! strings.Contains(printed, expected) {
+				t.Errorf("Expected '%s' in output", expected)
+			}
+		}
+		test(tuple.Atom{"abcde"}, "abcde")
+		test(tuple.Float64(-1.123), "-1.123")
+		test(tuple.Float64(math.NaN()), "NaN")
+		test(tuple.Float64(math.Inf(1)), "Inf")
+		test(tuple.Int64(123), "123")
+		test(tuple.String("abc"), "abc")
+		test(tuple.NewTuple(tuple.Int64(-1234)), "-1234")
+		test(tuple.Bool(false), "false")  //  'false' might not be valid for all grammars
 	})
 	if count != 8 {
 		t.Errorf("Expected %d got %d", 2, count)

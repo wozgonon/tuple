@@ -420,17 +420,8 @@ func (printer Style) PrintBinaryOperator(depth string, atom Atom, value1 Value, 
 	PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
 }
 
-func isCons(tuple Tuple) bool {
-	cons := false
-	if tuple.Length() > 0 {
-		t, ok := tuple.List[0].(Tuple)
-		cons = ok && t.IsCons()
-	}
-	return cons
-}
-
 func (printer Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
-	if isCons(tuple) {
+	if tuple.IsConsInTuple() {
 		out(printer.Open2)
 	} else {
 		out(printer.Open)
@@ -440,7 +431,7 @@ func (printer Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunctio
 
 func (printer Style) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {
 	printer.PrintIndent(depth, out)
-	if isCons(tuple) {
+	if tuple.IsConsInTuple() {
 		out(printer.Close2)
 	} else {
 		out(printer.Close)

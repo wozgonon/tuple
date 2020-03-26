@@ -57,16 +57,15 @@ func (query Query) filter(depth int, token Value, next Next) {
 			return
 		}
 		head := tuple.List[0]
-		atom, ok := head.(Atom)
-		var name string
-		if ok {
-			name = atom.Name
+		if atom, ok := head.(Atom); ok {
+			name := atom.Name
 			if query.match(depth, name) {
 				next(token)
 			}
-		} else {
-			// TODO test string
-			return // TODO
+		} else if str, ok := head.(String); ok{
+			if query.match(depth, string(str)) {
+				next(token)
+			}
 		}
 		for _, token := range tuple.List {
 			query.filter(depth+1, token, next)

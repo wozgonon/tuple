@@ -45,5 +45,8 @@ func TestQuery(t *testing.T) {
 	test(empty, 0, "a")
 	test(empty, 1, "*")
 	test(empty, 1, "")
+
+	test(tuple.NewTuple(tuple.String("a")), 1, "a")
+	test(tuple.NewTuple(tuple.String("a")), 1, "*")
 }
 

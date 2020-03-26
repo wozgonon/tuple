@@ -22,6 +22,7 @@ func TestExprToInt64(t *testing.T) {
 		"--1." : 1,
 		"-- 1." : 1,
 		"--- 1." : -1,
+		"+1." : 1,
 		"(((-1.)))" : -1,
 		"1+2*3" : 7,
 		"(1+2)*3" : 9,
@@ -113,6 +114,10 @@ func TestExprEquals(t *testing.T) {
 	// TODO test("++1 == 1")
 	// TODO test("+-+1 == -1")
 
+	test("log(E) == 1")
+	test("PHI == PHI")
+	test("PI != Phi")
+	test("PI == PI")
 
 	test("3 != -(1+2)")
 	test("1 == -(-(-1)+2)")
@@ -136,5 +141,8 @@ func TestExprEquals(t *testing.T) {
 
 	test("len(\"abcde\")==5")
 	test("1+len(\"abcde\")==6")
+	test("len(upper(\"abc\"))==3")
+	//test("upper(\"abc\")==\"ABC\"")
+	//test("upper(lower(\"aBc\"))==\"ABC\"")
 }
 

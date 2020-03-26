@@ -43,6 +43,9 @@ func testGetNext(t *testing.T, expression string, expected string) {
 	} else if expected != result {
 		t.Errorf("%s==%s   exp=%s", expected, result, expression)
 	}
+	if context.Errors() > 0 {
+		t.Errorf("Expected no errors: %d", context.Errors())
+	}
 }
 
 func TestLex1(t *testing.T) {

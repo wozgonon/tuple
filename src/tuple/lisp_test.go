@@ -28,6 +28,26 @@ func testFloatExpressionFailParse(t *testing.T, grammar tuple.Grammar, formula s
        }
 }
 
+func TestLispCons(t *testing.T) {
+
+	test := func(formula string) {
+		c := tuple.ParseString(tuple.NewLispGrammar(), formula)
+		tuple1 := c.(tuple.Tuple)
+		if ! tuple1.IsConsInTuple() {
+			t.Errorf("Expected a cons cell got %s", c)
+		}
+		tuple2 := tuple1.List[0].(tuple.Tuple)
+		if ! tuple2.IsCons() {
+			t.Errorf("Expected a cons cell got %s", c)
+		}
+	}
+	//test("a.b")
+	test("((cons a b) ())")  // TODO investigate
+	test("(a.b)")
+	test("(a.b c.d)")
+	test("(a.b c.d e.f)")
+}
+
 func TestEvalLisp1(t *testing.T) {
 	var grammar = tuple.NewLispGrammar()
 	testFloatExpression(t, grammar, "(+ 1 1)", 2)
@@ -85,9 +105,6 @@ func TestEvalLispWithInfixGrammarToInt64(t *testing.T) {
 	}
 }
 
-func TestLispCons(t *testing.T) {
-	// TODO test .
-}
 
 func TestLispInfixEquals(t *testing.T) {
 

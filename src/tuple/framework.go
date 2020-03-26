@@ -107,6 +107,16 @@ func (tuple *Tuple) IsCons() bool {
 	return false
 }
 
+// TODO this may not make sense cons is embedded in another tuple
+func (tuple *Tuple) IsConsInTuple() bool {
+	cons := false
+	if tuple.Length() > 0 {
+		t, ok := tuple.List[0].(Tuple)
+		cons = ok && t.IsCons()
+	}
+	return cons
+}
+
 func NewTuple(values...Value) Tuple {
 	return Tuple{values}
 }
