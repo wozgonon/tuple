@@ -9,12 +9,14 @@ import (
 	"fmt"
 )
 
+const NO_RESULT = "..."
+
 func testGetNext(t *testing.T, expression string, expected string) {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := tuple.NewRunnerContext("<eval>", reader, tuple.GetLogger(nil), false)
 
-	result := "..."
+	result := NO_RESULT
 	style := tuple.LispWithInfixStyle
 	err := style.GetNext(context,
 		func(open string) {
@@ -55,6 +57,9 @@ func TestLex1(t *testing.T) {
 	testGetNext(t, "(", "(")
 	//testGetNext(t, "[", "]")
 	//testGetNext(t, "{", "}")
+
+	testGetNext(t, ";", NO_RESULT)  // Comments are currently ignored
+	testGetNext(t, ";comment", NO_RESULT)
 }
 
 func TestCLanguageOperators(t *testing.T) {

@@ -303,23 +303,6 @@ func ReadUntilEndOfLine(context Context) (Comment, error) {
 	}
 }
 
-func ReadUntilSpace(context Context, token string) (String, error) {
-	for {
-		ch, err := context.ReadRune()
-		switch {
-		case err == io.EOF:
-			return String(token), nil
-		case err != nil:
-			return String(token), err
-		case unicode.IsSpace(ch), ch == NEWLINE:
-			context.UnreadRune()
-			return String(token), nil
-		default:
-			token = token + string(ch)
-		}
-	}
-}
-
 func ReadCLanguageString(context Context) (String, error) {
 	token := ""
 	for {

@@ -30,6 +30,10 @@ func TestGrammars(t *testing.T) {
 			t.Errorf("Expected name and suffix, got '%s', '%s'", name, suffix)
 		}
 
+		if g, ok := grammars.FindBySuffix(suffix); ! ok || g.Name() != name {
+			t.Errorf("Expected find by suffix '%s' to return grammar: '%s'", suffix, name)
+		}
+		
 		smoke := 123
 		printed := ""
 		grammar.Print(tuple.Int64(smoke), func (value string) {
