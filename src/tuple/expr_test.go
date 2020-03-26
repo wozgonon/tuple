@@ -134,5 +134,7 @@ func TestExprEquals(t *testing.T) {
 	// TODO test("!1 == 0")  - TODO priority of unary operators
 	// TODO test("!0 == 1")
 
+	test("len(\"abcde\")==5")
+	test("1+len(\"abcde\")==6")
 }
 
