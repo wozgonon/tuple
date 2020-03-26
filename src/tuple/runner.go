@@ -98,6 +98,18 @@ func (context RunnerContext) ReadRune() (rune, error) {
 	return ch, nil
 }
 
+func (context RunnerContext) LookAhead() rune {
+	ch, _, err := context.scanner.ReadRune()
+	if err != nil {
+		// TODO Is this okay to just return false rather than an error
+		context.scanner.UnreadRune()
+		return ' '
+	}
+	context.scanner.UnreadRune()
+	return ch
+
+}
+
 func (context RunnerContext) UnreadRune() {
 	context.scanner.UnreadRune()
 	if context.column == 0 {
@@ -151,6 +163,7 @@ func Eval(grammar Grammar, expression string) Value {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := NewRunnerContext("<eval>", reader, GetLogger(nil), false)
+	//fmt.Printf("*** Eval: '%s'\n", expression)
 	grammar.Parse(context, pipeline)
 	return result
 }

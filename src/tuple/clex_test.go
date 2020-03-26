@@ -5,6 +5,8 @@ import (
 	"tuple"
 	"bufio"
 	"strings"
+	"strconv"
+	"fmt"
 )
 
 func testGetNext(t *testing.T, expression string, expected string) {
@@ -25,24 +27,43 @@ func testGetNext(t *testing.T, expression string, expected string) {
 			result = atom.Name
 		},
 		func (literal tuple.Value) {
+			switch literal.(type) {
+			case tuple.Int64: result = strconv.FormatInt(int64(literal.(tuple.Int64)), 10)
+			case tuple.Float64: result = fmt.Sprint(float64(literal.(tuple.Float64)))
+			case tuple.String: result = string(literal.(tuple.String))
+			case tuple.Bool: result = strconv.FormatBool(bool(literal.(tuple.Bool)))
+			}
 			// TODO result = literal
 		})
 
 	if err != nil {
 		t.Errorf("Error: %s", err)
-	} else if result != expression {
-		t.Errorf("%s==%s", expected, result)
+	} else if expected != result {
+		t.Errorf("%s==%s   exp=%s", expected, result, expression)
 	}
 }
 
-
 func TestLex1(t *testing.T) {
-	//testGetNext(t, "1", "1")
-	//testGetNext(t, "1.1", "1.1")
+	testGetNext(t, "1", "1")
+	testGetNext(t, "-1", "-1")
+	testGetNext(t, ".1", "0.1")
+	//testGetNext(t, "-1.", "-1.")
+	// TODO testGetNext(t, "-.1", ".1")
 	testGetNext(t, "abc123", "abc123")
 	testGetNext(t, "+", "+")
 	testGetNext(t, ">=", ">=")
 	testGetNext(t, "(", "(")
 	//testGetNext(t, "[", "]")
 	//testGetNext(t, "{", "}")
+}
+
+func TestCLanguageOperators(t *testing.T) {
+
+	operators := tuple.NewOperators(tuple.LispWithInfixStyle)
+	tuple.AddStandardCOperators(&operators)
+	operators.Forall(func(operator string) {
+		if operator != " " {  // TODO handle space
+			testGetNext(t, operator, operator)
+		}
+	})
 }

@@ -138,7 +138,12 @@ func toFloat64(value Value) float64 {
 	case Int64: return float64(val)
 	case Float64: return float64(val)
 	case Atom: return math.NaN() // TODO Nullary(val)
-	//case bool: return float64(val)
+	case Bool:
+		if val {
+			return 1
+		} else {
+			return 0
+		}
 	default:
 		return math.NaN()
 	}

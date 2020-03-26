@@ -154,7 +154,8 @@ func (style Style) GetNext(context Context, open func(open string), close func(c
 			return err
 		}
 		nextLiteral(value)
-	case ch == '.' || unicode.IsNumber(ch):
+	case ((ch == '.' || ch == '-') && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch):
+	//case ch == '.' || unicode.IsNumber(ch):
 		value, err := ReadNumber(context, string(ch))    // TODO minus
 		if err != nil {
 			return err
@@ -164,28 +165,13 @@ func (style Style) GetNext(context Context, open func(open string), close func(c
 		} else {
 			nextLiteral(value)
 		}
-/*	case ch == '-':
-		ch1, err := context.ReadRune() // Create a lookahead method  - check for spaces - set row and column back
-		if err != nil {
-			return err
-		}
-		if unicode.IsNumber(ch1) {
-			context.UnreadRune()
-			value, err := ReadNumber(context, string(ch))    // TODO minus
-			if err != nil {
-				return err
-			}
-			if atom, ok := value.(Atom); ok {
-				nextAtom(atom) // TODO  Complain about -.
-			} else {
-				nextLiteral(value)
-			}
-		} else {
-			nextAtom(Atom{string(ch)})
-		}*/
 	case ch == style.KeyValueSeparatorRune:
 		nextAtom(Atom{style.KeyValueSeparator})
 	case IsArithmetic(ch): nextAtom(Atom{string(ch)}) // }, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
+	case ch == '|' && context.LookAhead() == '|':
+		nextAtom(Atom{"||"})
+	case ch == '&' && context.LookAhead() == '&':
+		nextAtom(Atom{"&&"})
 	case IsCompare(ch):
 		value, err := (ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) }))
 		if err != nil {

@@ -125,6 +125,7 @@ type Context interface {
 	Open()
 	Close()
 	ReadRune() (rune, error)
+	LookAhead() rune
 	UnreadRune()
 	Log(format string, level string, args ...interface{})
 	Errors() int64

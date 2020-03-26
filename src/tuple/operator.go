@@ -200,16 +200,20 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	Verbose(stack.context,"*PushOperator '%s'", atom.Name)
 
 	unaryOperator, ok := stack.operators.unary[atom.Name]
-	unary := (*stack).wasOperator && ok
+	nextIsUnary := (*stack).wasOperator && ok
 	if atom != SPACE_ATOM {
-		if unary {
+		if nextIsUnary {
 			atom = unaryOperator
 		}
 		atomPrecedence := stack.operators.Precedence(atom)
 		lo := len(stack.operatorStack)
 		for index := lo-1 ; index >= 0; index -= 1 {
 			top := stack.operatorStack[index]
-			if !unary && stack.operators.IsOpenBracket(top) {
+			topIsUnary := strings.HasPrefix(top.Name, "_unary_")
+			Verbose(stack.context, "IsUnary %s %s", top, topIsUnary)
+			if !nextIsUnary && (topIsUnary || stack.operators.IsOpenBracket(top)) {
+				break
+			} else if nextIsUnary && topIsUnary {
 				break
 			} else if stack.operators.Precedence(top) >= atomPrecedence {
 				Verbose(stack.context,"* PushOperator - Reduce '%s'", top)
@@ -219,7 +223,7 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 			}
 		}
 	}
-	if ! unary && (*stack).wasOperator {
+	if ! nextIsUnary && (*stack).wasOperator {
 		Error(stack.context,"Unexpected binary operator '%s'", atom.Name)
 	} else {
 		if atom.Name == "." {
@@ -247,6 +251,21 @@ type Operators struct {
 
 func NewOperators(style Style) Operators {
 	return Operators{style, make(map[string]int, 0), make(map[string]Atom, 0), make(map[string]string, 0), make(map[string]string, 0)}
+}
+
+// Iterates through all operators, this is mainly for testing
+func (operators *Operators) Forall(next func (value string)) {
+	for k, _ := range operators.precedence {
+		next(k)
+	}
+	/* TODO for k, v := range operators.brackets {
+		next(k)
+		next(v)
+	}*/
+	for k, v := range operators.unary {
+		next(k)
+		next(v.Name)
+	}
 }
 
 func (operators *Operators) Add(operator string, precedence int) {
@@ -279,16 +298,22 @@ func (operators *Operators) IsCloseBracket(atom Atom) bool {
 	return ok
 }
 
+/*func (operators *Operators) IsUnary(atom Atom) bool {
+	token := atom.Name
+	_, ok := operators.unary[token]
+	return ok
+}*/
+
 func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
 	expectedClose, ok := operators.brackets[open.Name]
 	return ok && expectedClose == close.Name
 }
 
 // TODO generalize
-func (operators *Operators) IsUnaryPrefix(token string) bool {
-	_, ok := operators.brackets[token]
-	return ok
-}
+//func (operators *Operators) IsUnaryPrefix(token string) bool {
+//	_, ok := operators.brackets[token]
+//	return ok
+//}
 
 /////////////////////////////////////////////////////////////////////////////
 // Printer

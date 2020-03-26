@@ -135,7 +135,7 @@ test_wexpr: bin/wexpr
 	test x-123 = x`bin/wexpr -- "-123"`
 	test x-123 = x`bin/wexpr -- "-(123)"`
 	test -3 = `bin/wexpr -- "-(1+2)"`
-	test -3 = `bin/wexpr -- "-(-(-1)+2)"`
+	test 1 = `bin/wexpr -- "-(-(-1)+2)"`
 	test 3 = `bin/wexpr -- "(0- - 3)"`
 	test x-3 = x`bin/wexpr -- "-(0- - 3)"`
 	test x-2 = x`bin/wexpr -- "-(1--1)"`

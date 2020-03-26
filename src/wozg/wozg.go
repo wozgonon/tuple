@@ -33,7 +33,7 @@ func main() {
 	
 	var in = flag.String("in", ".l", "The format of the input.")
 	var out = flag.String("out", ".l", "The format of the output.")
-	var loggerGrammarSuffix = flag.String("log", ".l", "The format of the error logging.")
+	var loggerGrammarSuffix = flag.String("log", "", "The format of the error logging.")
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
 	var eval = flag.Bool("eval", false, "Run 'eval' interpretter.")
 	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
@@ -76,7 +76,7 @@ func main() {
 
 	
 	outputGrammar := grammars.FindBySuffixOrPanic(*out)
-	loggerGrammar := grammars.FindBySuffixOrPanic(*loggerGrammarSuffix)
+	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
 	logger := tuple.GetLogger(loggerGrammar)
 	var inputGrammar tuple.Grammar = nil
 	if *in != "" {
