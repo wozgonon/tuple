@@ -168,6 +168,18 @@ func Eval(grammar Grammar, expression string) Value {
 	return result
 }
 
+func ParseString(grammar Grammar, expression string) Value {
+	var result Value = NAN
+	pipeline := func(value Value) {
+		result = value
+	}
+
+	reader := bufio.NewReader(strings.NewReader(expression))
+	context := NewRunnerContext("<parse>", reader, GetLogger(nil), false)
+	grammar.Parse(context, pipeline)
+	return result
+}
+
 func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, grammars *Grammars, next Next) int64 {
 
 	errors := int64(0)
