@@ -24,6 +24,7 @@ func TestQuery(t *testing.T) {
 	b := (tuple.Atom{"b"})
 	c := (tuple.Atom{"c"})
 
+	empty := tuple.NewTuple()
 	abc := tuple.NewTuple(a, b, c)
 	bc := tuple.NewTuple(b, c)
 	aaa := tuple.NewTuple(a, bc, abc, bc, abc, abc)
@@ -33,8 +34,16 @@ func TestQuery(t *testing.T) {
 	test(abc, 1, "a")
 	test(aaa, 2, "*.b")
 	test(aaa, 2, "a.b")
-	test(aaa, 3, "a.a")
-	test(aaa, 5, "a.*")
-	test(aaa, 5, "*.*")
+	test(aaa, 4, "a.a")
+	test(aaa, 6, "a.*")
+	test(aaa, 6, "*.*")
+	test(aaa, 0, "*.z")
+	test(aaa, 0, "a.z")
+	test(a, 1, "a")
+	test(a, 1, "a")
+	test(b, 0, "a")
+	test(empty, 0, "a")
+	test(empty, 1, "*")
+	test(empty, 1, "")
 }
 
