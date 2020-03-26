@@ -18,8 +18,8 @@ package tuple
 
 import "math"
 import "strings"
-//import "reflect"
-//import "fmt"
+import "reflect"
+import "fmt"
 
 //  A simple toy evaluator.
 //
@@ -32,14 +32,132 @@ import "strings"
 //  * [Eval](https://en.wikipedia.org/wiki/Eval)
 //  * [Meta-circular_evaluator](https://en.wikipedia.org/wiki/Meta-circular_evaluator)
 //  
+
+type SymbolTable struct {
+	symbols map[string]reflect.Value
+}
+
+func NewSymbolTable() SymbolTable {
+
+	table := SymbolTable{map[string]reflect.Value{}}
+	table.Add("len", func(value string) int64 { return int64(len(value)) })
+	table.Add("lower", strings.ToLower)
+	table.Add("upper", strings.ToUpper)
+	table.Add("exp", math.Exp)
+	table.Add("log", math.Log)
+	table.Add("sin", math.Sin)
+	table.Add("cos", math.Cos)
+	table.Add("tan", math.Tan)
+	table.Add("acos", math.Acos)
+	table.Add("asin", math.Asin)
+	table.Add("atan", math.Atan)
+	table.Add("atan2", math.Atan2)
+	table.Add("round", math.Round)
+	table.Add("^", math.Pow)
+	table.Add("+", func (aa float64) float64 { return aa })
+	table.Add("-", func (aa float64) float64 { return -aa })
+	table.Add("+", func (aa float64, bb float64) float64 { return aa+bb })
+	table.Add("-", func (aa float64, bb float64) float64 { return aa-bb })
+	table.Add("*", func (aa float64, bb float64) float64 { return aa*bb })
+	table.Add("/", func (aa float64, bb float64) float64 { return aa/bb })
+	table.Add("==", func (aa float64, bb float64) bool { return aa==bb })
+	table.Add("!=", func (aa float64, bb float64) bool { return aa!=bb })
+	table.Add(">=", func (aa float64, bb float64) bool { return aa>=bb })
+	table.Add("<=", func (aa float64, bb float64) bool { return aa<=bb })
+	table.Add(">", func (aa float64, bb float64) bool { return aa>bb })
+	table.Add("<", func (aa float64, bb float64) bool { return aa<bb })
+	table.Add("&&", func (aa bool, bb bool) bool { return aa&&bb })
+	table.Add("||", func (aa bool, bb bool) bool { return aa||bb })
+	table.Add("!", func (aa bool) bool { return ! aa })
+	table.Add("PI", func () float64 { return math.Pi })
+	table.Add("PHI", func () float64 { return math.Phi })
+	table.Add("E", func () float64 { return math.E })
+	table.Add("true", func () bool { return true })
+	table.Add("false", func () bool { return false })
+
+	return table
+}
 func SimpleEval(expression Value, next Next) {
-	result := eval(expression)
+	symbols := NewSymbolTable()
+	result := symbols.Eval(expression)
 	next(result)
 }
 
+func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 
-func eval(expression Value) Value {
+	//fmt.Printf("mapToReflectValue: %s\n", v)
+	if expected == reflect.TypeOf(int64(1))  {
+		
+		return reflect.ValueOf(toInt64(v))
+	}
+	if expected == reflect.TypeOf(float64(1.0)) {
+		return reflect.ValueOf(toFloat64(v))
+	}
+	if expected == reflect.TypeOf(true) {
+		return reflect.ValueOf(toBool(v))
+	}
+	if expected == reflect.TypeOf("") {
+		return reflect.ValueOf(toString(v))
+	}
+	return reflect.ValueOf(float64(v.(Float64)))
+	//return Float64(in.Float())
+}
 
+func mapFromReflectValue (in []reflect.Value) Value {
+	v:= in[0]
+	expected := v.Type()
+	if expected == reflect.TypeOf(int64(1))  {
+		return Int64(v.Int())
+	}
+	if expected == reflect.TypeOf(float64(1.0)) {
+		return Float64(v.Float())
+	}
+	if expected == reflect.TypeOf(true) {
+		return Bool(v.Bool())
+	}
+	if expected == reflect.TypeOf("") {
+		return String(v.String())
+	}
+	// TODO
+	return Float64(in[0].Float())
+	//return Float64(in.Float())
+}
+
+func makeKey(name string, arity int) string {
+	return fmt.Sprintf("%d_%s", arity, name)
+}
+
+func (table SymbolTable) Add(name string, function interface{}) {
+	reflectValue := reflect.ValueOf(function)
+	typ := reflectValue.Type()
+	key := makeKey(name, typ.NumIn())
+	table.symbols[key] = reflectValue
+}
+
+func (table SymbolTable) Call(head Atom, args []Value) Value {
+
+	name := head.Name
+	nn := len(args)
+
+	key := makeKey(name, len(args))
+	f, ok := table.symbols[key]
+	if ok {
+		t := f.Type()
+		//fmt.Printf("FUNC %s %d - %s %s\n", name, nn, key, t)
+		//fmt.Printf("  FUNC %s %d - %s %d\n", name, nn, key, t.NumIn())
+		//fmt.Printf("   FUNC %s %d\n", name, nn)
+		reflectedArgs := make([]reflect.Value, nn)
+		for k,_:= range args {
+			reflectedArgs[k] = mapToReflectValue(args[k], t.In(k))
+		}
+		reflectValue := f.Call(reflectedArgs)
+		return mapFromReflectValue(reflectValue)
+	}
+	fmt.Printf("ERROR: not found: '%s' %d\n", name, nn)
+	return NAN  // TODO
+}
+
+func (table SymbolTable) Eval(expression Value) Value {
 
 	switch val := expression.(type) {
 	case Tuple:
@@ -49,156 +167,56 @@ func eval(expression Value) Value {
 		}
 		head := val.List[0]
 		if ll == 1 {
-			return eval(head)
+			return table.Eval(head)
 		}
 		atom, ok := head.(Atom)
 		if ! ok {
-			// TODO Handle case of list: (1 2 3)
+			return val // TODO Handle case of list: (1 2 3)
 		}
 		evaluated := make([]Value, ll-1)
 		for k, v := range val.List[1:] {
-			evaluated[k] = eval(v)
+			evaluated[k] = table.Eval(v)
 		}
-
-		name := atom.Name
-
-		/*
-		functions := map[string]reflect.Value{
-			"exp": reflect.ValueOf(math.Exp),
-			"log": reflect.ValueOf(math.Log),
-			"sin": reflect.ValueOf(math.Sin),
-			"cos": reflect.ValueOf(math.Cos),
-			"tan": reflect.ValueOf(math.Tan),
-			"acos": reflect.ValueOf(math.Acos),
-			"asin": reflect.ValueOf(math.Asin),
-			"atan": reflect.ValueOf(math.Atan),
-			"round": reflect.ValueOf(math.Round),
-		}
-
-		mappingFrom := func(in Value) reflect.Value {
-			if val, ok := in.(Int64) ; ok {
-				return reflect.ValueOf(int64(val))
-			}
-			if val, ok := in.(Float64); ok  {
-				return reflect.ValueOf(float64(val))
-			}
-			return reflect.ValueOf(float64(in.(Float64)))
-			//return Float64(in.Float())
-		}
-		mappingTo := func(in []reflect.Value) Value {
-			v:= in[0]
-			t := v.Type()
-			if t == reflect.TypeOf(int64(1))  {
-				return Int64(v.Int())
-			}
-			if t == reflect.TypeOf(float64(1.0)) {
-				return Float64(v.Float())
-			}
-			return Float64(in[0].Float())
-			//return Float64(in.Float())
-		}
-		nn := ll-1
-		for k, f := range functions {
-			t := f.Type()
-			fmt.Printf("FUNC %s %d - %s %d\n", name, nn, k, t.NumIn())
-			if name == k && nn == t.NumIn() {
-				fmt.Printf("FUNC %s %d", name, nn)
-				args := make([]reflect.Value, nn)
-				for k,_:= range args {
-					args[k] = toFloat64(mappingFrom(evaluated[k]))
-				}
-				r := f.Call(args)
-				return mappingTo(r)
-			}
-		}*/
-
-		switch ll {
-		case 2:
-			if str, ok := evaluated[0].(String); ok {
-				switch name {
-				case "len": return Int64(len(str))
-				case "lower": return String(strings.ToLower(string(str)))
-				case "upper": return String(strings.ToUpper(string(str)))
-				default: return NAN // Float64math.NaN()
-				}
-			}
-
-			// TODO not !
-			aa := toFloat64(evaluated[0])
-			switch name {
-			case "log": return Float64(math.Log(aa))
-			case "exp": return Float64(math.Exp(aa))
-			case "sin": return Float64(math.Sin(aa))
-			case "cos": return Float64(math.Cos(aa))
-			case "tan": return Float64(math.Tan(aa))
-			case "acos": return Float64(math.Acos(aa))
-			case "asin": return Float64(math.Asin(aa))
-			case "atan": return Float64(math.Atan(aa))
-			case "round": return Float64(math.Round(aa))
-			case "-": return Float64(-aa)
-			case "+": return Float64(aa)
-			case "!":
-				if math.Round(aa) == 0 {
-					return Bool(true)
-				} else {
-					return Bool(false)
-				}
-			//case "_unary_minus": return -aa
-			//case "_unary_plus": return aa
-			default: return NAN // math.NaN()
-			}
-		case 3:
-			aa := toFloat64(evaluated[0])
-			bb := toFloat64(evaluated[1])
-			switch name {
-				//case ":=": 
-			case "^": return Float64(math.Pow(aa,bb))
-			case "+": return Float64(aa+bb)
-			case "-": return Float64(aa-bb)
-			case "*": return Float64(aa*bb)
-			case "/": return Float64(aa/bb)
-			case "==": return Bool(aa==bb)
-			case "!=": return Bool(aa!=bb)
-			case ">=": return Bool(aa>=bb)
-			case "<=": return Bool(aa<=bb)
-			case ">": return Bool(aa>bb)
-			case "<": return Bool(aa<bb)
-			case "atan2": return Float64(math.Atan2(aa,bb))
-			default: return NAN
-			}
-		default:
-			return NAN
-			// TODO
-		}
-	case Int64:
-		return expression
-	case Float64:
-		return expression
-	case String:
-		return expression
-	case Bool:
-		return expression
+		return table.Call(atom, evaluated)
 	case Atom:
-		return Nullary(expression.(Atom))
+		return table.Call(val, []Value{})
 	default:
-		return NAN
+		return val
 	}
-		
 }
+
 func toString(value Value) string {
 	switch val := value.(type) {
 	case Atom: return val.Name
 	case String: return string(val)
 	default:
-		return ""
+		return "..." // TODO
+	}
+}
+
+func toBool(value Value) bool {
+	switch val := value.(type) {
+	case Int64: return val != 0
+	case Float64: return val != 0
+	case Atom:
+		if val.Name == "true" {
+			return true
+		}
+		return false // TODO Nullary(val)
+	case Bool: return bool(val)
+	default:
+		return false
 	}
 }
 
 func toFloat64(value Value) float64 {
+	//fmt.Printf("toFloat64 %s\n", value)
 	switch val := value.(type) {
 	case Int64: return float64(val)
 	case Float64: return float64(val)
-	case Atom: return math.NaN() // TODO Nullary(val)
+	case Atom:
+		return 0. // return math.NaN() // TODO Nullary(val)
+	case String: return 0. // return math.NaN() // TODO Nullary(val)
 	case Bool:
 		if val {
 			return 1
@@ -210,13 +228,19 @@ func toFloat64(value Value) float64 {
 	}
 }
 
-func Nullary(val Atom) Value {
-	switch val.Name {
-	case "PI": return Float64(math.Pi)
-	case "PHI": return Float64(math.Phi)
-	case "E": return Float64(math.E)
-	case "true": return Bool(true)
-	case "false": return Bool(false)
-	default: return NAN   // TODO look up variable
+func toInt64(value Value) int64 {
+	switch val := value.(type) {
+	case Int64: return int64(val)
+	case Float64: return int64(val)
+	case Atom: return -1 // math.NaN() // TODO Nullary(val)
+	case Bool:
+		if val {
+			return 1
+		} else {
+			return 0
+		}
+	default:
+		return -1 //math.NaN()
 	}
 }
+

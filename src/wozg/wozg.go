@@ -86,7 +86,12 @@ func main() {
 	//
 	//  Set up the translator pipeline.
 	//
-	pipeline := tuple.SimplePipeline (*eval, *queryPattern, outputGrammar)
+	var symbols * tuple.SymbolTable = nil
+	table := tuple.NewSymbolTable()
+	if *eval {
+		symbols = &table
+	}
+	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar)
 
 	if *command {
 		//

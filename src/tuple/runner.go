@@ -154,11 +154,11 @@ func GetLogger(logGrammar Grammar) Logger {
 }
 
 func Eval(grammar Grammar, expression string) Value {
+	symbols := NewSymbolTable()
+
 	var result Value = NAN
 	pipeline := func(value Value) {
-		SimpleEval(value, func(value Value) {
-			result = value
-		})
+		result = symbols.Eval(value)
 	}
 
 	reader := bufio.NewReader(strings.NewReader(expression))
@@ -225,7 +225,7 @@ func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, 
 //
 //  Set up the translator pipeline.
 //
-func SimplePipeline (eval bool, queryPattern string, outputGrammar Grammar) Next {
+func SimplePipeline (symbols * SymbolTable, queryPattern string, outputGrammar Grammar) Next {
 
 	prettyPrint := func(tuple Value) {
 		outputGrammar.Print(tuple, func(value string) {
@@ -233,10 +233,10 @@ func SimplePipeline (eval bool, queryPattern string, outputGrammar Grammar) Next
 		})
 	}
 	pipeline := prettyPrint
-	if eval {
+	if symbols != nil {
 		next := pipeline
 		pipeline = func(value Value) {
-			SimpleEval(value, next)
+			next(symbols.Eval(value))
 		}
 	}
 	if queryPattern != "" {

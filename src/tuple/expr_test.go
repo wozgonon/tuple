@@ -134,6 +134,11 @@ func TestExprEquals(t *testing.T) {
 	test("true")
 	test("! false")
 
+	test("true && ! false")
+	test("true || false")
+
+	test("1<3 && 3>2")
+
 	test("(!1) == 0")
 	test("(!0) == 1")
 	// TODO test("!1 == 0")  - TODO priority of unary operators

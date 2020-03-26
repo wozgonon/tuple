@@ -32,7 +32,12 @@ func main () {
 	//  Set up the translator pipeline.
 	//
 	outputGrammar := tuple.NewInfixExpressionGrammar()
-	pipeline := tuple.SimplePipeline (!*ast, *queryPattern, outputGrammar)
+	var symbols * tuple.SymbolTable = nil
+	table := tuple.NewSymbolTable()
+	if !*ast {
+		symbols = &table
+	}
+	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar)
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := tuple.NewRunnerContext("<cli>", reader, tuple.GetLogger(nil), *verbose)
 	grammar := tuple.NewInfixExpressionGrammar()
