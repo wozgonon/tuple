@@ -44,7 +44,26 @@ func TestExprToInt64(t *testing.T) {
 
 func TestExpr(t *testing.T) {
 	testFloatExpressionFailParse(t, grammar, "-")
-	testValueExpression(t, grammar, "(-123 == -(123))", tuple.Bool(true))
+
+	test := func(formula string, expected tuple.Value) {
+		val := tuple.Eval(grammar, formula)
+		if val != expected {
+			t.Errorf("%s=%f  expected=%s", formula, val, expected)
+		}
+	}
+
+	test("true", tuple.Bool(true))
+	test("false", tuple.Bool(false))
+
+	test("0", tuple.Int64(0))
+	test("1", tuple.Int64(1))
+	test("-1", tuple.Int64(-1))
+
+	test("-1.", tuple.Float64(-1.))
+	test(".0", tuple.Float64(.0))
+	test(".1", tuple.Float64(.1))
+
+	test("\"abc\"", tuple.String("abc"))
 }
 
 
