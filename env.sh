@@ -44,8 +44,14 @@ loc () {
     wc -l `find . -name '*.go'`
 }
 
+# Reports lines of test code and percentage test coverage
 loct () {
     wc -l `find . -name '*_test.go'`
+    go test tuple -cover
+}
+
+cov() {
+    go tool cover -html=c.out
 }
 
 #############################################################################

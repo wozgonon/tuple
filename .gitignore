@@ -3,3 +3,4 @@ bin
 pkg
 src/wozg/version.go
 target
+c.out

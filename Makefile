@@ -62,7 +62,8 @@ version: wozg
 	bin/wozg --version
 
 go_test: all
-	go test tuple
+	go test tuple -coverprofile=c.out
+	echo RUN: go tool cover -html=c.out
 
 test_dirs: 
 	mkdir -p ${T1DIR}${TDIR} ${T2DIR}${TDIR}
