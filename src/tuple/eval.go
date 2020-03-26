@@ -18,6 +18,8 @@ package tuple
 
 import "math"
 import "strings"
+//import "reflect"
+//import "fmt"
 
 //  A simple toy evaluator.
 //
@@ -35,7 +37,9 @@ func SimpleEval(expression Value, next Next) {
 	next(result)
 }
 
+
 func eval(expression Value) Value {
+
 
 	switch val := expression.(type) {
 	case Tuple:
@@ -57,6 +61,57 @@ func eval(expression Value) Value {
 		}
 
 		name := atom.Name
+
+		/*
+		functions := map[string]reflect.Value{
+			"exp": reflect.ValueOf(math.Exp),
+			"log": reflect.ValueOf(math.Log),
+			"sin": reflect.ValueOf(math.Sin),
+			"cos": reflect.ValueOf(math.Cos),
+			"tan": reflect.ValueOf(math.Tan),
+			"acos": reflect.ValueOf(math.Acos),
+			"asin": reflect.ValueOf(math.Asin),
+			"atan": reflect.ValueOf(math.Atan),
+			"round": reflect.ValueOf(math.Round),
+		}
+
+		mappingFrom := func(in Value) reflect.Value {
+			if val, ok := in.(Int64) ; ok {
+				return reflect.ValueOf(int64(val))
+			}
+			if val, ok := in.(Float64); ok  {
+				return reflect.ValueOf(float64(val))
+			}
+			return reflect.ValueOf(float64(in.(Float64)))
+			//return Float64(in.Float())
+		}
+		mappingTo := func(in []reflect.Value) Value {
+			v:= in[0]
+			t := v.Type()
+			if t == reflect.TypeOf(int64(1))  {
+				return Int64(v.Int())
+			}
+			if t == reflect.TypeOf(float64(1.0)) {
+				return Float64(v.Float())
+			}
+			return Float64(in[0].Float())
+			//return Float64(in.Float())
+		}
+		nn := ll-1
+		for k, f := range functions {
+			t := f.Type()
+			fmt.Printf("FUNC %s %d - %s %d\n", name, nn, k, t.NumIn())
+			if name == k && nn == t.NumIn() {
+				fmt.Printf("FUNC %s %d", name, nn)
+				args := make([]reflect.Value, nn)
+				for k,_:= range args {
+					args[k] = toFloat64(mappingFrom(evaluated[k]))
+				}
+				r := f.Call(args)
+				return mappingTo(r)
+			}
+		}*/
+
 		switch ll {
 		case 2:
 			if str, ok := evaluated[0].(String); ok {
@@ -71,8 +126,7 @@ func eval(expression Value) Value {
 			// TODO not !
 			aa := toFloat64(evaluated[0])
 			switch name {
-			case "log":
-				return Float64(math.Log(aa))
+			case "log": return Float64(math.Log(aa))
 			case "exp": return Float64(math.Exp(aa))
 			case "sin": return Float64(math.Sin(aa))
 			case "cos": return Float64(math.Cos(aa))

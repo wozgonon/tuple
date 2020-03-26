@@ -17,7 +17,7 @@
 package tuple
 
 import "strings"
-//import "fmt"
+import "fmt"
 
 //  The Query type is used for filtering the AST produced by the parser.
 type Query struct {
@@ -34,30 +34,26 @@ func NewQuery(query string) Query {
 func (query Query) match(depth int, name string) bool {
 	//TODO Handles cons cells
 	ll := len(query.components)
-	//fmt.Printf("name=%s ll=%d depth=%d\n", name, ll, depth)
-	if depth <= ll {
-		component := query.components[depth-1]
-		//fmt.Printf("component=%s", component)
+	if depth < ll {
+		component := query.components[depth]
 		if name == component || component == "*" {
 			if depth == ll-1 {
+				fmt.Printf("Match component=%s name=%s depth=%d\n", component, name, depth)
 				return true
 			}
 			
 		}
-		return false
 	}
-	return true
+	return false
 }
 
 func (query Query) filter(depth int, token Value, next Next) {
-	///fmt.Printf("match=%s\n", token)
 	if tuple, ok := token.(Tuple); ok {
 
-		/*if len(tuple.List) == 0 {
+		if len(tuple.List) == 0 {
 			return
 		}
 		head := tuple.List[0]
-		//fmt.Printf("head=%s\n", head)
 		atom, ok := head.(Atom)
 		var name string
 		if ok {
@@ -69,7 +65,6 @@ func (query Query) filter(depth int, token Value, next Next) {
 			// TODO test string
 			return // TODO
 		}
-               */
 		for _, token := range tuple.List {
 			query.filter(depth+1, token, next)
 		}
@@ -84,5 +79,5 @@ func (query Query) filter(depth int, token Value, next Next) {
 
 func (query Query) Match(expression Value, next Next) {
 
-	query.filter(-1, expression, next)
+	query.filter(0, expression, next)
 }

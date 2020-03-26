@@ -50,7 +50,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version go_test test_basic test_arithmetic test_expr test_tcl test_yaml test_json test_wexpr test_infix #  test_query 
+test: version go_test test_basic test_arithmetic test_expr test_tcl test_yaml test_json test_wexpr test_infix test_query 
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -108,7 +108,7 @@ test_infix: ${TDIR}test.infix test_dirs  all
 	@bin/wozg -out infix ${T1DIR}test.infix.l  > ${T1DIR}test.infix
 	diff -y --suppress-common-lines ${T1DIR}test.infix ${T2DIR}test.infix
 
-test_query:
+test_query: all
 	bin/wozg --query a.*.c ${TDIR}nested.l > ${T1DIR}nested.l
 	diff -y --suppress-common-lines ${T1DIR}nested.l ${TDIR}nested.l.golden
 
@@ -118,7 +118,7 @@ test_json: ${TDIR}test.json all
 	diff -y --suppress-common-lines ${T1DIR}test.json  ${T2DIR}test.json
 	diff -y --suppress-common-lines ${T1DIR}test.json ${TDIR}test.json.golden
 
-test_wexpr: bin/wexpr
+test_wexpr: bin/wexpr all
 	test 11 = `bin/wexpr "11"`
 	test () = `bin/wexpr "()"`
 	test 7 = `bin/wexpr "1+2*3"`
