@@ -77,55 +77,7 @@ func NewSymbolTable() SymbolTable {
 
 	return table
 }
-func SimpleEval(expression Value, next Next) {
-	symbols := NewSymbolTable()
-	result := symbols.Eval(expression)
-	next(result)
-}
 
-func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
-
-	//fmt.Printf("mapToReflectValue: %s\n", v)
-	if expected == reflect.TypeOf(int64(1))  {
-		
-		return reflect.ValueOf(toInt64(v))
-	}
-	if expected == reflect.TypeOf(float64(1.0)) {
-		return reflect.ValueOf(toFloat64(v))
-	}
-	if expected == reflect.TypeOf(true) {
-		return reflect.ValueOf(toBool(v))
-	}
-	if expected == reflect.TypeOf("") {
-		return reflect.ValueOf(toString(v))
-	}
-	return reflect.ValueOf(float64(v.(Float64)))
-	//return Float64(in.Float())
-}
-
-func mapFromReflectValue (in []reflect.Value) Value {
-	v:= in[0]
-	expected := v.Type()
-	if expected == reflect.TypeOf(int64(1))  {
-		return Int64(v.Int())
-	}
-	if expected == reflect.TypeOf(float64(1.0)) {
-		return Float64(v.Float())
-	}
-	if expected == reflect.TypeOf(true) {
-		return Bool(v.Bool())
-	}
-	if expected == reflect.TypeOf("") {
-		return String(v.String())
-	}
-	// TODO
-	return Float64(in[0].Float())
-	//return Float64(in.Float())
-}
-
-func makeKey(name string, arity int) string {
-	return fmt.Sprintf("%d_%s", arity, name)
-}
 
 func (table SymbolTable) Add(name string, function interface{}) {
 	reflectValue := reflect.ValueOf(function)
@@ -157,6 +109,11 @@ func (table SymbolTable) Call(head Atom, args []Value) Value {
 	return NAN  // TODO
 }
 
+
+func makeKey(name string, arity int) string {
+	return fmt.Sprintf("%d_%s", arity, name)
+}
+
 func (table SymbolTable) Eval(expression Value) Value {
 
 	switch val := expression.(type) {
@@ -185,12 +142,42 @@ func (table SymbolTable) Eval(expression Value) Value {
 	}
 }
 
+func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
+
+	switch {
+	case expected == reflect.TypeOf(int64(1)): return reflect.ValueOf(toInt64(v))
+	case expected == reflect.TypeOf(float64(1.0)): return reflect.ValueOf(toFloat64(v))
+	case expected == reflect.TypeOf(true): return reflect.ValueOf(toBool(v))
+	case expected == reflect.TypeOf(""): return reflect.ValueOf(toString(v))
+	default: return reflect.ValueOf(float64(v.(Float64)))
+	}
+}
+
+func mapFromReflectValue (in []reflect.Value) Value {
+	v:= in[0]
+	expected := v.Type()
+	switch {
+	case expected == reflect.TypeOf(int64(1)): return Int64(v.Int())
+	case expected == reflect.TypeOf(float64(1.0)): return Float64(v.Float())
+	case expected == reflect.TypeOf(true): return Bool(v.Bool())
+	case expected == reflect.TypeOf(""): return String(v.String())
+	default: return Float64(in[0].Float()) // TODO
+	}
+}
+
 func toString(value Value) string {
 	switch val := value.(type) {
 	case Atom: return val.Name
 	case String: return string(val)
-	default:
-		return "..." // TODO
+	//case Float64:
+	//case Int64:
+	case Bool:
+		if val {
+			return "true"
+		} else {
+			return "false"
+		}
+	default: return "..." // TODO
 	}
 }
 
@@ -204,19 +191,16 @@ func toBool(value Value) bool {
 		}
 		return false // TODO Nullary(val)
 	case Bool: return bool(val)
-	default:
-		return false
+	default: return false
 	}
 }
 
 func toFloat64(value Value) float64 {
-	//fmt.Printf("toFloat64 %s\n", value)
 	switch val := value.(type) {
 	case Int64: return float64(val)
 	case Float64: return float64(val)
-	case Atom:
-		return 0. // return math.NaN() // TODO Nullary(val)
-	case String: return 0. // return math.NaN() // TODO Nullary(val)
+	case Atom: return math.NaN()
+	case String: return math.NaN()
 	case Bool:
 		if val {
 			return 1
@@ -232,15 +216,15 @@ func toInt64(value Value) int64 {
 	switch val := value.(type) {
 	case Int64: return int64(val)
 	case Float64: return int64(val)
-	case Atom: return -1 // math.NaN() // TODO Nullary(val)
 	case Bool:
 		if val {
 			return 1
 		} else {
 			return 0
 		}
+	case Atom: return -1 // TODO
 	default:
-		return -1 //math.NaN()
+		return -1 //TODO
 	}
 }
 
