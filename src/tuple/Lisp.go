@@ -101,10 +101,12 @@ func (grammar LispWithInfixGrammar) Print(token Value, next func(value string)) 
 	PrintExpression(&(grammar.operators), "", token, next)
 }
 
+var LispWithInfixStyle Style =NewStyle("", "", "  ",
+	OPEN_BRACKET, CLOSE_BRACKET, "", "", CONS_OPERATOR, 
+	"", "\n", "true", "false", ';', "")
+
 func NewLispWithInfixGrammar() Grammar {
-	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", CONS_OPERATOR, 
-		"", "\n", "true", "false", ';', "")
+	style := LispWithInfixStyle
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
 	operators.Add(CONS_OPERATOR, 105) // CONS Operator
