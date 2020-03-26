@@ -292,12 +292,12 @@ func (operators *Operators) IsOpenBracket(atom Atom) bool {
 	return ok
 }
 
-func (operators *Operators) IsCloseBracket(atom Atom) bool {
+/*func (operators *Operators) IsCloseBracket(atom Atom) bool {
 	token := atom.Name
 	_, ok := operators.closeBrackets[token]
 	return ok
 }
-
+*/
 /*func (operators *Operators) IsUnary(atom Atom) bool {
 	token := atom.Name
 	_, ok := operators.unary[token]

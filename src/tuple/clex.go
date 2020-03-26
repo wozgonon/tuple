@@ -154,7 +154,7 @@ func (style Style) GetNext(context Context, open func(open string), close func(c
 			return err
 		}
 		nextLiteral(value)
-	case ((ch == '.' || ch == '-') && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch):
+	case ((ch == '.'|| ch == '-') && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch): // TODO || ch == '+' 
 	//case ch == '.' || unicode.IsNumber(ch):
 		value, err := ReadNumber(context, string(ch))    // TODO minus
 		if err != nil {
@@ -377,6 +377,7 @@ func IsCompare(ch rune) bool {
 }
 
 func AddStandardCOperators(operators *Operators) {
+	operators.unary["!"] = Atom{"_unary_not"}
 	operators.unary["-"] = Atom{"_unary_minus"}
 	operators.unary["+"] = Atom{"_unary_plus"}
 	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
@@ -384,6 +385,7 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
 	operators.Add("_unary_plus", 110)
 	operators.Add("_unary_minus", 110)
+	operators.Add("_unary_not", 55) // TODO check
 	operators.Add("^", 100)
 	operators.Add("*", 90)
 	operators.Add("/", 90)

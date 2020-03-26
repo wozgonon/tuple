@@ -67,7 +67,8 @@ func eval(expression Value) Value {
 				default: return NAN // Float64math.NaN()
 				}
 			}
-			
+
+			// TODO not !
 			aa := toFloat64(evaluated[0])
 			switch name {
 			case "log":
@@ -82,6 +83,12 @@ func eval(expression Value) Value {
 			case "round": return Float64(math.Round(aa))
 			case "-": return Float64(-aa)
 			case "+": return Float64(aa)
+			case "!":
+				if math.Round(aa) == 0 {
+					return Bool(true)
+				} else {
+					return Bool(false)
+				}
 			//case "_unary_minus": return -aa
 			//case "_unary_plus": return aa
 			default: return NAN // math.NaN()

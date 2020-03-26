@@ -50,7 +50,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version go_test test_basic test_arithmetic test_expr test_tcl test_yaml test_query test_json test_wexpr test_infix
+test: version go_test test_basic test_arithmetic test_expr test_tcl test_yaml test_json test_wexpr test_infix #  test_query 
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/

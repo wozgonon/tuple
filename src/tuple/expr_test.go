@@ -34,6 +34,9 @@ func TestExprToInt64(t *testing.T) {
 		"-(-(-1)+2)" : 1,
 		"cos(PI)" : -1,
 		"acos(cos(PI))" : math.Pi,
+		"asin(sin(0))" : 0,
+		"atan(tan(0))" : 0,
+		"exp(log(1))" : 1,
 	}
 	for k, v := range tests {
 		//t.Logf("*** %s %f", k, v)
@@ -62,6 +65,9 @@ func TestExpr(t *testing.T) {
 	test("-1.", tuple.Float64(-1.))
 	test(".0", tuple.Float64(.0))
 	test(".1", tuple.Float64(.1))
+
+	test("round(1234.1234)", tuple.Float64(1234))
+	test("atan2(0,0)", tuple.Float64(0))
 
 	test("\"abc\"", tuple.String("abc"))
 }
@@ -103,9 +109,30 @@ func TestExprEquals(t *testing.T) {
 	test("(acos (cos(PI)))==PI")
 	test("true == ((acos (cos(PI)))==PI)")
 
+	// TODO test("+1 == 1")
+	// TODO test("++1 == 1")
+	// TODO test("+-+1 == -1")
+
 
 	test("3 != -(1+2)")
 	test("1 == -(-(-1)+2)")
+
+	test("1 >= 1")
+	test("1 >= 0")
+	test("1 >  0")
+	test("1 <  2")
+	test("1 <= 1")
+	test("0 <= 1")
+	test("1 != -1")
+	test("1 == 1")
+
+	test("true")
+	test("! false")
+
+	test("(!1) == 0")
+	test("(!0) == 1")
+	// TODO test("!1 == 0")  - TODO priority of unary operators
+	// TODO test("!0 == 1")
 
 }
 

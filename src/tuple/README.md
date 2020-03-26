@@ -91,6 +91,11 @@ However,the grammars provided are sufficient:
 The basic grammars provided are variations on S-Expressions and operator precedence grammars.
 A basic lexer is recognises C-Language like tokens
 
+### Security
+
+A DSL written in Groovy or Scala typically has access to functionality you don't necessarilly need.
+With 'tuple' you specify exactly what functions are available so there is no risk of any backdoors.
+
 ## Teaching
 
 The package might be useful to those interested in understanding or in teaching others how compilers and interpreters work.
@@ -119,4 +124,5 @@ It provides implementations of each of the stages (lex, parse, resolve, eval, ge
 * TODO Recognise Reverse Polish Notation, aka postfix (postscript, forth)
 * TODO Recognise indented syntax (occam/python/yaml)
 * TODO basic prolog like eval (operator grammar syntax postfix operator)
-
+* TODO cloudformation like expressions in strings in json:   abc "${,,,}"
+* TODO resolver

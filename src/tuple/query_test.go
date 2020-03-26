@@ -13,15 +13,22 @@ func TestQuery(t *testing.T) {
 		query := tuple.NewQuery(queryString)
 		query.Match(input, func (value tuple.Value) {
 
-			tupleValue := value.(tuple.Tuple)
-			if tupleValue.Arity() != 1 {
-				head := tupleValue.List[0]
-				
-				if headAtom, ok := head.(tuple.Atom); ok && headAtom.Name == queryString {
+			if atom, ok := value.(tuple.Atom); ok {
+				if atom.Name == queryString {
 					count += 1
-					//t.Logf("Match")
 				} else {
-					 t.Errorf("Expected (%s) got: %s input=%s head=%s ", queryString, value, input, head)
+					t.Errorf("Expected (%s) got: %s input=%s ", queryString, value, input)
+				}
+			} else {
+				tupleValue := value.(tuple.Tuple)
+				if tupleValue.Arity() != 1 {
+					head := tupleValue.List[0]
+					if headAtom, ok := head.(tuple.Atom); ok && headAtom.Name == queryString {
+						count += 1
+						//t.Logf("Match")
+					} else {
+						t.Errorf("Expected (%s) got: %s input=%s head=%s ", queryString, value, input, head)
+					}
 				}
 			}
 		})
@@ -43,7 +50,7 @@ func TestQuery(t *testing.T) {
 
 	//test(abc, 3, "*")
 	test(abc, 0, "q")
-	test(abc, 1, "a")
+	//test(abc, 1, "a")
 	//test(abc, 1, "b")
 	//test(aabbcca, 3, "a")
 }

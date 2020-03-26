@@ -31,11 +31,29 @@ func NewQuery(query string) Query {
 	return Query{query, components, 0}
 }
 
-func (query Query) match(depth int, token Value, next Next) {
+func (query Query) match(depth int, name string) bool {
+	//TODO Handles cons cells
+	ll := len(query.components)
+	//fmt.Printf("name=%s ll=%d depth=%d\n", name, ll, depth)
+	if depth <= ll {
+		component := query.components[depth-1]
+		//fmt.Printf("component=%s", component)
+		if name == component || component == "*" {
+			if depth == ll-1 {
+				return true
+			}
+			
+		}
+		return false
+	}
+	return true
+}
+
+func (query Query) filter(depth int, token Value, next Next) {
 	///fmt.Printf("match=%s\n", token)
 	if tuple, ok := token.(Tuple); ok {
 
-		if len(tuple.List) == 0 {
+		/*if len(tuple.List) == 0 {
 			return
 		}
 		head := tuple.List[0]
@@ -44,26 +62,21 @@ func (query Query) match(depth int, token Value, next Next) {
 		var name string
 		if ok {
 			name = atom.Name
+			if query.match(depth, name) {
+				next(token)
+			}
 		} else {
 			// TODO test string
 			return // TODO
 		}
-		//fmt.Printf("name=%s\n", name)
-		//TODO Handles cons cells
-		ll := len(query.components)
-		if query.depth < ll {
-			component := query.components[depth]
-			//fmt.Printf("component=%s", component)
-			if name == component || component == "*" {
-				if depth == ll-1 {
-					next(token)
-					return
-				}
-				for _, token := range tuple.List {
-					query.match(depth+1, token, next)
-				}
-				
-			}
+               */
+		for _, token := range tuple.List {
+			query.filter(depth+1, token, next)
+		}
+
+	} else if atom, ok := token.(Atom); ok {
+		if query.match(depth+1, atom.Name) {
+			next(token)
 		}
 	}
 }
@@ -71,5 +84,5 @@ func (query Query) match(depth int, token Value, next Next) {
 
 func (query Query) Match(expression Value, next Next) {
 
-	query.match(0, expression, next)
+	query.filter(-1, expression, next)
 }

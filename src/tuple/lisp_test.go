@@ -85,6 +85,10 @@ func TestEvalLispWithInfixGrammarToInt64(t *testing.T) {
 	}
 }
 
+func TestLispCons(t *testing.T) {
+	// TODO test .
+}
+
 func TestLispInfixEquals(t *testing.T) {
 
 	test := func (formula string) {
