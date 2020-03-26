@@ -17,6 +17,7 @@
 package tuple
 
 import "strings"
+//import "fmt"
 
 //  The Query type is used for filtering the AST produced by the parser.
 type Query struct {
@@ -31,23 +32,28 @@ func NewQuery(query string) Query {
 }
 
 func (query Query) match(depth int, token Value, next Next) {
+	///fmt.Printf("match=%s\n", token)
 	if tuple, ok := token.(Tuple); ok {
 
 		if len(tuple.List) == 0 {
 			return
 		}
 		head := tuple.List[0]
+		//fmt.Printf("head=%s\n", head)
 		atom, ok := head.(Atom)
 		var name string
 		if ok {
 			name = atom.Name
 		} else {
+			// TODO test string
 			return // TODO
 		}
+		//fmt.Printf("name=%s\n", name)
 		//TODO Handles cons cells
 		ll := len(query.components)
 		if query.depth < ll {
 			component := query.components[depth]
+			//fmt.Printf("component=%s", component)
 			if name == component || component == "*" {
 				if depth == ll-1 {
 					next(token)
