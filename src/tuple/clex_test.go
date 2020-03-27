@@ -18,7 +18,8 @@ func testGetNext(t *testing.T, expression string, expected string) {
 
 	result := NO_RESULT
 	style := tuple.LispWithInfixStyle
-	err := style.GetNext(context,
+	err := style.GetNext(&context,
+		func() {},
 		func(open string) {
 			result = open
 		},

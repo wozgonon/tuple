@@ -66,6 +66,7 @@ func main() {
 	grammars.Add((tuple.NewIniGrammar()))
 	grammars.Add((tuple.NewPropertyGrammar()))
 	grammars.Add((tuple.NewJSONGrammar()))
+	grammars.Add((tuple.NewShellGrammar()))
 
 	if *listGrammars {
 		grammars.Forall(func (grammar tuple.Grammar) {

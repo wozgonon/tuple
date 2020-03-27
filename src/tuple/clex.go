@@ -128,7 +128,7 @@ func readRune(context Context, style Style) (rune, error) {
 	return ch, nil
 }
 
-func (style Style) GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error {
+func (style Style) GetNext(context Context, eol func(), open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error {
 
 	ch, err := readRune(context, style)
 	switch {
@@ -136,6 +136,7 @@ func (style Style) GetNext(context Context, open func(open string), close func(c
 	case err == io.EOF:
 		//next.NextEOF()
 		return err
+	case ch == NEWLINE && context.Depth() == 0: eol()
 	case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
 	case ch == style.OneLineComment:
 		_, err = ReadUntilEndOfLine(context)
@@ -191,8 +192,7 @@ func (style Style) GetNext(context Context, open func(open string), close func(c
 			nextAtom(atom)
 		} else {
 			nextLiteral(value)
-		}
-		
+		}		
 	case unicode.IsGraphic(ch): Error(context,"Error graphic character not recognised '%s'", string(ch))
 	case unicode.IsControl(ch): Error(context,"Error control character not recognised '%d'", ch)
 	default: Error(context,"Error character not recognised '%d'", ch)

@@ -43,14 +43,14 @@ func NewOperatorGrammar(context Context, operators * Operators) OperatorGrammar 
 
 func (stack * OperatorGrammar) pushOperator(token Atom) {
 	Verbose(stack.context,"PUSH OPERATOR\t '%s'", token.Name)
-	(*stack).operatorStack = append((*stack).operatorStack, token)
+	stack.operatorStack = append(stack.operatorStack, token)
 }
 
 // Remove top from operator stack
 func (stack * OperatorGrammar) popOperator() {
 	lo := len(stack.operatorStack) // This could be passed in for efficiency
-	Verbose(stack.context,"POP OPERATOR\t '%s'", (*stack).operatorStack[lo-1].Name)
-	(*stack).operatorStack = (*stack).operatorStack[:lo-1]
+	Verbose(stack.context,"POP OPERATOR\t '%s'", stack.operatorStack[lo-1].Name)
+	stack.operatorStack = stack.operatorStack[:lo-1]
 }
 
 func (stack * OperatorGrammar) reduceUnary(top Atom) {
@@ -62,17 +62,17 @@ func (stack * OperatorGrammar) reduceUnary(top Atom) {
 	default: name = top
 	}
 
-	values := &((*stack).Values.List)
+	values := &(stack.Values.List)
 	lv := stack.Values.Length()
 	val1 := (*values) [lv - 1]
-	(*stack).Values.List = append((*values)[:lv-1], NewTuple(name, val1))
+	stack.Values.List = append((*values)[:lv-1], NewTuple(name, val1))
 	Verbose(stack.context," REDUCE:\t%s\t'%s'\n", name.Name, val1)
 }
 
 // Replace top of value stack with an expression
 func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 
-	values := &((*stack).Values.List)
+	values := &(stack.Values.List)
 	lv := stack.Values.Length()
 	if strings.HasPrefix(top.Name, "_unary_") {
 		stack.popOperator()
@@ -83,11 +83,11 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 			stack.popOperator()
 			count := 2
 			for {
-				ll := len((*stack).operatorStack)
+				ll := len(stack.operatorStack)
 				if ll == 0 {
 					break
 				}
-				nextTop := (*stack).operatorStack[ll - 1]
+				nextTop := stack.operatorStack[ll - 1]
 				Verbose(stack.context,"*** REDUCE\t'%s'\n", top.Name)
 				if nextTop != SPACE_ATOM {
 					break
@@ -105,13 +105,13 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 				tuple.Append(v)
 			}
 			Verbose(stack.context," REDUCE:\t'SPACE'\t'%s'\t'%s'\t...%d...   \n", tuple.List[0], tuple.List[1], tuple.Length()) //, tuple.List==(*values))
-			(*stack).Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
+			stack.Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
 			return count - 2
 		} else {
 			val1 := (*values) [lv - 2]
 			val2 := (*values) [lv - 1]
 			stack.popOperator()
-			(*stack).Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+			stack.Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
 			Verbose(stack.context," REDUCE:\t'%s'\t'%s'\t'%s'\n", top.Name, val1, val2)
 		}
 	}
@@ -119,34 +119,34 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 }
 
 func (stack * OperatorGrammar) PushValue(value Value) {
-	if ! (*stack).wasOperator {
+	if ! stack.wasOperator {
 		stack.PushOperator(SPACE_ATOM)
 	}
 	Verbose(stack.context,"PUSH VALUE\t'%s'\n", value)
-	(*stack).Values.Append(value)
-	(*stack).wasOperator = false
+	stack.Values.Append(value)
+	stack.wasOperator = false
 }
 
 func (stack * OperatorGrammar) OpenBracket(token Atom) {
 
 	Verbose(stack.context,"OPEN '%s'", token.Name)
-	if ! (*stack).wasOperator {
+	if ! stack.wasOperator {
 		stack.PushOperator(SPACE_ATOM)
 	}
 	stack.pushOperator(token)
-	(*stack).wasOperator = true
+	stack.wasOperator = true
 }
 
 func (stack * OperatorGrammar) CloseBracket(token Atom) {
 	Verbose(stack.context,"CLOSE '%s'", token.Name)
 	lo := len(stack.operatorStack)
-	if lo == 0 || (*stack).wasOperator {
+	if lo == 0 || stack.wasOperator {
 		if lo > 0 && stack.operators.IsOpenBracket(stack.operatorStack[lo-1]) {  // '()'  Empty list, is this always okay
-			(*stack).wasOperator = false
+			stack.wasOperator = false
 			stack.popOperator()
 			//lv := stack.Values.Length()
-			values := (*stack).Values.List
-			(*stack).Values.List = append(values, NewTuple())
+			values := stack.Values.List
+			stack.Values.List = append(values, NewTuple())
 			Verbose(stack.context," REDUCE:\t'()'\n")
 			return
 		} else {
@@ -156,7 +156,7 @@ func (stack * OperatorGrammar) CloseBracket(token Atom) {
 		}
 	}
 
-	(*stack).wasOperator = false
+	stack.wasOperator = false
 	for index := lo-1 ; index >= 0; index -= 1 {
 		top := stack.operatorStack[index]
 		if stack.operators.IsOpenBracket(top) {
@@ -172,9 +172,14 @@ func (stack * OperatorGrammar) CloseBracket(token Atom) {
 }
 
 // Signal end of input
-func (stack * OperatorGrammar) EOF(next Next) {
+func (stack * OperatorGrammar) EndOfInput(next Next) {
 	Verbose(stack.context,"EOF")
-	if (*stack).wasOperator {
+
+	empty := stack.Values.Length() == 0 && len(stack.operatorStack) == 0
+	if empty {
+		return
+	}
+	if stack.wasOperator {
 		UnexpectedEndOfInputErrorBracketError(stack.context)
 		return
 	}
@@ -183,24 +188,26 @@ func (stack * OperatorGrammar) EOF(next Next) {
 		top := stack.operatorStack[index]
 		if stack.operators.IsOpenBracket(top) {
 			stack.popOperator()
-			break
 		} else {
 			index -= stack.reduceOperatorExpression(top)
 		}
 	}
 	// TODO this is a hack to handle space separated expressions: 1+2 3*4 5
-	if len((*stack).Values.List) == 1 {
-		next ((*stack).Values.List[0])
+	if len(stack.Values.List) == 1 {
+		next (stack.Values.List[0])
 	} else {
-		next ((*stack).Values)
+		next (stack.Values)
 	}
+	stack.Values = NewTuple()
+	stack.operatorStack = make([]Atom, 0)
+	stack.wasOperator = true
 }
 
 func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	Verbose(stack.context,"*PushOperator '%s'", atom.Name)
 
 	unaryOperator, ok := stack.operators.unary[atom.Name]
-	nextIsUnary := (*stack).wasOperator && ok
+	nextIsUnary := stack.wasOperator && ok
 	if atom != SPACE_ATOM {
 		if nextIsUnary {
 			atom = unaryOperator
@@ -223,7 +230,7 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 			}
 		}
 	}
-	if ! nextIsUnary && (*stack).wasOperator {
+	if ! nextIsUnary && stack.wasOperator {
 		Error(stack.context,"Unexpected binary operator '%s'", atom.Name)
 	} else {
 		if atom.Name == "." {
@@ -231,7 +238,7 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 		}
 		stack.pushOperator(atom)
 		// TODO postfix
-		(*stack).wasOperator = true
+		stack.wasOperator = true
 	}
 }
 

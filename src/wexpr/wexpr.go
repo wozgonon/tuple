@@ -45,7 +45,7 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	grammar.Parse(context, pipeline)
+	grammar.Parse(&context, pipeline)
 
 	if context.Errors() > 0 {
 		os.Exit(1)

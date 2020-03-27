@@ -61,6 +61,9 @@ func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *T
 	var right Value = nil
 	for {
 		err := parser.lexer.GetNext(context,
+			func() {
+				// EOL do nothing 
+			},
 			func (open string) {
 				Verbose(context,"** OPEN")
 				tuple1 := NewTuple()
@@ -95,6 +98,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 	closeBracketFound := false
 	for {
 		err := parser.lexer.GetNext(context,
+			func() {},
 			func (open string) {
 				subTuple := NewTuple()
 				err := parser.parseSExpressionTuple(context, &subTuple)
@@ -139,6 +143,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 func (parser SExpressionParser) parse(context Context, next Next) (error) {
 
 	err := parser.lexer.GetNext(context,
+		func() {},
 		func (open string) {
 			tuple := NewTuple()
 			parser.parseSExpressionTuple(context, &tuple)

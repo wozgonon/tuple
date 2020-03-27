@@ -21,6 +21,8 @@ import "log"
 import "reflect"
 import "path"
 import "math"
+import "fmt"
+import "strconv"
 
 const STDIN = "<stdin>"
 
@@ -38,7 +40,7 @@ type Logger func(context Context, level string, message string)
 
 type Lexer interface {
 	Printer
-	GetNext(context Context, open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error
+	GetNext(context Context, eol func(), open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error
 }
 
 // The Value interface must be implected by any of the small number of types that can be produced by the lexer
@@ -78,6 +80,43 @@ func NewComment(_ Context, token string) Comment {
 }
 
 func (tuple Tuple) Arity() int { return len(tuple.List) }
+
+
+type Scalar interface {
+	Value
+	ToDefaultString() string
+}
+
+
+func (value Atom) ToDefaultString() string {
+	return value.Name
+}
+
+func (value Bool) ToDefaultString() string {
+	b := value
+	if b {
+		return "true"
+	} else {
+		return "false"
+	}
+}
+
+func (value String) ToDefaultString() string {
+	return DOUBLE_QUOTE + string(value) + DOUBLE_QUOTE  // TODO Escape
+}
+
+func (value Int64) ToDefaultString() string {
+	return strconv.FormatInt(int64(value), 10)
+}
+
+func (value Float64) ToDefaultString() string {
+	float := float64(value)
+	if math.IsInf(float, 64) {
+		return "Inf" // style.INF)  // Do not print +Inf
+	} else {
+		return fmt.Sprint(float)
+	}
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Tuple
