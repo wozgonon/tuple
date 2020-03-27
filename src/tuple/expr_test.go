@@ -74,8 +74,14 @@ func TestExpr(t *testing.T) {
 }
 
 
+func TestArithmeticAndLogic(t *testing.T) {
 
-func TestExprEquals(t *testing.T) {
+	testArithmeticAndLogic(t, tuple.NewInfixExpressionGrammar())
+	testArithmeticAndLogic(t, tuple.NewShellGrammar())
+}
+
+
+func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 	test := func (formula string) {
 		val := tuple.Eval(grammar, formula)

@@ -11,10 +11,10 @@ import (
 
 const NO_RESULT = "..."
 
-func testGetNext(t *testing.T, expression string, expected string) {
+func testGetNext(t *testing.T, logger tuple.Logger, expression string, expected string) {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := tuple.NewRunnerContext("<eval>", reader, tuple.GetLogger(nil), false)
+	context := tuple.NewRunnerContext("<eval>", reader, logger, false)
 
 	result := NO_RESULT
 	style := tuple.LispWithInfixStyle
@@ -50,29 +50,37 @@ func testGetNext(t *testing.T, expression string, expected string) {
 }
 
 func TestLex1(t *testing.T) {
-	testGetNext(t, "1", "1")
-	testGetNext(t, "-1", "-1")
-	testGetNext(t, ".1", "0.1")
-	//testGetNext(t, "-1.", "-1.")
-	// TODO testGetNext(t, "-.1", ".1")
-	testGetNext(t, "abc123", "abc123")
-	testGetNext(t, "+", "+")
-	testGetNext(t, ">=", ">=")
-	testGetNext(t, "(", "(")
-	//testGetNext(t, "[", "]")
-	//testGetNext(t, "{", "}")
 
-	testGetNext(t, ";", NO_RESULT)  // Comments are currently ignored
-	testGetNext(t, ";comment", NO_RESULT)
+	testLex1(t, tuple.GetLogger(nil))
+	testLex1(t, tuple.GetLogger(tuple.NewLispWithInfixGrammar()))
+}
+
+func testLex1(t *testing.T, logger tuple.Logger) {
+
+	testGetNext(t, logger, "1", "1")
+	testGetNext(t, logger, "-1", "-1")
+	testGetNext(t, logger, ".1", "0.1")
+	//testGetNext(t, logger, "-1.", "-1.")
+	// TODO testGetNext(t, logger, "-.1", ".1")
+	testGetNext(t, logger, "abc123", "abc123")
+	testGetNext(t, logger, "+", "+")
+	testGetNext(t, logger, ">=", ">=")
+	testGetNext(t, logger, "(", "(")
+	//testGetNext(t, logger, "[", "]")
+	//testGetNext(t, logger, "{", "}")
+
+	testGetNext(t, logger, ";", NO_RESULT)  // Comments are currently ignored
+	testGetNext(t, logger, ";comment", NO_RESULT)
 }
 
 func TestCLanguageOperators(t *testing.T) {
 
+	logger := tuple.GetLogger(tuple.NewLispGrammar())
 	operators := tuple.NewOperators(tuple.LispWithInfixStyle)
 	tuple.AddStandardCOperators(&operators)
 	operators.Forall(func(operator string) {
 		if operator != " " {  // TODO handle space
-			testGetNext(t, operator, operator)
+			testGetNext(t, logger, operator, operator)
 		}
 	})
 }
