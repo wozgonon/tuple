@@ -56,14 +56,7 @@ func main() {
 	// Set up and then look up the set of supported grammars.
 	//
 	grammars := tuple.NewGrammars()
-	grammars.Add(tuple.NewLispWithInfixGrammar())
-	grammars.Add((tuple.NewLispGrammar()))
-	grammars.Add((tuple.NewInfixExpressionGrammar()))
-	grammars.Add((tuple.NewYamlGrammar()))
-	grammars.Add((tuple.NewIniGrammar()))
-	grammars.Add((tuple.NewPropertyGrammar()))
-	grammars.Add((tuple.NewJSONGrammar()))
-	grammars.Add((tuple.NewShellGrammar()))
+	tuple.AddAllKnownGrammars(&grammars)
 
 	if *listGrammars {
 		grammars.Forall(func (grammar tuple.Grammar) {

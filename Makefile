@@ -10,9 +10,10 @@
 VERSION_FILE=src/wozg/version.go
 VERSION="0.1"
 
-all: bin/wozg bin/wsh bin/wozg bin/wexpr pkg/linux_amd64/tuple.a
+all: bin/wozg bin/whd bin/wsh bin/wozg bin/wexpr pkg/linux_amd64/tuple.a
 
 bin/wsh: wsh
+bin/whd: whd
 bin/wexpr: wexpr
 bin/wozg: wozg
 pkg/linux_amd64/tuple.a: tuple
@@ -24,6 +25,9 @@ wozg: tuple src/wozg/wozg.go ${VERSION_FILE}
 	go install $@
 
 wsh: tuple src/wsh/wsh.go ${VERSION_FILE}
+	go install $@
+
+whd: tuple src/whd/whd.go ${VERSION_FILE}
 	go install $@
 
 tuple: src/tuple/*.go
@@ -122,42 +126,40 @@ test_json: ${TDIR}test.json all
 	diff -y --suppress-common-lines ${T1DIR}test.json ${TDIR}test.json.golden
 
 test_wexpr: bin/wexpr all
-	test 11 = `bin/wexpr "11"`
-	test () = `bin/wexpr "()"`
-	test 7 = `bin/wexpr "1+2*3"`
-	test 5 = `bin/wexpr "1*2+3"`
-	test 120 = `bin/wexpr 1*2*3*4*5`
-	test 6 = `bin/wexpr "(1)+((2))+(((3)))"`
-	test 22 = `bin/wexpr "((22))"`
-	test 22 = `bin/wexpr "((((22))))"`
-	test 3 = `bin/wexpr "(1+2)"`
-	test 9 = `bin/wexpr "(1+2)*3"`
-	test 10 = `bin/wexpr "1+2+3+4"`
-	test 10 = `bin/wexpr "1+(2+3)+4"`
-	test 10 = `bin/wexpr "(1+2+3+4)"`
-	test 10 = `bin/wexpr "((1+((2)+3))+(4))"`
-	test x-123 = x`bin/wexpr -- "-123"`
-	test x-123 = x`bin/wexpr -- "-(123)"`
-	test -3 = `bin/wexpr -- "-(1+2)"`
-	test 1 = `bin/wexpr -- "-(-(-1)+2)"`
-	test 3 = `bin/wexpr -- "(0- - 3)"`
-	test x-3 = x`bin/wexpr -- "-(0- - 3)"`
-	test x-2 = x`bin/wexpr -- "-(1--1)"`
-	test x-3 = x`bin/wexpr -- "-(0- - - - 3)"`
-	test x-3 = x`bin/wexpr -- "-(0--3)"`
-	test 1 = `bin/wexpr -- "cos(0)"`
-	test -1 = `bin/wexpr -- "cos(PI)"`
-	test 3.141592653589793 = `bin/wexpr -- "acos(cos(PI))"`
-	test true = `bin/wexpr -- "(acos(cos(PI)))==PI"`
-	@bin/wexpr  +     || true
-	@bin/wexpr  "(+"  || true
-	@bin/wexpr  "+("  || true
-	@bin/wexpr  "("  || true
-	@bin/wexpr  ")"  || true
-	test "0 == `bin/wexpr "atan2(0 1)"`"
-	test "0.7853981633974483 == `bin/wexpr "atan2(1 1)"`"
-
-
+	@test 11 = `bin/wexpr "11"`
+	@test () = `bin/wexpr "()"`
+	@test 7 = `bin/wexpr "1+2*3"`
+	@test 5 = `bin/wexpr "1*2+3"`
+	@test 120 = `bin/wexpr 1*2*3*4*5`
+	@test 6 = `bin/wexpr "(1)+((2))+(((3)))"`
+	@test 22 = `bin/wexpr "((22))"`
+	@test 22 = `bin/wexpr "((((22))))"`
+	@test 3 = `bin/wexpr "(1+2)"`
+	@test 9 = `bin/wexpr "(1+2)*3"`
+	@test 10 = `bin/wexpr "1+2+3+4"`
+	@test 10 = `bin/wexpr "1+(2+3)+4"`
+	@test 10 = `bin/wexpr "(1+2+3+4)"`
+	@test 10 = `bin/wexpr "((1+((2)+3))+(4))"`
+	@test x-123 = x`bin/wexpr -- "-123"`
+	@test x-123 = x`bin/wexpr -- "-(123)"`
+	@test -3 = `bin/wexpr -- "-(1+2)"`
+	@test 1 = `bin/wexpr -- "-(-(-1)+2)"`
+	@test 3 = `bin/wexpr -- "(0- - 3)"`
+	@test x-3 = x`bin/wexpr -- "-(0- - 3)"`
+	@test x-2 = x`bin/wexpr -- "-(1--1)"`
+	@test x-3 = x`bin/wexpr -- "-(0- - - - 3)"`
+	@test x-3 = x`bin/wexpr -- "-(0--3)"`
+	@test 1 = `bin/wexpr -- "cos(0)"`
+	@test -1 = `bin/wexpr -- "cos(PI)"`
+	@test 3.141592653589793 = `bin/wexpr -- "acos(cos(PI))"`
+	@test true = `bin/wexpr -- "(acos(cos(PI)))==PI"`
+	@@bin/wexpr  +     || true
+	@@bin/wexpr  "(+"  || true
+	@@bin/wexpr  "+("  || true
+	@@bin/wexpr  "("  || true
+	@@bin/wexpr  ")"  || true
+	@test "0 == `bin/wexpr "atan2(0 1)"`"
+	@test "0.7853981633974483 == `bin/wexpr "atan2(1 1)"`"
 
 
 smoke: test test_dirs 

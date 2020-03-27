@@ -267,6 +267,16 @@ func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
 	return syntax
 }
 
+func AddAllKnownGrammars(grammars * Grammars) {
+	grammars.Add(NewLispWithInfixGrammar())
+	grammars.Add(NewLispGrammar())
+	grammars.Add(NewInfixExpressionGrammar())
+	grammars.Add(NewYamlGrammar())
+	grammars.Add(NewIniGrammar())
+	grammars.Add(NewPropertyGrammar())
+	grammars.Add(NewJSONGrammar())
+	grammars.Add(NewShellGrammar())
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //  Printer

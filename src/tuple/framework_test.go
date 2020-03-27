@@ -11,14 +11,7 @@ import (
 func TestGrammars(t *testing.T) {
 
 	grammars := tuple.NewGrammars()
-	grammars.Add(tuple.NewLispWithInfixGrammar())
-	grammars.Add((tuple.NewLispGrammar()))
-	grammars.Add((tuple.NewShellGrammar()))
-	grammars.Add((tuple.NewInfixExpressionGrammar()))
-	grammars.Add((tuple.NewYamlGrammar()))
-	grammars.Add((tuple.NewIniGrammar()))
-	grammars.Add((tuple.NewPropertyGrammar()))
-	grammars.Add((tuple.NewJSONGrammar()))
+	tuple.AddAllKnownGrammars(&grammars)
 
 	count := 0
 	grammars.Forall(func (grammar tuple.Grammar) {

@@ -24,6 +24,7 @@ mck () {
 alias wexpr=bin/wexpr
 alias wozg=bin/wozg
 alias wsh=bin/wsh
+alias whd=bin/whd
 
 #############################################################################
 # Search for a pattern in the source code
