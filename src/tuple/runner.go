@@ -74,7 +74,7 @@ func (context * RunnerContext) Close() {
 	}
 }
 
-func (context * RunnerContext) prompt() {
+func (context * RunnerContext) EOL() {
 	if IsInteractive(context) {
 		fmt.Print (context.SourceName())
 		if context.depth > 0 {
@@ -93,7 +93,6 @@ func (context * RunnerContext) ReadRune() (rune, error) {
 		context.line ++
 		context.column = 0
 		Verbose(context,"New line")
-		context.prompt()
 	default:
 		context.column ++
 	}
@@ -110,15 +109,6 @@ func (context * RunnerContext) LookAhead() rune {
 	context.scanner.UnreadRune()
 	return ch
 
-}
-
-func (context * RunnerContext) UnreadRune() {
-	context.scanner.UnreadRune()
-	if context.column == 0 {
-		context.line --
-	} else {
-		context.column --
-	}
 }
 
 func (context * RunnerContext) Log(format string, level string, args ...interface{}) {
@@ -204,7 +194,7 @@ func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
 		context := NewRunnerContext(STDIN, reader, logger, verbose)
-		context.prompt()
+		context.EOL() // prompt
 		parse(&context)
 		errors += context.errors
 		

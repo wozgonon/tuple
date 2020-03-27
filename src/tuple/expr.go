@@ -19,8 +19,18 @@ package tuple
 import "io"
 
 /////////////////////////////////////////////////////////////////////////////
+//
+//  
+//
 // Conventional arithmetic expression grammar,
 // with an infix notation and conventional function call syntax a(b, c, ...)
+//
+//  Also understands blocks of expressions surrounded by braces, for example:
+//
+// func abc {
+//     1+2
+//     3+4
+//  }
 /////////////////////////////////////////////////////////////////////////////
 
 type InfixExpressionGrammar struct {
@@ -42,20 +52,19 @@ func handleAtom(atom Atom, style Style, context Context, operatorGrammar * Opera
 	if operators.Precedence(atom) != -1 {
 		operatorGrammar.PushOperator(atom)
 	} else {
-		ch, err := context.ReadRune()
-		if err == io.EOF {
-			(*operatorGrammar).PushValue(atom)
-			//operatorGrammar.EOF(next)
-			return // TODO eof
-		}
-		if err != nil {
-			// TODO
-			return
-		}
+		ch := context.LookAhead()
 		if ch == style.openChar {
+			_, err := context.ReadRune()
+			if err == io.EOF {
+				(*operatorGrammar).PushValue(atom)
+				//operatorGrammar.EOF(next)
+				return // TODO eof
+			}
+			if err != nil {
+				// TODO
+				return
+			}
 			(*operatorGrammar).OpenBracket(Atom{open})
-		} else {
-			context.UnreadRune()
 		}
 		(*operatorGrammar).PushValue(atom)
 	}
@@ -100,7 +109,7 @@ func (grammar InfixExpressionGrammar) Print(token Value, next func(value string)
 
 func NewInfixExpressionGrammar() Grammar {
 	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", ":",
+		OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
 		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
 
 	operators := NewOperators(style)

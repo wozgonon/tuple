@@ -173,9 +173,9 @@ type Context interface {
 	Depth() int
 	Open()
 	Close()
+	EOL()
 	ReadRune() (rune, error)
 	LookAhead() rune
-	UnreadRune()
 	Log(format string, level string, args ...interface{})
 	Errors() int64
 }

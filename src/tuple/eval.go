@@ -100,7 +100,7 @@ func (table SymbolTable) Call(head Atom, args []Value) Value {
 		//fmt.Printf("   FUNC %s %d\n", name, nn)
 		reflectedArgs := make([]reflect.Value, nn)
 		for k,_:= range args {
-			reflectedArgs[k] = mapToReflectValue(args[k].(Scalar), t.In(k))
+			reflectedArgs[k] = mapToReflectValue(args[k], t.In(k))
 		}
 		reflectValue := f.Call(reflectedArgs)
 		return mapFromReflectValue(reflectValue)
@@ -142,14 +142,17 @@ func (table SymbolTable) Eval(expression Value) Value {
 	}
 }
 
-func mapToReflectValue (v Scalar, expected reflect.Type) reflect.Value {
+func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 
+	_, isTuple := v.(Tuple)
+	
 	/// TODO should this take a Scalar or a Value?
 	switch {
 	case expected == reflect.TypeOf(int64(1)): return reflect.ValueOf(toInt64(v))
 	case expected == reflect.TypeOf(float64(1.0)): return reflect.ValueOf(toFloat64(v))
 	case expected == reflect.TypeOf(true): return reflect.ValueOf(toBool(v))
 	case expected == reflect.TypeOf(""): return reflect.ValueOf(toString(v))
+	case expected == reflect.TypeOf(NewTuple()) && isTuple: return reflect.ValueOf(v)
 	default: return reflect.ValueOf(float64(v.(Float64)))
 	}
 }
@@ -165,6 +168,7 @@ func mapFromReflectValue (in []reflect.Value) Value {
 	default: return Float64(in[0].Float()) // TODO
 	}
 }
+
 
 func toString(value Value) string {
 	switch val := value.(type) {

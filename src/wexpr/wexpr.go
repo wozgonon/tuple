@@ -25,7 +25,7 @@ func main () {
 	//
 	argsLength := len(os.Args)
 	numberOfFiles := flag.NArg()
-	args := os.Args[argsLength-numberOfFiles:]
+	args := os.Args[argsLength-numberOfFiles:] 
 	expression := strings.Join(args, " ")
 
 	//
@@ -37,6 +37,8 @@ func main () {
 	if !*ast {
 		symbols = &table
 	}
+	//table.Add("func", func(name string, body tuple.Tuple) { fmt.Printf("TODO Implement 'func' '%s' '%s'", name, body) })
+
 	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar)
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := tuple.NewRunnerContext("<cli>", reader, tuple.GetLogger(nil), *verbose)

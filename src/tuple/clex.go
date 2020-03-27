@@ -136,8 +136,12 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 	case err == io.EOF:
 		//next.NextEOF()
 		return err
-	case ch == NEWLINE && context.Depth() == 0: eol()
-	case ch == ',' || unicode.IsSpace(ch): break // TODO fix comma
+	case ch == NEWLINE:
+		if context.Depth() == 0 {
+			eol()
+		}
+		context.EOL()
+	case ch == ',' || unicode.IsSpace(ch) || ch == '\r': break // TODO fix comma
 	case ch == style.OneLineComment:
 		_, err = ReadUntilEndOfLine(context)
 		if err != nil {
@@ -208,18 +212,19 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 
 func ReadString (context Context, token string, unReadLast bool, test func(r rune) bool) (string, error) {
 	for {
+		if unReadLast {
+			ch := context.LookAhead()
+			if ! test(ch) {
+				return token, nil
+			}
+		}
 		ch, err := context.ReadRune()
 		if err == io.EOF {
 			//Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
 			return token, nil
 		} else if err != nil {
 			//log.Printf("ERROR nil")
-			//return ""
-		} else if ! test(ch) {
-			if unReadLast {
-				context.UnreadRune()
-			}
-			return token, nil
+			return "", err
 		} else {
 			// TODO not efficient
 			token = token + string(ch)
@@ -247,22 +252,21 @@ func ReadNumber(context Context, token string) (Value, error) {  // Number
 		dots = 0
 	}
 	for {
-		ch, err := context.ReadRune()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, err
-		} else if ch == '.' && dots == 0 {
-			dots += 1
-			token = token + "." // TODO not efficient
-		} else if unicode.IsNumber(ch) {
-			// TODO ought to be much more efficient to build up a number dynamically
-			token = token + string(ch) // TODO not efficient
+		ch := context.LookAhead()
+		if (ch == '.' && dots == 0) || unicode.IsNumber(ch) {
+			ch, err := context.ReadRune()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				return nil, err
+			} else if ch == '.' && dots == 0 {
+				dots += 1
+				token = token + "." // TODO not efficient
+			} else if unicode.IsNumber(ch) {
+				// TODO ought to be much more efficient to build up a number dynamically
+				token = token + string(ch) // TODO not efficient
+			}
 		} else {
-			context.UnreadRune()
-			//if token == "." {
-			//	context.UnreadRune()
-			//}
 			break
 		}
 	}
@@ -288,14 +292,15 @@ func ReadNumber(context Context, token string) (Value, error) {  // Number
 func ReadUntilEndOfLine(context Context) (Comment, error) {
 	token := ""
 	for {
+		ch := context.LookAhead()
+		if ch == NEWLINE {
+			return NewComment(context, token), nil
+		}
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
 			return NewComment(context, token), nil
 		case err != nil:
-			return NewComment(context, token), err
-		case ch == NEWLINE:
-			context.UnreadRune()
 			return NewComment(context, token), err
 		default:
 			token = token + string(ch)

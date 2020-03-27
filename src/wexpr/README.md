@@ -1,6 +1,9 @@
 A simple shell utility for evaluating [expressions](https://en.wikipedia.org/wiki/Expression_(mathematics))
 similar to the UNIX [expr](https://en.wikipedia.org/wiki/Expr) utility.
 
+
+## Arithmetic
+
 For example:
 
 ```
@@ -44,3 +47,14 @@ $ wexpr -ast -- "-1+2*3^4"
 
 
 
+## Blocks and Braces
+
+'wexpr' also understands blocks of expressions surrounded by braces, for example:
+
+
+```
+function def {
+    1+2
+    3+4
+}
+```
