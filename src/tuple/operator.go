@@ -275,8 +275,13 @@ func (operators *Operators) Forall(next func (value string)) {
 	}
 }
 
-func (operators *Operators) Add(operator string, precedence int) {
+func (operators *Operators) AddInfix(operator string, precedence int) {
 	(*operators).precedence[operator] = precedence
+}
+
+func (operators *Operators) AddUnaryPrefix(operator string, name string, precedence int) {
+	operators.unary[operator] = Atom{name}
+	operators.precedence[name] = precedence
 }
 
 func (operators *Operators) AddBracket(open string, close string) {
@@ -299,28 +304,10 @@ func (operators *Operators) IsOpenBracket(atom Atom) bool {
 	return ok
 }
 
-/*func (operators *Operators) IsCloseBracket(atom Atom) bool {
-	token := atom.Name
-	_, ok := operators.closeBrackets[token]
-	return ok
-}
-*/
-/*func (operators *Operators) IsUnary(atom Atom) bool {
-	token := atom.Name
-	_, ok := operators.unary[token]
-	return ok
-}*/
-
 func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
 	expectedClose, ok := operators.brackets[open.Name]
 	return ok && expectedClose == close.Name
 }
-
-// TODO generalize
-//func (operators *Operators) IsUnaryPrefix(token string) bool {
-//	_, ok := operators.brackets[token]
-//	return ok
-//}
 
 /////////////////////////////////////////////////////////////////////////////
 // Printer

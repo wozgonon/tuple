@@ -111,6 +111,6 @@ func NewLispWithInfixGrammar() Grammar {
 	style := LispWithInfixStyle
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	operators.Add(CONS_OPERATOR, 105) // CONS Operator
+	operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
 	return LispWithInfixGrammar{style, operators}
 }

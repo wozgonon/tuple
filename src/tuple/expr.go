@@ -114,12 +114,28 @@ func NewInfixExpressionGrammar() Grammar {
 
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	operators.Add(CONS_OPERATOR, 105) // CONS Operator
+	operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
 
 	return InfixExpressionGrammar{style, operators}
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// The basic syntax of command shell parsers is typically very simple:
+// everything is a line of strings separated by spaces terminate by a newline.
+// Mostly no need for quotes or double quotes or semi-colons.
+// This makes it very easy to type command with a few parameters on a command line interface (CLI).
+//
+// Examples include [TCL](https://en.wikipedia.org/wiki/Tcl), [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), DOS cmd shell
+// TCL and bash use braces { ... } for nesting.
+//
+// Bash and DOS of course have lots of extra syntax for working with files but the
+// basic syntax typically does not understand arithmetic, with infix notation, one has to use a special tool:
+// * TCL has a 'expr' function that understand arithmetic with infix notation
+// * Bash one can use an external 'expr(1)' tool:  'expr 8.3 + 6'
+// * DOS has a special version of the SET command 'SET /a c=a+b'
+//
+// It would be nice not to have to put quotes around strings, in particular working interactice on the command line (CLI) with a shell such as bash or
+// dos command line.  It is very nice not to have to include any boiler plate when just entering commands but this quickly becomes very awkward to add any more complex syntax.
 /////////////////////////////////////////////////////////////////////////////
 
 type ShellGrammar struct {
@@ -177,11 +193,12 @@ func (grammar ShellGrammar) Print(token Value, next func(value string)) {
 func NewShellGrammar() Grammar {
 	style := NewStyle("", "", "  ",
 		OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
-		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
+		",", "\n", "true", "false", '#', "")
 
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	operators.Add(CONS_OPERATOR, 105) // CONS Operator
+	//operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
+	operators.AddUnaryPrefix("$", "_unary_dollar", 150)
 
 	return ShellGrammar{style, operators}
 }

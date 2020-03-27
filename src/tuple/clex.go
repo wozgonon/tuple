@@ -160,7 +160,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		}
 		nextLiteral(value)
 	case ((ch == '.'|| ch == '-') && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch): // TODO || ch == '+' 
-	//case ch == '.' || unicode.IsNumber(ch):
+		//case ch == '.' || unicode.IsNumber(ch):
 		value, err := ReadNumber(context, string(ch))    // TODO minus
 		if err != nil {
 			return err
@@ -170,6 +170,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		} else {
 			nextLiteral(value)
 		}
+	case ch == '.':  nextAtom(Atom{"."})
 	case ch == style.KeyValueSeparatorRune:
 		nextAtom(Atom{style.KeyValueSeparator})
 	case IsArithmetic(ch): nextAtom(Atom{string(ch)}) // }, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
@@ -365,31 +366,29 @@ func IsCompare(ch rune) bool {
 }
 
 func AddStandardCOperators(operators *Operators) {
-	operators.unary["!"] = Atom{"_unary_not"}
-	operators.unary["-"] = Atom{"_unary_minus"}
-	operators.unary["+"] = Atom{"_unary_plus"}
+	
 	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
 	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
 	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
-	operators.Add("_unary_plus", 110)
-	operators.Add("_unary_minus", 110)
-	operators.Add("_unary_not", 55) // TODO check
-	operators.Add("^", 100)
-	operators.Add("*", 90)
-	operators.Add("/", 90)
-	operators.Add("+", 80)
-	operators.Add("-", 80)
-	operators.Add("<", 60)
-	operators.Add(">", 60)
-	operators.Add("<=", 60)
-	operators.Add(">=", 60)
-	operators.Add("==", 60)
-	operators.Add("!=", 60)
-	operators.Add("&&", 50)
-	operators.Add("||", 50)
-	//operators.Add(",", 40)
-	//operators.Add(";", 30)
-	operators.Add(SPACE_ATOM.Name, 10)  // TODO space???
+	operators.AddUnaryPrefix("+", "_unary_plus", 110)
+	operators.AddUnaryPrefix("-", "_unary_minus", 110)
+	operators.AddUnaryPrefix("!", "_unary_not", 55) // TODO check
+	operators.AddInfix("^", 100)
+	operators.AddInfix("*", 90)
+	operators.AddInfix("/", 90)
+	operators.AddInfix("+", 80)
+	operators.AddInfix("-", 80)
+	operators.AddInfix("<", 60)
+	operators.AddInfix(">", 60)
+	operators.AddInfix("<=", 60)
+	operators.AddInfix(">=", 60)
+	operators.AddInfix("==", 60)
+	operators.AddInfix("!=", 60)
+	operators.AddInfix("&&", 50)
+	operators.AddInfix("||", 50)
+	//operators.AddInfix(",", 40)
+	//operators.AddInfix(";", 30)
+	operators.AddInfix(SPACE_ATOM.Name, 10)  // TODO space???
 }
 
 /////////////////////////////////////////////////////////////////////////////

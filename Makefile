@@ -50,7 +50,7 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version go_test test_basic test_arithmetic test_expr test_tcl test_yaml test_json test_wexpr test_infix test_query 
+test: version go_test test_basic test_arithmetic test_expr test_sh test_yaml test_json test_wexpr test_infix test_query 
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
@@ -79,9 +79,9 @@ test_arithmetic: ${TDIR}arithmetic.l test_dirs all
 	@bin/wozg --eval ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
-test_tcl: ${TDIR}test.tcl test_dirs all
-	bin/wozg --in .tcl --out .tcl $<  > ${T1DIR}$<
-	@bin/wozg --in .tcl --out .tcl ${T1DIR}$<  > ${T2DIR}$<
+test_sh: ${TDIR}test.sh test_dirs all
+	bin/wozg --in .sh --out .sh $<  > ${T1DIR}$<
+	@bin/wozg --in .sh --out .sh ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
 test_expr: ${TDIR}test.expr test_dirs all
@@ -158,7 +158,7 @@ test_wexpr: bin/wexpr all
 
 
 smoke: test test_dirs 
-	bin/wozg --out tcl ${TDIR}test.tcl
+	bin/wozg --out sh ${TDIR}test.sh
 
 #############################################################################
 #  Clean up
