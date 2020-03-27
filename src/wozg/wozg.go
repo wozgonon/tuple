@@ -55,12 +55,9 @@ func main() {
 	//
 	// Set up and then look up the set of supported grammars.
 	//
-
 	grammars := tuple.NewGrammars()
 	grammars.Add(tuple.NewLispWithInfixGrammar())
 	grammars.Add((tuple.NewLispGrammar()))
-	grammars.Add((tuple.NewTclGrammar()))
-	//grammars.Add((tuple.NewJmlGrammar()))
 	grammars.Add((tuple.NewInfixExpressionGrammar()))
 	grammars.Add((tuple.NewYamlGrammar()))
 	grammars.Add((tuple.NewIniGrammar()))

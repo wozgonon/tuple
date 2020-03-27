@@ -13,7 +13,7 @@ func TestGrammars(t *testing.T) {
 	grammars := tuple.NewGrammars()
 	grammars.Add(tuple.NewLispWithInfixGrammar())
 	grammars.Add((tuple.NewLispGrammar()))
-	grammars.Add((tuple.NewTclGrammar()))
+	grammars.Add((tuple.NewShellGrammar()))
 	grammars.Add((tuple.NewInfixExpressionGrammar()))
 	grammars.Add((tuple.NewYamlGrammar()))
 	grammars.Add((tuple.NewIniGrammar()))
