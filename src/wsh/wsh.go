@@ -2,8 +2,12 @@ package main
 
 import "tuple"
 import "os"
+import "os/exec"
+//import "io"
 import "fmt"
 import "flag"
+import "log"
+import "bytes"
 
 func main () {
 
@@ -24,6 +28,27 @@ func main () {
 	outputGrammar := tuple.NewShellGrammar()
 	inputGrammar := tuple.NewShellGrammar()
 	table := tuple.NewSymbolTable()
+
+	//
+	//  Add shell specific commands
+	//  These are typically not a 'safe' in that they allow access to the file system
+	// 
+	table.Add("exec", func (arg string) bool {
+		cmd := exec.Command(arg)
+		var stdout bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Run()
+		if err != nil {
+			log.Printf("Command finished with error: %v", err)
+			return false
+		}
+		outStr := string(stdout.Bytes())
+		fmt.Print(outStr)
+		return true
+	})
+	
 	pipeline := tuple.SimplePipeline (&table, *queryPattern, outputGrammar)
 
 	grammars := tuple.NewGrammars()
