@@ -10,9 +10,9 @@
 VERSION_FILE=src/wozg/version.go
 VERSION="0.1"
 
-all: bin/wozg bin/wozg bin/wexpr pkg/linux_amd64/tuple.a
+all: bin/wozg bin/wsh bin/wozg bin/wexpr pkg/linux_amd64/tuple.a
 
-
+bin/wsh: wsh
 bin/wexpr: wexpr
 bin/wozg: wozg
 pkg/linux_amd64/tuple.a: tuple
@@ -21,6 +21,9 @@ wexpr: tuple src/wexpr/wexpr.go ${VERSION_FILE}
 	go install $@
 
 wozg: tuple src/wozg/wozg.go ${VERSION_FILE}
+	go install $@
+
+wsh: tuple src/wsh/wsh.go ${VERSION_FILE}
 	go install $@
 
 tuple: src/tuple/*.go
