@@ -20,6 +20,7 @@ import "math"
 import "strings"
 import "reflect"
 import "fmt"
+import "strconv"
 
 //  A simple toy evaluator.
 //
@@ -115,6 +116,13 @@ func (table SymbolTable) Call(head Atom, args []Value) Value {
 	return table.ifFunctionNotFound(head, args)
 }
 
+func ValuesToStrings(values []Value) []string {
+	result := make([]string, len(values))
+	for k,_:= range values {
+		result[k] = toString(values[k])
+	}
+	return result
+}
 
 func makeKey(name string, arity int) string {
 	return fmt.Sprintf("%d_%s", arity, name)
@@ -148,40 +156,51 @@ func (table SymbolTable) Eval(expression Value) Value {
 	}
 }
 
+// TODO type constants
+var IntType = reflect.TypeOf(int64(1))
+var FloatType = reflect.TypeOf(float64(1.0))
+var BoolType = reflect.TypeOf(true)
+var StringType = reflect.TypeOf("")
+var TupleType = reflect.TypeOf(NewTuple())
+
 func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 
 	_, isTuple := v.(Tuple)
+
+	var result interface{}
 	
 	/// TODO should this take a Scalar or a Value?
-	switch {
-	case expected == reflect.TypeOf(int64(1)): return reflect.ValueOf(toInt64(v))
-	case expected == reflect.TypeOf(float64(1.0)): return reflect.ValueOf(toFloat64(v))
-	case expected == reflect.TypeOf(true): return reflect.ValueOf(toBool(v))
-	case expected == reflect.TypeOf(""): return reflect.ValueOf(toString(v))
-	case expected == reflect.TypeOf(NewTuple()) && isTuple: return reflect.ValueOf(v)
-	default: return reflect.ValueOf(float64(v.(Float64)))
+	switch expected {
+	case IntType: result = toInt64(v)
+	case FloatType: result = toFloat64(v)
+	case BoolType: result = toBool(v)
+	case StringType: result = toString(v)
+	case TupleType:
+		if isTuple {
+			result = v
+		}
+	default: result = float64(v.(Float64)) // TODO???
 	}
+	return reflect.ValueOf(result)
 }
 
 func mapFromReflectValue (in []reflect.Value) Value {
 	v:= in[0]
-	expected := v.Type()
-	switch {
-	case expected == reflect.TypeOf(int64(1)): return Int64(v.Int())
-	case expected == reflect.TypeOf(float64(1.0)): return Float64(v.Float())
-	case expected == reflect.TypeOf(true): return Bool(v.Bool())
-	case expected == reflect.TypeOf(""): return String(v.String())
+	switch v.Type() {
+	case IntType: return Int64(v.Int())
+	case FloatType: return Float64(v.Float())
+	case BoolType: return Bool(v.Bool())
+	case StringType: return String(v.String())
 	default: return Float64(in[0].Float()) // TODO
 	}
 }
 
-
 func toString(value Value) string {
 	switch val := value.(type) {
 	case Atom: return val.Name
-	case String: return string(val)
-	//case Float64:
-	//case Int64:
+	case String: return string(val)  // Quote ???
+	case Float64: return  fmt.Sprint(val)  // TODO Inf ???
+	case Int64: return strconv.FormatInt(int64(val), 10)
 	case Bool:
 		if val {
 			return "true"

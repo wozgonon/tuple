@@ -21,8 +21,8 @@ import "log"
 import "reflect"
 import "path"
 import "math"
-import "fmt"
-import "strconv"
+//import "fmt"
+//import "strconv"
 
 const STDIN = "<stdin>"
 
@@ -82,6 +82,7 @@ func NewComment(_ Context, token string) Comment {
 func (tuple Tuple) Arity() int { return len(tuple.List) }
 
 
+/*
 type Scalar interface {
 	Value
 	ToDefaultString() string
@@ -117,7 +118,7 @@ func (value Float64) ToDefaultString() string {
 		return fmt.Sprint(float)
 	}
 }
-
+*/
 /////////////////////////////////////////////////////////////////////////////
 // Tuple
 /////////////////////////////////////////////////////////////////////////////
