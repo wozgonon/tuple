@@ -173,9 +173,20 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 	case ch == '.':  nextAtom(Atom{"."})
 	case ch == style.KeyValueSeparatorRune:
 		nextAtom(Atom{style.KeyValueSeparator})
+	case ch == '>' && context.LookAhead() == '=':
+		context.ReadRune()
+		nextAtom(Atom{">="})
+	case ch == '<' && context.LookAhead() == '=':
+		context.ReadRune()
+		nextAtom(Atom{"<="})
+	case ch == '*' && context.LookAhead() == '*':
+		context.ReadRune()
+		nextAtom(Atom{"**"})
 	case IsArithmetic(ch): nextAtom(Atom{string(ch)}) // }, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
 	case ch == '|' && context.LookAhead() == '|':
 		nextAtom(Atom{"||"})
+	case ch == '|':
+		nextAtom(Atom{"|"})
 	case ch == '&' && context.LookAhead() == '&':
 		nextAtom(Atom{"&&"})
 	case IsCompare(ch):
@@ -350,7 +361,7 @@ func IsArithmetic(ch rune) bool {
 		case '-': return true
 		case '/': return true
 		case '*': return true
-		case '^': return true
+		//case '^': return true
 		default: return false
 	}
 }
@@ -373,7 +384,7 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddUnaryPrefix("+", "_unary_plus", 110)
 	operators.AddUnaryPrefix("-", "_unary_minus", 110)
 	operators.AddUnaryPrefix("!", "_unary_not", 55) // TODO check
-	operators.AddInfix("^", 100)
+	operators.AddInfix("**", 100)
 	operators.AddInfix("*", 90)
 	operators.AddInfix("/", 90)
 	operators.AddInfix("+", 80)
@@ -384,6 +395,7 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddInfix(">=", 60)
 	operators.AddInfix("==", 60)
 	operators.AddInfix("!=", 60)
+	operators.AddInfix("|", 55)  // Pipe, what about redirect
 	operators.AddInfix("&&", 50)
 	operators.AddInfix("||", 50)
 	//operators.AddInfix(",", 40)

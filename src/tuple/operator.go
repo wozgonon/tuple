@@ -107,6 +107,8 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 			Verbose(stack.context," REDUCE:\t'SPACE'\t'%s'\t'%s'\t...%d...   \n", tuple.List[0], tuple.List[1], tuple.Length()) //, tuple.List==(*values))
 			stack.Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
 			return count - 2
+		} else if lv < 2 {
+			Error(stack.context, "FATAL: On reducing '%s' Expected two on stack, not %d", top, lv)
 		} else {
 			val1 := (*values) [lv - 2]
 			val2 := (*values) [lv - 1]

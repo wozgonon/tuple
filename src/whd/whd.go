@@ -21,7 +21,8 @@ import (
 	"fmt"
 	"net/http"
 	"bufio"
-	//"strings"
+	"flag"
+	"os"
 )
 
 func do(w http.ResponseWriter, req *http.Request) {
@@ -44,10 +45,14 @@ func do(w http.ResponseWriter, req *http.Request) {
 		reader := bufio.NewReader(r) // TODO read from request
 		context := tuple.NewRunnerContext("<http>", reader, tuple.GetLogger(nil), false)
 		grammar.Parse(&context, func (value tuple.Value) {
+			fmt.Printf("GOT '%s'\n", value)
 			fmt.Fprintf(w, "%s", value)
 		})
+	} else {
+		fmt.Printf("Unkown grammar '%s'\n", grammarName)
 	}
 	fmt.Fprintf(w, "\n")
+	fmt.Printf("DONE\n")
 }
 
 func headers(w http.ResponseWriter, req *http.Request) {
@@ -61,7 +66,19 @@ func headers(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 
+	//var verbose = flag.Bool("verbose", false, "Verbose logging.")
+	var listenPort = flag.String("port", ":8888", "Listen port.")
+	var version = flag.Bool("version", false, "Print version of this software.")
+	flag.Parse()
+	
+	if *version {
+		fmt.Printf("%s version 0.1", os.Args[0])
+		return
+	}
+
+	fmt.Printf("Listen on: '%s'\n", *listenPort)
+
 	http.HandleFunc("/do", do)
 	http.HandleFunc("/headers", headers)
-	http.ListenAndServe(":8888", nil)
+	http.ListenAndServe(*listenPort, nil)
 }

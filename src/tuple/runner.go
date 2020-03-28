@@ -214,15 +214,17 @@ func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, 
 	return errors
 }
 
+func PrintString(value string) {
+	fmt.Printf ("%s", value)
+}
+
 //
 //  Set up the translator pipeline.
 //
-func SimplePipeline (symbols * SymbolTable, queryPattern string, outputGrammar Grammar) Next {
+func SimplePipeline (symbols * SymbolTable, queryPattern string, outputGrammar Grammar, out func(value string)) Next {
 
 	prettyPrint := func(tuple Value) {
-		outputGrammar.Print(tuple, func(value string) {
-			fmt.Printf ("%s", value)
-		})
+		outputGrammar.Print(tuple, out)
 	}
 	pipeline := prettyPrint
 	if symbols != nil {
