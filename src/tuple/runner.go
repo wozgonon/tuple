@@ -146,7 +146,7 @@ func GetLogger(logGrammar Grammar) Logger {
 }
 
 func Eval(grammar Grammar, expression string) Value {
-	symbols := NewSymbolTable()
+	symbols := NewSymbolTable(ErrorIfFunctionNotFound)  // TODO perhaps another default function would be better
 
 	var result Value = NAN
 	pipeline := func(value Value) {

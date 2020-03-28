@@ -33,7 +33,7 @@ func main () {
 	//
 	outputGrammar := tuple.NewInfixExpressionGrammar()
 	var symbols * tuple.SymbolTable = nil
-	table := tuple.NewSymbolTable()
+	table := tuple.NewSymbolTable(tuple.ErrorIfFunctionNotFound)
 	if !*ast {
 		symbols = &table
 	}

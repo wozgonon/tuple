@@ -78,7 +78,7 @@ func main() {
 	//  Set up the translator pipeline.
 	//
 	var symbols * tuple.SymbolTable = nil
-	table := tuple.NewSymbolTable()
+	table := tuple.NewSymbolTable(tuple.ErrorIfFunctionNotFound)
 	if *eval {
 		symbols = &table
 	}

@@ -35,11 +35,19 @@ import "fmt"
 
 type SymbolTable struct {
 	symbols map[string]reflect.Value
+	ifFunctionNotFound FunctionNotFound
 }
 
-func NewSymbolTable() SymbolTable {
+type FunctionNotFound func(name Atom, args [] Value) Value
 
-	table := SymbolTable{map[string]reflect.Value{}}
+func ErrorIfFunctionNotFound(name Atom, args [] Value) Value {
+	fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
+	return Bool(false)
+}
+
+func NewSymbolTable(notFound FunctionNotFound) SymbolTable {
+
+	table := SymbolTable{map[string]reflect.Value{},notFound}
 	table.Add("len", func(value string) int64 { return int64(len(value)) })
 	table.Add("lower", strings.ToLower)
 	table.Add("upper", strings.ToUpper)
@@ -78,8 +86,7 @@ func NewSymbolTable() SymbolTable {
 	return table
 }
 
-
-func (table SymbolTable) Add(name string, function interface{}) {
+func (table * SymbolTable) Add(name string, function interface{}) {
 	reflectValue := reflect.ValueOf(function)
 	typ := reflectValue.Type()
 	key := makeKey(name, typ.NumIn())
@@ -105,8 +112,7 @@ func (table SymbolTable) Call(head Atom, args []Value) Value {
 		reflectValue := f.Call(reflectedArgs)
 		return mapFromReflectValue(reflectValue)
 	}
-	fmt.Printf("ERROR: not found: '%s' %d\n", name, nn)
-	return NAN  // TODO
+	return table.ifFunctionNotFound(head, args)
 }
 
 

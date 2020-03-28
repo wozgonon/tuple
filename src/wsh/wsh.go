@@ -25,6 +25,46 @@ import "flag"
 import "log"
 import "bytes"
 
+/////////////////////////////////////////////////////////////////////////////
+//  Functions specific to command shell
+/////////////////////////////////////////////////////////////////////////////
+
+func executeProcess(arg string) bool {
+	cmd := exec.Command(arg)
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("Command finished with error: %v", err)
+		return false
+	}
+	outStr := string(stdout.Bytes())
+	fmt.Print(outStr)
+	return true
+}
+
+func spawnProcess (arg string) bool {
+		cmd := exec.Command(arg)
+		var stdout bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Start()
+		if err != nil {
+			log.Printf("Command finished with error: %v", err)
+			return false
+		}
+		outStr := string(stdout.Bytes())
+		fmt.Print(outStr)
+		return true
+}
+
+func execIfNotFound(name tuple.Atom, args [] tuple.Value) tuple.Value {
+	return tuple.Bool(executeProcess(name.Name))
+}
+
 func main () {
 
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
@@ -43,27 +83,13 @@ func main () {
 	//
 	outputGrammar := tuple.NewShellGrammar()
 	inputGrammar := tuple.NewShellGrammar()
-	table := tuple.NewSymbolTable()
-
+	table := tuple.NewSymbolTable(execIfNotFound)
 	//
 	//  Add shell specific commands
 	//  These are typically not a 'safe' in that they allow access to the file system
 	// 
-	table.Add("exec", func (arg string) bool {
-		cmd := exec.Command(arg)
-		var stdout bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = os.Stderr
-
-		err := cmd.Run()
-		if err != nil {
-			log.Printf("Command finished with error: %v", err)
-			return false
-		}
-		outStr := string(stdout.Bytes())
-		fmt.Print(outStr)
-		return true
-	})
+	table.Add("exec", executeProcess)
+	table.Add("spawn", spawnProcess)
 	
 	pipeline := tuple.SimplePipeline (&table, *queryPattern, outputGrammar)
 
