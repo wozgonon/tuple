@@ -62,7 +62,7 @@ func NewSymbolTable(notFound FunctionNotFound) SymbolTable {
 	table.Add("atan", math.Atan)
 	table.Add("atan2", math.Atan2)
 	table.Add("round", math.Round)
-	table.Add("^", math.Pow)
+	table.Add("**", math.Pow)
 	table.Add("+", func (aa float64) float64 { return aa })
 	table.Add("-", func (aa float64) float64 { return -aa })
 	table.Add("+", func (aa float64, bb float64) float64 { return aa+bb })

@@ -45,20 +45,57 @@ func executeProcess(arg string) bool {
 	return true
 }
 
-func spawnProcess (arg string) bool {
-		cmd := exec.Command(arg)
-		var stdout bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = os.Stderr
+func pipe(writer string, reader string) bool {
+	cmdw := exec.Command(writer)
+	stdoutw, err := cmdw.StdoutPipe()
 
-		err := cmd.Start()
-		if err != nil {
-			log.Printf("Command finished with error: %v", err)
-			return false
-		}
-		outStr := string(stdout.Bytes())
-		fmt.Print(outStr)
-		return true
+	err = cmdw.Start()
+	if err != nil {
+		log.Printf("Start 1 finished with error: %v", err)
+		return false
+	}
+
+	cmdr := exec.Command(reader)
+	cmdr.Stdin = stdoutw
+	cmdr.Stdout = os.Stdout
+
+	if err != nil {
+		log.Printf("StdoutPipe finished with error: %v", err)
+		log.Fatal(err)
+	}
+	err = cmdr.Start()
+	if err != nil {
+		log.Printf("Start 2 finished with error: %v", err)
+		log.Fatal(err)
+	}
+	err = cmdw.Wait()
+	if err != nil {
+		log.Printf("Wait 1 finished with error: %v", err)
+		return false
+	}
+	err = cmdr.Wait()
+	if ; err != nil {
+		log.Printf("Wait 2 finished with error: %v", err)
+		log.Fatal(err)
+	}
+
+	return true
+}
+
+func spawnProcess (arg string) bool {
+	cmd := exec.Command(arg)
+	//var stdout bytes.Buffer
+	cmd.Stdout = os.Stdout //&stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Start()
+	if err != nil {
+		log.Printf("Command finished with error: %v", err)
+		return false
+	}
+	//outStr := string(stdout.Bytes())
+	//fmt.Print(outStr)
+	return true
 }
 
 func execIfNotFound(name tuple.Atom, args [] tuple.Value) tuple.Value {
@@ -68,7 +105,7 @@ func execIfNotFound(name tuple.Atom, args [] tuple.Value) tuple.Value {
 func main () {
 
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
-	//var ast = flag.Bool("ast", false, "If set then returns the AST else runs the 'eval' interpretter.")
+	var ast = flag.Bool("ast", false, "If set then returns the AST else runs the 'eval' interpretter.")
 	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
 	var version = flag.Bool("version", false, "Print version of this software.")
 	flag.Parse()
@@ -81,8 +118,9 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	outputGrammar := tuple.NewShellGrammar()
 	inputGrammar := tuple.NewShellGrammar()
+	outputGrammar := inputGrammar
+
 	table := tuple.NewSymbolTable(execIfNotFound)
 	//
 	//  Add shell specific commands
@@ -90,8 +128,15 @@ func main () {
 	// 
 	table.Add("exec", executeProcess)
 	table.Add("spawn", spawnProcess)
-	
-	pipeline := tuple.SimplePipeline (&table, *queryPattern, outputGrammar)
+	table.Add("|", pipe)
+	table.Add("pipe", pipe)
+
+	var symbols * tuple.SymbolTable = nil
+	if !*ast {
+		symbols = &table
+	}
+
+	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
 
 	grammars := tuple.NewGrammars()
 	errors := tuple.RunFiles([]string{}, tuple.GetLogger(nil), *verbose, inputGrammar, &grammars, pipeline)

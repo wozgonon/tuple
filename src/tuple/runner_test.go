@@ -26,8 +26,8 @@ func TestEvalToInt64(t *testing.T) {
 		"(1+2)*3" : 9,
 		"((1+2)*3)" : 9,
 		"((1+2)*3*3/9)" : 3,
-		"-1^7*2" : -2,
-		"-1^7*2+3" : 1,
+		"-1**7*2" : -2,
+		"-1**7*2+3" : 1,
 		"0*(7)" : 0,
 		"8/4" : 2,
 		"cos(PI)" : -1,
@@ -41,7 +41,7 @@ func TestEvalToInt64(t *testing.T) {
 	}
 }
 
-func TestFiles(t *testing.T) {
+func testFiles(t *testing.T) {
 
 	grammars := tuple.NewGrammars()
 	grammars.Add((tuple.NewLispGrammar()))
@@ -57,4 +57,11 @@ func TestFiles(t *testing.T) {
 	if count != expected {
 		t.Errorf("Expected %d got %d", expected, count)
 	}
+}
+
+func TestSimplePipeline(t *testing.T) {
+
+	table := tuple.NewSymbolTable(tuple.ErrorIfFunctionNotFound)
+	tuple.SimplePipeline(&table, "*", tuple.NewLispGrammar(), func (_ string) {})
+	// TODO
 }

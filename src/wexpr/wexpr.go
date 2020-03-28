@@ -39,7 +39,7 @@ func main () {
 	}
 	//table.Add("func", func(name string, body tuple.Tuple) { fmt.Printf("TODO Implement 'func' '%s' '%s'", name, body) })
 
-	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar)
+	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := tuple.NewRunnerContext("<cli>", reader, tuple.GetLogger(nil), *verbose)
 	grammar := tuple.NewInfixExpressionGrammar()

@@ -25,6 +25,7 @@ import (
 	"bufio"
 )
 
+
 func main() {
 
 	//
@@ -65,7 +66,6 @@ func main() {
 		return
 	}
 
-	
 	outputGrammar := grammars.FindBySuffixOrPanic(*out)
 	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
 	logger := tuple.GetLogger(loggerGrammar)
@@ -73,7 +73,7 @@ func main() {
 	if *in != "" {
 		inputGrammar = grammars.FindBySuffixOrPanic(*in)
 	}
-	
+
 	//
 	//  Set up the translator pipeline.
 	//
@@ -82,7 +82,8 @@ func main() {
 	if *eval {
 		symbols = &table
 	}
-	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar)
+
+	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
 
 	if *command {
 		//
@@ -101,6 +102,7 @@ func main() {
 		grammar := grammars.FindBySuffixOrPanic(*in)
 
 		grammar.Parse(&context, pipeline)
+
 		if context.Errors() > 0 {
 			os.Exit(1)
 		}
@@ -113,6 +115,7 @@ func main() {
 		numberOfFiles := flag.NArg()
 		files := os.Args[args-numberOfFiles:]
 		errors := tuple.RunFiles(files, logger, *verbose, inputGrammar, &grammars, pipeline)
+
 		//
 		//  Exit with non-zero response code if any errors occurred.
 		//
