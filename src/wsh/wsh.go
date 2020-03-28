@@ -29,8 +29,8 @@ import "bytes"
 //  Functions specific to command shell
 /////////////////////////////////////////////////////////////////////////////
 
-func executeProcess(arg string) bool {
-	cmd := exec.Command(arg)
+func executeProcess(arg string, args... string) bool {
+	cmd := exec.Command(arg, args...)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
@@ -45,7 +45,14 @@ func executeProcess(arg string) bool {
 	return true
 }
 
+// TODO sort out variadic arguments
+func executeProcess0(arg string) bool {
+	return executeProcess(arg)
+}
+
 func pipe(writer string, reader string) bool {
+
+	log.Printf("pipe '%s', '%s'", writer, reader)
 	cmdw := exec.Command(writer)
 	stdoutw, err := cmdw.StdoutPipe()
 
@@ -99,7 +106,8 @@ func spawnProcess (arg string) bool {
 }
 
 func execIfNotFound(name tuple.Atom, args [] tuple.Value) tuple.Value {
-	return tuple.Bool(executeProcess(name.Name))
+
+	return tuple.Bool(executeProcess(name.Name, tuple.ValuesToStrings(args)...))
 }
 
 func main () {
@@ -126,7 +134,7 @@ func main () {
 	//  Add shell specific commands
 	//  These are typically not a 'safe' in that they allow access to the file system
 	// 
-	table.Add("exec", executeProcess)
+	table.Add("exec", executeProcess0)
 	table.Add("spawn", spawnProcess)
 	table.Add("|", pipe)
 	table.Add("pipe", pipe)
