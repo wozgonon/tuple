@@ -17,7 +17,6 @@
 package tuple
 
 import "math"
-import "strings"
 import "reflect"
 import "fmt"
 import "strconv"
@@ -41,51 +40,6 @@ type SymbolTable struct {
 
 type FunctionNotFound func(name Atom, args [] Value) Value
 
-func ErrorIfFunctionNotFound(name Atom, args [] Value) Value {
-	fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
-	return Bool(false)
-}
-
-func NewSymbolTable(notFound FunctionNotFound) SymbolTable {
-
-	table := SymbolTable{map[string]reflect.Value{},notFound}
-	table.Add("len", func(value string) int64 { return int64(len(value)) })
-	table.Add("lower", strings.ToLower)
-	table.Add("upper", strings.ToUpper)
-	table.Add("exp", math.Exp)
-	table.Add("log", math.Log)
-	table.Add("sin", math.Sin)
-	table.Add("cos", math.Cos)
-	table.Add("tan", math.Tan)
-	table.Add("acos", math.Acos)
-	table.Add("asin", math.Asin)
-	table.Add("atan", math.Atan)
-	table.Add("atan2", math.Atan2)
-	table.Add("round", math.Round)
-	table.Add("**", math.Pow)
-	table.Add("+", func (aa float64) float64 { return aa })
-	table.Add("-", func (aa float64) float64 { return -aa })
-	table.Add("+", func (aa float64, bb float64) float64 { return aa+bb })
-	table.Add("-", func (aa float64, bb float64) float64 { return aa-bb })
-	table.Add("*", func (aa float64, bb float64) float64 { return aa*bb })
-	table.Add("/", func (aa float64, bb float64) float64 { return aa/bb })
-	table.Add("==", func (aa float64, bb float64) bool { return aa==bb })
-	table.Add("!=", func (aa float64, bb float64) bool { return aa!=bb })
-	table.Add(">=", func (aa float64, bb float64) bool { return aa>=bb })
-	table.Add("<=", func (aa float64, bb float64) bool { return aa<=bb })
-	table.Add(">", func (aa float64, bb float64) bool { return aa>bb })
-	table.Add("<", func (aa float64, bb float64) bool { return aa<bb })
-	table.Add("&&", func (aa bool, bb bool) bool { return aa&&bb })
-	table.Add("||", func (aa bool, bb bool) bool { return aa||bb })
-	table.Add("!", func (aa bool) bool { return ! aa })
-	table.Add("PI", func () float64 { return math.Pi })
-	table.Add("PHI", func () float64 { return math.Phi })
-	table.Add("E", func () float64 { return math.E })
-	table.Add("true", func () bool { return true })
-	table.Add("false", func () bool { return false })
-
-	return table
-}
 
 func (table * SymbolTable) Add(name string, function interface{}) {
 	reflectValue := reflect.ValueOf(function)

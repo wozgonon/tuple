@@ -53,12 +53,12 @@ func (stack * OperatorGrammar) popOperator() {
 	stack.operatorStack = stack.operatorStack[:lo-1]
 }
 
-func (stack * OperatorGrammar) reduceUnary(top Atom) {
+func (stack * OperatorGrammar) reducePrefix(top Atom) {
 
 	var name Atom
 	switch top.Name {
-	case "_unary_minus": name = Atom{"-"}
-	case "_unary_plus": name = Atom{"+"}
+	case "_prefix_minus": name = Atom{"-"}
+	case "_prefix_plus": name = Atom{"+"}
 	default: name = top
 	}
 
@@ -74,9 +74,9 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 
 	values := &(stack.Values.List)
 	lv := stack.Values.Length()
-	if strings.HasPrefix(top.Name, "_unary_") {
+	if strings.HasPrefix(top.Name, "_prefix_") {
 		stack.popOperator()
-		stack.reduceUnary(top)
+		stack.reducePrefix(top)
 	} else {
 		if top == SPACE_ATOM { // TODO Could in principle generalize to make any binary operator n-ary
 			Verbose(stack.context,"** REDUCE\t'%s'\n", top.Name)
@@ -206,21 +206,21 @@ func (stack * OperatorGrammar) EndOfInput(next Next) {
 func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	Verbose(stack.context,"*PushOperator '%s'", atom.Name)
 
-	unaryOperator, ok := stack.operators.unary[atom.Name]
-	nextIsUnary := stack.wasOperator && ok
+	prefixOperator, ok := stack.operators.prefix[atom.Name]
+	nextIsPrefix := stack.wasOperator && ok
 	if atom != SPACE_ATOM {
-		if nextIsUnary {
-			atom = unaryOperator
+		if nextIsPrefix {
+			atom = prefixOperator
 		}
 		atomPrecedence := stack.operators.Precedence(atom)
 		lo := len(stack.operatorStack)
 		for index := lo-1 ; index >= 0; index -= 1 {
 			top := stack.operatorStack[index]
-			topIsUnary := strings.HasPrefix(top.Name, "_unary_")
-			Verbose(stack.context, "IsUnary %s %s", top, topIsUnary)
-			if !nextIsUnary && (topIsUnary || stack.operators.IsOpenBracket(top)) {
+			topIsPrefix := strings.HasPrefix(top.Name, "_prefix_")
+			Verbose(stack.context, "IsPrefix %s %s", top, topIsPrefix)
+			if !nextIsPrefix && (topIsPrefix || stack.operators.IsOpenBracket(top)) {
 				break
-			} else if nextIsUnary && topIsUnary {
+			} else if nextIsPrefix && topIsPrefix {
 				break
 			} else if stack.operators.Precedence(top) >= atomPrecedence {
 				Verbose(stack.context,"* PushOperator - Reduce '%s'", top)
@@ -230,7 +230,7 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 			}
 		}
 	}
-	if ! nextIsUnary && stack.wasOperator {
+	if ! nextIsPrefix && stack.wasOperator {
 		Error(stack.context,"Unexpected binary operator '%s'", atom.Name)
 	} else {
 		if atom.Name == "." {
@@ -251,13 +251,16 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 type Operators struct {
 	Style
 	precedence map[string]int
-	unary map[string]Atom
+	prefix map[string]Atom
+	postfix map[string]Atom
 	brackets map[string]string
 	closeBrackets map[string]string
 }
 
 func NewOperators(style Style) Operators {
-	return Operators{style, make(map[string]int, 0), make(map[string]Atom, 0), make(map[string]string, 0), make(map[string]string, 0)}
+	atoms := make(map[string]Atom, 0)
+	strings := make(map[string]string, 0)
+	return Operators{style, make(map[string]int, 0), atoms, atoms, strings, strings}
 }
 
 // Iterates through all operators, this is mainly for testing
@@ -269,7 +272,7 @@ func (operators *Operators) Forall(next func (value string)) {
 		next(k)
 		next(v)
 	}*/
-	for k, v := range operators.unary {
+	for k, v := range operators.prefix {
 		next(k)
 		next(v.Name)
 	}
@@ -279,8 +282,13 @@ func (operators *Operators) AddInfix(operator string, precedence int) {
 	(*operators).precedence[operator] = precedence
 }
 
-func (operators *Operators) AddUnaryPrefix(operator string, name string, precedence int) {
-	operators.unary[operator] = Atom{name}
+func (operators *Operators) AddPrefix(operator string, name string, precedence int) {
+	operators.prefix[operator] = Atom{name}
+	operators.precedence[name] = precedence
+}
+
+func (operators *Operators) AddPostfix(operator string, name string, precedence int) {
+	operators.postfix[operator] = Atom{name}
 	operators.precedence[name] = precedence
 }
 
@@ -317,11 +325,11 @@ func (printer Operators) PrintNullaryOperator(depth string, atom Atom, out Strin
 	PrintTuple(&printer, depth, NewTuple(atom), out)
 }
 
-func (printer Operators) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
+func (printer Operators) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {  // Prefix and Postfix???
 	PrintTuple(&printer, depth, NewTuple(atom, value), out)
 }
 
-func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
+func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {  // TODO binary to infix
 
 	if _, ok := printer.precedence[atom.Name]; ok {
 		out(printer.Style.Open)

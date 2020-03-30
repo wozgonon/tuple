@@ -195,10 +195,21 @@ func NewShellGrammar() Grammar {
 		OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
 		",", "\n", "true", "false", '#', "")
 
+	// **
+	// /*
+	// +-
+	// == <= >=     < >
+	// ' '
+	// &
+	// | > >>
+	// && ||
+	// ;
+	
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
 	//operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
-	operators.AddUnaryPrefix("$", "_unary_dollar", 150)
+	operators.AddPrefix("$", "_prefix_dollar", 150)
+	operators.AddPostfix("&", "_postfix_spawn", 20)
 
 	return ShellGrammar{style, operators}
 }

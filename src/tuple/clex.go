@@ -384,9 +384,10 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
 	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
 	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
-	operators.AddUnaryPrefix("+", "_unary_plus", 110)
-	operators.AddUnaryPrefix("-", "_unary_minus", 110)
-	operators.AddUnaryPrefix("!", "_unary_not", 55) // TODO check
+	operators.AddPrefix("+", "_prefix_plus", 110)
+	operators.AddPrefix("-", "_prefix_minus", 110)
+	// TODO operators.AddPostfix("++", "_postfix_incr", 120) // TODO check
+	operators.AddPrefix("!", "_prefix_not", 55) // TODO check
 	operators.AddInfix("**", 100)
 	operators.AddInfix("*", 90)
 	operators.AddInfix("/", 90)

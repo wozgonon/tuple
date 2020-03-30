@@ -18,97 +18,13 @@ package main
 
 import "tuple"
 import "os"
-import "os/exec"
-//import "io"
 import "fmt"
 import "flag"
-import "log"
-import "bytes"
 
 /////////////////////////////////////////////////////////////////////////////
 //  Functions specific to command shell
 /////////////////////////////////////////////////////////////////////////////
 
-func executeProcess(arg string, args... string) bool {
-	cmd := exec.Command(arg, args...)
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("Command finished with error: %v", err)
-		return false
-	}
-	outStr := string(stdout.Bytes())
-	fmt.Print(outStr)
-	return true
-}
-
-// TODO sort out variadic arguments
-func executeProcess0(arg string) bool {
-	return executeProcess(arg)
-}
-
-func pipe(writer string, reader string) bool {
-
-	log.Printf("pipe '%s', '%s'", writer, reader)
-	cmdw := exec.Command(writer)
-	stdoutw, err := cmdw.StdoutPipe()
-
-	err = cmdw.Start()
-	if err != nil {
-		log.Printf("Start 1 finished with error: %v", err)
-		return false
-	}
-
-	cmdr := exec.Command(reader)
-	cmdr.Stdin = stdoutw
-	cmdr.Stdout = os.Stdout
-
-	if err != nil {
-		log.Printf("StdoutPipe finished with error: %v", err)
-		log.Fatal(err)
-	}
-	err = cmdr.Start()
-	if err != nil {
-		log.Printf("Start 2 finished with error: %v", err)
-		log.Fatal(err)
-	}
-	err = cmdw.Wait()
-	if err != nil {
-		log.Printf("Wait 1 finished with error: %v", err)
-		return false
-	}
-	err = cmdr.Wait()
-	if ; err != nil {
-		log.Printf("Wait 2 finished with error: %v", err)
-		log.Fatal(err)
-	}
-
-	return true
-}
-
-func spawnProcess (arg string) bool {
-	cmd := exec.Command(arg)
-	//var stdout bytes.Buffer
-	cmd.Stdout = os.Stdout //&stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Start()
-	if err != nil {
-		log.Printf("Command finished with error: %v", err)
-		return false
-	}
-	//outStr := string(stdout.Bytes())
-	//fmt.Print(outStr)
-	return true
-}
-
-func execIfNotFound(name tuple.Atom, args [] tuple.Value) tuple.Value {
-
-	return tuple.Bool(executeProcess(name.Name, tuple.ValuesToStrings(args)...))
-}
 
 func main () {
 
@@ -129,15 +45,8 @@ func main () {
 	inputGrammar := tuple.NewShellGrammar()
 	outputGrammar := inputGrammar
 
-	table := tuple.NewSymbolTable(execIfNotFound)
-	//
-	//  Add shell specific commands
-	//  These are typically not a 'safe' in that they allow access to the file system
-	// 
-	table.Add("exec", executeProcess0)
-	table.Add("spawn", spawnProcess)
-	table.Add("|", pipe)
-	table.Add("pipe", pipe)
+	table := tuple.NewUnSafeSymbolTable()
+	table.Add("|", tuple.Pipe)
 
 	var symbols * tuple.SymbolTable = nil
 	if !*ast {

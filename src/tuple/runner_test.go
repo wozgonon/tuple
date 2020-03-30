@@ -9,7 +9,7 @@ import (
 
 func TestEval1(t *testing.T) {
 	var grammar = tuple.NewInfixExpressionGrammar()
-	val := tuple.Eval(grammar, "1+1")
+	val := tuple.Eval(grammar, symbols, "1+1")
 	if val != tuple.Float64(2) {
 		t.Errorf("1+1=%s", val)
 	}
@@ -34,7 +34,7 @@ func TestEvalToInt64(t *testing.T) {
 		"acos(cos(PI))" : math.Pi,
 	}
 	for k, v := range tests {
-		val := tuple.Eval(grammar, k)
+		val := tuple.Eval(grammar, symbols, k)
 		if val != tuple.Float64(v) {
 			t.Errorf("%s=%d   %s", k, int64(v), val)
 		}
@@ -61,7 +61,7 @@ func testFiles(t *testing.T) {
 
 func TestSimplePipeline(t *testing.T) {
 
-	table := tuple.NewSymbolTable(tuple.ErrorIfFunctionNotFound)
+	table := tuple.NewSafeSymbolTable(tuple.ErrorIfFunctionNotFound)
 	tuple.SimplePipeline(&table, "*", tuple.NewLispGrammar(), func (_ string) {})
 	// TODO
 }

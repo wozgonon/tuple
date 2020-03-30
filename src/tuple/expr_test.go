@@ -8,6 +8,7 @@ import (
 
 
 var grammar = tuple.NewInfixExpressionGrammar()
+var symbols = tuple.NewSafeSymbolTable(tuple.ErrorIfFunctionNotFound)  // TODO perhaps another default function would be better
 
 
 func TestExpr1(t *testing.T) {
@@ -50,7 +51,7 @@ func TestExpr(t *testing.T) {
 	testFloatExpressionFailParse(t, grammar, "-")
 
 	test := func(formula string, expected tuple.Value) {
-		val := tuple.Eval(grammar, formula)
+		val := tuple.Eval(grammar, symbols, formula)
 		if val != expected {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}
@@ -84,7 +85,7 @@ func TestArithmeticAndLogic(t *testing.T) {
 func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 	test := func (formula string) {
-		val := tuple.Eval(grammar, formula)
+		val := tuple.Eval(grammar, symbols, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -122,7 +123,7 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 	test("log(E) == 1")
 	test("PHI == PHI")
-	test("PI != Phi")
+	test("PI != PHI")
 	test("PI == PI")
 
 	test("3 != -(1+2)")
