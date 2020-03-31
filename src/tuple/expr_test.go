@@ -158,3 +158,20 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 	//test("upper(lower(\"aBc\"))==\"ABC\"")
 }
 
+
+func testExprDeclareFunctions(t *testing.T, grammar tuple.Grammar) {
+
+	var symbols = tuple.NewSafeSymbolTable(tuple.ErrorIfFunctionNotFound)  // TODO perhaps another default function would be better
+	tuple.AddDeclareFunctions(symbols)
+	
+	test := func (formula string) {
+		val := tuple.Eval(grammar, symbols, formula)
+		if val != tuple.Bool(true) {
+			t.Errorf("Expected '%s' to be TRUE", formula)
+		}
+	}
+
+	test("if(true,1,2) == 1")
+	test("if(false,1,2) == 2")
+	test("if(false,1, cos(PI)) == -1")
+}

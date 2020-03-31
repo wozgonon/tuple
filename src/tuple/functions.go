@@ -75,7 +75,7 @@ func AddBooleanAndArithmeticFunctions(table SymbolTable) SymbolTable {
 
 // These functions are harmless, one can execute them from a script and not cause any damage.
 func NewSafeSymbolTable(notFound FunctionNotFound) SymbolTable {
-	table := SymbolTable{map[string]reflect.Value{},notFound}
+	table := NewSymbolTable(notFound)
 	AddBooleanAndArithmeticFunctions(table)
 	return table
 }
@@ -87,12 +87,7 @@ func NewSafeSymbolTable(notFound FunctionNotFound) SymbolTable {
 func AddDeclareFunctions(table SymbolTable) {
 
 	table.Add("get", func(atom Atom) Value {
-		f, ok := table.symbols[atom.Name]
-		if ok {
-			reflectedArgs := make([]reflect.Value, 0)
-			return mapFromReflectValue(f.Call(reflectedArgs))
-		}
-		return NAN // TODO
+		return table.Call(atom, []Value{})
 	})
 	table.Add("set", func(atom Atom, value Value) Value {
 		table.Add(atom.Name, func () Value {
@@ -100,8 +95,9 @@ func AddDeclareFunctions(table SymbolTable) {
 		})
 		return value
 	})
-	table.Add("func", func(atom Atom, arg Value, code Value) Value {
-		table.Add(atom.Name, func (arg Value) Value {
+	table.Add("func", func(atom Atom, arg Atom, code Value) Value {
+		table.Add(atom.Name, func (arg Atom) Value {
+			// Set atom
 			return table.Eval(code)
 		})
 		return atom

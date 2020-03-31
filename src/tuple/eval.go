@@ -38,8 +38,15 @@ type SymbolTable struct {
 	ifFunctionNotFound FunctionNotFound
 }
 
+func NewSymbolTable(notFound FunctionNotFound) SymbolTable {
+	return SymbolTable{map[string]reflect.Value{},notFound}
+}
+
 type FunctionNotFound func(name Atom, args [] Value) Value
 
+func (table * SymbolTable) Count() int {
+	return len(table.symbols)
+}
 
 func (table * SymbolTable) Add(name string, function interface{}) {
 	reflectValue := reflect.ValueOf(function)
@@ -53,16 +60,21 @@ func (table SymbolTable) Call(head Atom, args []Value) Value {
 	name := head.Name
 	nn := len(args)
 
-	key := makeKey(name, len(args))
+	key := makeKey(name, nn)
 	f, ok := table.symbols[key]
 	if ok {
 		t := f.Type()
-		//fmt.Printf("FUNC %s %d - %s %s\n", name, nn, key, t)
-		//fmt.Printf("  FUNC %s %d - %s %d\n", name, nn, key, t.NumIn())
-		//fmt.Printf("   FUNC %s %d\n", name, nn)
 		reflectedArgs := make([]reflect.Value, nn)
-		for k,_:= range args {
-			reflectedArgs[k] = mapToReflectValue(args[k], t.In(k))
+		for k,v:= range args {
+			expectedType := t.In(k)
+			if expectedType == AtomType {
+				reflectedArgs[k] = reflect.ValueOf(v)
+			} else if expectedType == TupleType {
+				reflectedArgs[k] = reflect.ValueOf(v)
+			} else {
+				evaluated := table.Eval(v)
+				reflectedArgs[k] = mapToReflectValue(evaluated, expectedType)
+			}
 		}
 		reflectValue := f.Call(reflectedArgs)
 		return mapFromReflectValue(reflectValue)
@@ -98,11 +110,7 @@ func (table SymbolTable) Eval(expression Value) Value {
 		if ! ok {
 			return val // TODO Handle case of list: (1 2 3)
 		}
-		evaluated := make([]Value, ll-1)
-		for k, v := range val.List[1:] {
-			evaluated[k] = table.Eval(v)
-		}
-		return table.Call(atom, evaluated)
+		return table.Call(atom, val.List[1:])
 	case Atom:
 		return table.Call(val, []Value{})
 	default:
@@ -116,10 +124,15 @@ var FloatType = reflect.TypeOf(float64(1.0))
 var BoolType = reflect.TypeOf(true)
 var StringType = reflect.TypeOf("")
 var TupleType = reflect.TypeOf(NewTuple())
+var AtomType = reflect.TypeOf(Atom{""})
+
+var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
+
 
 func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 
 	_, isTuple := v.(Tuple)
+	//_, isAtom := v.(Atom)
 
 	var result interface{}
 	
@@ -129,11 +142,16 @@ func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 	case FloatType: result = toFloat64(v)
 	case BoolType: result = toBool(v)
 	case StringType: result = toString(v)
+	case AtomType: result = v
 	case TupleType:
 		if isTuple {
 			result = v
 		}
-	default: result = float64(v.(Float64)) // TODO???
+	case ValueType:
+		result = v
+	default:
+		fmt.Printf("ERROR should not get here Expected type: '%s' v=%s", expected, v) // TODO
+		result = float64(v.(Float64)) // TODO???
 	}
 	return reflect.ValueOf(result)
 }
@@ -145,6 +163,9 @@ func mapFromReflectValue (in []reflect.Value) Value {
 	case FloatType: return Float64(v.Float())
 	case BoolType: return Bool(v.Bool())
 	case StringType: return String(v.String())
+	case TupleType: return v.Interface().(Tuple)
+	case AtomType: return v.Interface().(Atom)
+	case ValueType: return v.Interface().(Value)
 	default: return Float64(in[0].Float()) // TODO
 	}
 }

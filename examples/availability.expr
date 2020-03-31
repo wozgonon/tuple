@@ -1,0 +1,31 @@
+
+"Hours per year" 24*360
+
+"Hours unavailable per year .99%" 24*360*(1-.99)
+
+"Hours unavailable per year .995%" 24*360*(1-.995)
+
+"Hours unavailable per year .999%" 24*360*(1-.999)
+
+
+
+"Days unavailable per year .99%" 24*360*(1-.99)/24
+
+"Days unavailable per year .995%" 24*360*(1-.995)/24
+
+"Days unavailable per year .999%" 24*360*(1-.999)/24
+
+
+
+"Minutes unavailable per year .99%" 24*360*(1-.99)*60
+
+"Minutes unavailable per year .995%" 24*360*(1-.995)*60
+
+"Minutes unavailable per year .999%" 24*360*(1-.999)*60
+
+"Minutes unavailable per year .9999%" 24*360*(1-.999)*60
+
+
+
+
+
