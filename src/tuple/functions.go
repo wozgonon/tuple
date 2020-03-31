@@ -28,9 +28,16 @@ import "bytes"
 func AddStringFunctions(table SymbolTable) SymbolTable {
 	table.Add("len", func(value string) int64 { return int64(len(value)) })
 	table.Add("lower", strings.ToLower)
-	table.Add("join", func (separator string, tuple Tuple) string { return strings.Join(ValuesToStrings(tuple.List), separator) })
+	table.Add("join", func (context EvalContext, separator string, tuple Tuple) string { return strings.Join(EvalToStrings(context, tuple.List), separator) })
 	table.Add("concat", func (aa string, bb string) string { return aa + bb })
 	table.Add("upper", strings.ToUpper)
+
+	table.Add("at", func(index int64, tuple Tuple) Value {
+		if index < 0 || index >= int64(tuple.Length()) {
+			return EMPTY
+		}
+		return tuple.List[index]
+	})
 
 	return table
 }
@@ -221,7 +228,7 @@ func spawnProcess (arg string) bool {
 
 // These functions access the operating system and so an actor
 // could use them to harm the computer.
-func AddOperatinSystemFunctions(table SymbolTable) {
+func AddOperatingSystemFunctions(table SymbolTable) {
 	//
 	//  Add shell specific commands
 	//  These are typically not a 'safe' in that they allow access to the file system
@@ -252,8 +259,8 @@ type ExecIfNotFound struct {}
 
 func (exec * ExecIfNotFound) Find (name Atom, args [] Value) reflect.Value {
 
-	return reflect.ValueOf(func(args... Value) bool {
-		return executeProcess(name.Name, ValuesToStrings(args)...)
+	return reflect.ValueOf(func(context EvalContext, args... Value) bool {
+		return executeProcess(name.Name, EvalToStrings(context, args)...)
 	})
 }
 
@@ -262,6 +269,6 @@ func NewUnSafeSymbolTable() SymbolTable {
 	table := SymbolTable{map[string]reflect.Value{},&ExecIfNotFound{}}
 	AddBooleanAndArithmeticFunctions(table)
 	AddDeclareFunctions(table)
-	AddOperatinSystemFunctions(table)
+	AddOperatingSystemFunctions(table)
 	return table
 }

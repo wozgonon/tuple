@@ -55,6 +55,7 @@ type Int64 int64
 type Bool bool
 
 var NAN Float64 = Float64(math.NaN())
+var EMPTY Tuple = NewTuple()
 
 // An Atom - a name for something, an identifier or operator
 // TODO include location and source for editors

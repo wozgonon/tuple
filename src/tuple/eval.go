@@ -39,7 +39,7 @@ type SymbolTable struct {
 }
 
 func (context * SymbolTable) Call(head Atom, args []Value) Value {
-	return context.Call3(context, head, args)
+	return context.call3(context, head, args)
 }
 
 func (context * SymbolTable) Log(format string, level string, args ...interface{}) {
@@ -55,6 +55,15 @@ func ValuesToStrings(values []Value) []string {
 	result := make([]string, len(values))
 	for k,_:= range values {
 		result[k] = toString(values[k])
+	}
+	return result
+}
+
+func EvalToStrings(context EvalContext, values []Value) []string {
+	result := make([]string, len(values))
+	for k,_:= range values {
+		value := Eval(context, values[k])
+		result[k] = toString(value)
 	}
 	return result
 }
@@ -87,7 +96,7 @@ func (table * SymbolTable) Add(name string, function interface{}) {
 	table.symbols[key] = reflectValue
 }
 
-func (table * SymbolTable) Call3(context EvalContext, head Atom, args []Value) Value {  // Reduce
+func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) Value {  // Reduce
 
 	//name := head.Name
 	nn := len(args)
