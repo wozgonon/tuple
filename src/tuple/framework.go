@@ -34,18 +34,6 @@ type StringFunction func(value string)
 type Next func(value Value)
 type Logger func(context Context, level string, message string)
 
-type CallHandler interface {
-	Find(name Atom, args [] Value) reflect.Value
-}
-
-/*
-type Eval interface {
-	Count() int
-	Add(name string, function interface{})
-	Call(head Atom, args []Value) Value  // Reduce
-	Eval(expression Value) Value
-}*/
-	 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer and Values
 /////////////////////////////////////////////////////////////////////////////
@@ -179,7 +167,40 @@ func NewTuple(values...Value) Tuple {
 
 // The Context interface represents the current state of parsing and translation.
 // It can provide: the name of the input and current depth and number of errors
+type LocationContext interface {
+	SourceName() string
+	Line() int64
+	Column() int64
+	Depth() int
+	Log(format string, level string, args ...interface{})
+}
+
+type CallHandler interface {
+	Find(name Atom, args [] Value) reflect.Value
+}
+
+/*
+type Eval interface {
+	Count() int
+	Add(name string, function interface{})
+	Call(head Atom, args []Value) Value  // Reduce
+	Eval(expression Value) Value
+}*/
+
+type EvalContext interface {
+	CallHandler
+	//LocationContext
+
+	Log(format string, level string, args ...interface{})
+	Add(name string, function interface{})
+	//Eval(expression Value) Value
+	Call(head Atom, args []Value) Value  // Reduce
+}
+
+// The Context interface represents the current state of parsing and translation.
+// It can provide: the name of the input and current depth and number of errors
 type Context interface {
+	// TODO LocationContext  and change name to ParseContext
 	SourceName() string
 	Line() int64
 	Column() int64

@@ -38,6 +38,15 @@ type SymbolTable struct {
 	ifFunctionNotFound CallHandler
 }
 
+func (context * SymbolTable) Call(head Atom, args []Value) Value {
+	return context.Call3(context, head, args)
+}
+
+func (context * SymbolTable) Log(format string, level string, args ...interface{}) {
+	fmt.Printf(level + " " + format + "\n", args)
+}
+
+
 func NewSymbolTable(notFound CallHandler) SymbolTable {
 	return SymbolTable{map[string]reflect.Value{},notFound}
 }
@@ -59,23 +68,45 @@ func (table * SymbolTable) Count() int {
 	return len(table.symbols)
 }
 
+func TakesContext(typ reflect.Type) bool {
+	nn := typ.NumIn()
+	return nn > 0 && typ.In(0) == EvalContextType
+}
+
 func (table * SymbolTable) Add(name string, function interface{}) {
 	reflectValue := reflect.ValueOf(function)
 	typ := reflectValue.Type()
-	key := makeKey(name, typ.NumIn())
+
+	nn := typ.NumIn()
+	if nn > 0 {
+		if typ.In(0) == EvalContextType {
+			nn -= 1
+		}
+	}
+	key := makeKey(name, nn)
 	table.symbols[key] = reflectValue
 }
 
-func (table * SymbolTable) Call(head Atom, args []Value) Value {  // Reduce
+func (table * SymbolTable) Call3(context EvalContext, head Atom, args []Value) Value {  // Reduce
 
 	//name := head.Name
 	nn := len(args)
 
 	f := table.Find(head, args)
 	t := f.Type()
+
+	start := 0
+	if TakesContext(t) {
+		start = 1
+	}
+	reflectedArgs := make([]reflect.Value, nn + start)
+	if start == 1 {
+		reflectedArgs[0] = reflect.ValueOf(context)
+	}
 	
-	reflectedArgs := make([]reflect.Value, nn)
-	for k,v:= range args {
+	for key,v:= range args {
+
+		k := start + key
 		if t.IsVariadic() {
 			reflectedArgs[k] = reflect.ValueOf(v)
 		} else {
@@ -88,7 +119,7 @@ func (table * SymbolTable) Call(head Atom, args []Value) Value {  // Reduce
 				reflectedArgs[k] = reflect.ValueOf(v)
 			} else {
 				//fmt.Printf("Eval %s expectedType=%s\n", v, expectedType)
-				evaluated := table.Eval(v)
+				evaluated := Eval(context, v)
 				reflectedArgs[k] = mapToReflectValue(evaluated, expectedType)
 			}
 		}
@@ -113,7 +144,7 @@ func (table * SymbolTable) Find(head Atom, args []Value) reflect.Value {  // Red
 	return table.ifFunctionNotFound.Find(head, args)
 }
 
-func (table * SymbolTable) Eval(expression Value) Value {
+func Eval(context EvalContext, expression Value) Value {
 
 	switch val := expression.(type) {
 	case Tuple:
@@ -123,15 +154,15 @@ func (table * SymbolTable) Eval(expression Value) Value {
 		}
 		head := val.List[0]
 		if ll == 1 {
-			return table.Eval(head)
+			return Eval(context, head)
 		}
 		atom, ok := head.(Atom)
 		if ! ok {
 			return val // TODO Handle case of list: (1 2 3)
 		}
-		return table.Call(atom, val.List[1:])
+		return context.Call(atom, val.List[1:])
 	case Atom:
-		return table.Call(val, []Value{})
+		return context.Call(val, []Value{})
 	default:
 		return val
 	}
@@ -147,6 +178,7 @@ var TupleType = reflect.TypeOf(NewTuple())
 
 var AtomType = reflect.TypeOf(Atom{""})
 var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
+var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
 
 
 func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {

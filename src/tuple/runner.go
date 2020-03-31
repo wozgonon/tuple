@@ -145,11 +145,11 @@ func GetLogger(logGrammar Grammar) Logger {
 	}
 }
 
-func Eval(grammar Grammar, symbols SymbolTable, expression string) Value {
+func ParseAndEval(grammar Grammar, symbols SymbolTable, expression string) Value {
 
 	var result Value = NAN
 	pipeline := func(value Value) {
-		result = symbols.Eval(value)
+		result = Eval(&symbols, value)
 	}
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := NewRunnerContext("<eval>", reader, GetLogger(nil), false)
@@ -229,7 +229,7 @@ func SimplePipeline (symbols * SymbolTable, queryPattern string, outputGrammar G
 	if symbols != nil {
 		next := pipeline
 		pipeline = func(value Value) {
-			next(symbols.Eval(value))
+			next(Eval(symbols, value))
 		}
 	}
 	if queryPattern != "" {

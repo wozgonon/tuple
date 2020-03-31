@@ -51,7 +51,7 @@ func TestExpr(t *testing.T) {
 	testFloatExpressionFailParse(t, grammar, "-")
 
 	test := func(formula string, expected tuple.Value) {
-		val := tuple.Eval(grammar, symbols, formula)
+		val := tuple.ParseAndEval(grammar, symbols, formula)
 		if val != expected {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}
@@ -85,7 +85,7 @@ func TestArithmeticAndLogic(t *testing.T) {
 func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 	test := func (formula string) {
-		val := tuple.Eval(grammar, symbols, formula)
+		val := tuple.ParseAndEval(grammar, symbols, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -170,7 +170,7 @@ func testExprDeclareFunctions(t *testing.T, grammar tuple.Grammar) {
 	tuple.AddDeclareFunctions(symbols)
 	
 	test := func (formula string) {
-		val := tuple.Eval(grammar, symbols, formula)
+		val := tuple.ParseAndEval(grammar, symbols, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -179,4 +179,7 @@ func testExprDeclareFunctions(t *testing.T, grammar tuple.Grammar) {
 	test("if(true,1,2) == 1")
 	test("if(false,1,2) == 2")
 	test("if(false,1, cos(PI)) == -1")
+
+
+	// TODO test("for a (1 2) { for b (4 5) { a+b }} == ((5 6) (6 7))")
 }

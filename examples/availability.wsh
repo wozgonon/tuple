@@ -5,7 +5,7 @@ func unavailable percent { 24*360*(1-percent) }
 concat("Number of hours in a year: " 24*360)
 
 func days percent {
-     concat("Days unavailable per year at " concat(percent concat("% = " round(unavailable(percent)/24))))}
+     echo "Days unavailable per year at " concat(percent concat("% = " round(unavailable(percent)/24)))}
 
 func hours percent {
      concat("Hours unavailable per year at " concat(percent concat("% = " round(24*360*(1-percent)))))}
@@ -13,6 +13,10 @@ func hours percent {
 func minutes percent {
      concat("Minutes unavailable per year at " concat(percent concat("% = " round(24*360*(1-percent)*60))))}
 
+
+for period ("Days" "Hours") {
+	for percent (.99 .995 .999 .9999) {
+		(concat (concat period " unavailable per year at ") concat(percent concat("% = " round2(24*360*(1-percent)/24))))        }}
 
 days(.99)
 days(.995)

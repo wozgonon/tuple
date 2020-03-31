@@ -50,6 +50,7 @@ func AddBooleanAndArithmeticFunctions(table SymbolTable) SymbolTable {
 	table.Add("atan", math.Atan)
 	table.Add("atan2", math.Atan2)
 	table.Add("round", math.Round)
+	table.Add("round2", func(value float64) float64 { return math.Round(value*100)/100 }) // Not needed
 	table.Add("**", math.Pow)
 	table.Add("+", func (aa float64) float64 { return aa })
 	table.Add("-", func (aa float64) float64 { return -aa })
@@ -90,31 +91,45 @@ func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
 
 func AddDeclareFunctions(table SymbolTable) {
 
-	table.Add("get", func(atom Atom) Value {
-		return table.Call(atom, []Value{})
+	table.Add("get", func(context EvalContext, atom Atom) Value {
+		return context.Call(atom, []Value{})
 	})
-	table.Add("set", func(atom Atom, value Value) Value {
-		table.Add(atom.Name, func () Value {
+	table.Add("set", func(context EvalContext, atom Atom, value Value) Value {
+		context.Add(atom.Name, func () Value {
 			return value
 		})
 		return value
 	})
-	table.Add("func", func(atom Atom, arg Atom, code Value) Value {
-		table.Add(atom.Name, func (argValue Value) Value {
+	table.Add("func", func(context EvalContext, atom Atom, arg Atom, code Value) Value {
+		context.Add(atom.Name, func (argValue Value) Value {
 			newScope := NewSymbolTable(&table)
 			newScope.Add(arg.Name, func () Value {
 				return argValue
 			})
-			return newScope.Eval(code)
+			return Eval(&newScope, code)
 		})
 		return atom
 	})
-	table.Add("if", func(condition Value, trueCode Value, falseCode Value) Value {
-		if toBool(table.Eval(condition)) {
-			return table.Eval(trueCode)
+	table.Add("if", func(context EvalContext, condition Value, trueCode Value, falseCode Value) Value {
+		if toBool(Eval(context, condition)) {
+			return Eval(context, trueCode)
 		} else {
-			return table.Eval(falseCode)
+			return Eval(context, falseCode)
 		}
+	})
+	table.Add("for", func(context EvalContext, atom Atom, list Tuple, code Value) Tuple {
+		var iterator Value = nil
+		newScope := NewSymbolTable(context)
+		newScope.Add(atom.Name, func () Value {
+			return iterator
+		})
+		result := NewTuple()
+		for _, v := range list.List {
+			iterator = v
+			value := Eval(&newScope, code)
+			result.Append(value)
+		}
+		return result
 	})
 }
 
@@ -214,10 +229,11 @@ func AddOperatinSystemFunctions(table SymbolTable) {
 	table.Add("exec", executeProcess0)
 	table.Add("spawn", spawnProcess)
 	table.Add("pipe", Pipe)
-
-	table.Add("echo", func (values... Value) bool {
+	
+	table.Add("echo", func (context EvalContext, values... Value) bool {
 		for k,_:= range values {
-			fmt.Print(toString(values[k]))
+			evaluated := Eval(context, values[k])  // TODO This should use table from context so that it uses scope
+			fmt.Print(toString(evaluated))
 		}
 		return true
 	})
