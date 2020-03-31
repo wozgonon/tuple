@@ -35,51 +35,11 @@ import "strconv"
 
 type SymbolTable struct {
 	symbols map[string]reflect.Value
-	ifFunctionNotFound FunctionNotFound
+	ifFunctionNotFound CallHandler
 }
 
-func NewSymbolTable(notFound FunctionNotFound) SymbolTable {
+func NewSymbolTable(notFound CallHandler) SymbolTable {
 	return SymbolTable{map[string]reflect.Value{},notFound}
-}
-
-type FunctionNotFound func(name Atom, args [] Value) Value
-
-func (table * SymbolTable) Count() int {
-	return len(table.symbols)
-}
-
-func (table * SymbolTable) Add(name string, function interface{}) {
-	reflectValue := reflect.ValueOf(function)
-	typ := reflectValue.Type()
-	key := makeKey(name, typ.NumIn())
-	table.symbols[key] = reflectValue
-}
-
-func (table SymbolTable) Call(head Atom, args []Value) Value {
-
-	name := head.Name
-	nn := len(args)
-
-	key := makeKey(name, nn)
-	f, ok := table.symbols[key]
-	if ok {
-		t := f.Type()
-		reflectedArgs := make([]reflect.Value, nn)
-		for k,v:= range args {
-			expectedType := t.In(k)
-			if expectedType == AtomType {
-				reflectedArgs[k] = reflect.ValueOf(v)
-			} else if expectedType == TupleType {
-				reflectedArgs[k] = reflect.ValueOf(v)
-			} else {
-				evaluated := table.Eval(v)
-				reflectedArgs[k] = mapToReflectValue(evaluated, expectedType)
-			}
-		}
-		reflectValue := f.Call(reflectedArgs)
-		return mapFromReflectValue(reflectValue)
-	}
-	return table.ifFunctionNotFound(head, args)
 }
 
 func ValuesToStrings(values []Value) []string {
@@ -94,7 +54,66 @@ func makeKey(name string, arity int) string {
 	return fmt.Sprintf("%d_%s", arity, name)
 }
 
-func (table SymbolTable) Eval(expression Value) Value {
+
+func (table * SymbolTable) Count() int {
+	return len(table.symbols)
+}
+
+func (table * SymbolTable) Add(name string, function interface{}) {
+	reflectValue := reflect.ValueOf(function)
+	typ := reflectValue.Type()
+	key := makeKey(name, typ.NumIn())
+	table.symbols[key] = reflectValue
+}
+
+func (table * SymbolTable) Call(head Atom, args []Value) Value {  // Reduce
+
+	//name := head.Name
+	nn := len(args)
+
+	f := table.Find(head, args)
+	t := f.Type()
+	
+	reflectedArgs := make([]reflect.Value, nn)
+	for k,v:= range args {
+		if t.IsVariadic() {
+			reflectedArgs[k] = reflect.ValueOf(v)
+		} else {
+			expectedType := t.In(k)
+			if expectedType == AtomType {
+				reflectedArgs[k] = reflect.ValueOf(v)
+			} else if expectedType == TupleType {
+				reflectedArgs[k] = reflect.ValueOf(v)
+			} else if expectedType == ValueType {
+				reflectedArgs[k] = reflect.ValueOf(v)
+			} else {
+				//fmt.Printf("Eval %s expectedType=%s\n", v, expectedType)
+				evaluated := table.Eval(v)
+				reflectedArgs[k] = mapToReflectValue(evaluated, expectedType)
+			}
+		}
+	}
+	//fmt.Printf("Call '%s' (%s)   f=%s\n", head, reflectedArgs, f)
+	reflectValue := f.Call(reflectedArgs)
+	return mapFromReflectValue(reflectValue)
+}
+
+func (table * SymbolTable) Find(head Atom, args []Value) reflect.Value {  // Reduce
+
+	name := head.Name
+	nn := len(args)
+
+	//fmt.Printf("Call '%s' nn=%d count=%d\n", name, nn, table.Count())
+
+	key := makeKey(name, nn)
+	f, ok := table.symbols[key]
+	if ok {
+		return f
+	}
+	return table.ifFunctionNotFound.Find(head, args)
+}
+
+func (table * SymbolTable) Eval(expression Value) Value {
 
 	switch val := expression.(type) {
 	case Tuple:
@@ -124,15 +143,16 @@ var FloatType = reflect.TypeOf(float64(1.0))
 var BoolType = reflect.TypeOf(true)
 var StringType = reflect.TypeOf("")
 var TupleType = reflect.TypeOf(NewTuple())
-var AtomType = reflect.TypeOf(Atom{""})
 
+
+var AtomType = reflect.TypeOf(Atom{""})
 var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
 
 
 func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 
 	_, isTuple := v.(Tuple)
-	//_, isAtom := v.(Atom)
+	_, isAtom := v.(Atom)
 
 	var result interface{}
 	
@@ -142,7 +162,10 @@ func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 	case FloatType: result = toFloat64(v)
 	case BoolType: result = toBool(v)
 	case StringType: result = toString(v)
-	case AtomType: result = v
+	case AtomType:
+		if isAtom {
+			result = v
+		}
 	case TupleType:
 		if isTuple {
 			result = v
@@ -166,7 +189,9 @@ func mapFromReflectValue (in []reflect.Value) Value {
 	case TupleType: return v.Interface().(Tuple)
 	case AtomType: return v.Interface().(Atom)
 	case ValueType: return v.Interface().(Value)
-	default: return Float64(in[0].Float()) // TODO
+	default:
+		fmt.Printf("Cannot find type of '%s'\n", v)
+		return NAN
 	}
 }
 

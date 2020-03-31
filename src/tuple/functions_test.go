@@ -7,7 +7,7 @@ import (
 
 func TestBuildSymbolTable(t *testing.T) {
 
-	symbols := tuple.NewSymbolTable(tuple.ErrorIfFunctionNotFound)
+	symbols := tuple.NewSymbolTable(&tuple.ErrorIfFunctionNotFound{})
 	//if symbols.FunctionNotFound != tuple.ErrorIfFunctionNotFound {
 	//	t.Errorf("Expected error function")
 	//}

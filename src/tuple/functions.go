@@ -25,18 +25,21 @@ import "os/exec"
 import "os"
 import "bytes"
 
-func ErrorIfFunctionNotFound(name Atom, args [] Value) Value {
-	fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
-	return Bool(false)
-}
+func AddStringFunctions(table SymbolTable) SymbolTable {
+	table.Add("len", func(value string) int64 { return int64(len(value)) })
+	table.Add("lower", strings.ToLower)
+	table.Add("join", func (separator string, tuple Tuple) string { return strings.Join(ValuesToStrings(tuple.List), separator) })
+	table.Add("concat", func (aa string, bb string) string { return aa + bb })
+	table.Add("upper", strings.ToUpper)
 
+	return table
+}
 
 // These functions are harmless, one can execute them from a script and not cause any damage.
 func AddBooleanAndArithmeticFunctions(table SymbolTable) SymbolTable {
 
-	table.Add("len", func(value string) int64 { return int64(len(value)) })
-	table.Add("lower", strings.ToLower)
-	table.Add("upper", strings.ToUpper)
+	AddStringFunctions(table)
+	
 	table.Add("exp", math.Exp)
 	table.Add("log", math.Log)
 	table.Add("sin", math.Sin)
@@ -54,7 +57,8 @@ func AddBooleanAndArithmeticFunctions(table SymbolTable) SymbolTable {
 	table.Add("-", func (aa float64, bb float64) float64 { return aa-bb })
 	table.Add("*", func (aa float64, bb float64) float64 { return aa*bb })
 	table.Add("/", func (aa float64, bb float64) float64 { return aa/bb })
-	table.Add("==", func (aa float64, bb float64) bool { return aa==bb })
+	table.Add("eq", func (aa string, bb string) bool { return aa==bb })  // Should take Value as argument
+	table.Add("==", func (aa float64, bb float64) bool { return aa==bb })  // Should take Value as argument
 	table.Add("!=", func (aa float64, bb float64) bool { return aa!=bb })
 	table.Add(">=", func (aa float64, bb float64) bool { return aa>=bb })
 	table.Add("<=", func (aa float64, bb float64) bool { return aa<=bb })
@@ -74,7 +78,7 @@ func AddBooleanAndArithmeticFunctions(table SymbolTable) SymbolTable {
 
 
 // These functions are harmless, one can execute them from a script and not cause any damage.
-func NewSafeSymbolTable(notFound FunctionNotFound) SymbolTable {
+func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
 	table := NewSymbolTable(notFound)
 	AddBooleanAndArithmeticFunctions(table)
 	return table
@@ -96,9 +100,12 @@ func AddDeclareFunctions(table SymbolTable) {
 		return value
 	})
 	table.Add("func", func(atom Atom, arg Atom, code Value) Value {
-		table.Add(atom.Name, func (arg Atom) Value {
-			// Set atom
-			return table.Eval(code)
+		table.Add(atom.Name, func (argValue Value) Value {
+			newScope := NewSymbolTable(&table)
+			newScope.Add(arg.Name, func () Value {
+				return argValue
+			})
+			return newScope.Eval(code)
 		})
 		return atom
 	})
@@ -210,14 +217,27 @@ func AddOperatinSystemFunctions(table SymbolTable) {
 
 }
 
-func ExecIfNotFound(name Atom, args [] Value) Value {
+type ErrorIfFunctionNotFound struct {}
 
-	return Bool(executeProcess(name.Name, ValuesToStrings(args)...))
+func (function * ErrorIfFunctionNotFound) Find(name Atom, args [] Value) reflect.Value {
+	return reflect.ValueOf(func(args... Value) bool {
+		fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
+		return false
+	})
+}
+
+type ExecIfNotFound struct {}
+
+func (exec * ExecIfNotFound) Find (name Atom, args [] Value) reflect.Value {
+
+	return reflect.ValueOf(func(args... Value) bool {
+		return executeProcess(name.Name, ValuesToStrings(args)...)
+	})
 }
 
 // These functions are potentially not harmless
 func NewUnSafeSymbolTable() SymbolTable {
-	table := SymbolTable{map[string]reflect.Value{},ExecIfNotFound}
+	table := SymbolTable{map[string]reflect.Value{},&ExecIfNotFound{}}
 	AddBooleanAndArithmeticFunctions(table)
 	AddDeclareFunctions(table)
 	AddOperatinSystemFunctions(table)

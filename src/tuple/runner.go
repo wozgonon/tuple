@@ -151,7 +151,6 @@ func Eval(grammar Grammar, symbols SymbolTable, expression string) Value {
 	pipeline := func(value Value) {
 		result = symbols.Eval(value)
 	}
-
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := NewRunnerContext("<eval>", reader, GetLogger(nil), false)
 	//fmt.Printf("*** Eval: '%s'\n", expression)

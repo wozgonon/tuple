@@ -34,6 +34,18 @@ type StringFunction func(value string)
 type Next func(value Value)
 type Logger func(context Context, level string, message string)
 
+type CallHandler interface {
+	Find(name Atom, args [] Value) reflect.Value
+}
+
+/*
+type Eval interface {
+	Count() int
+	Add(name string, function interface{})
+	Call(head Atom, args []Value) Value  // Reduce
+	Eval(expression Value) Value
+}*/
+	 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer and Values
 /////////////////////////////////////////////////////////////////////////////

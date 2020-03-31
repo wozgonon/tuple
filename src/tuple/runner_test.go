@@ -61,7 +61,7 @@ func testFiles(t *testing.T) {
 
 func TestSimplePipeline(t *testing.T) {
 
-	table := tuple.NewSafeSymbolTable(tuple.ErrorIfFunctionNotFound)
+	table := tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})
 	tuple.SimplePipeline(&table, "*", tuple.NewLispGrammar(), func (_ string) {})
 	// TODO
 }

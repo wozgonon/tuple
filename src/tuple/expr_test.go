@@ -8,7 +8,7 @@ import (
 
 
 var grammar = tuple.NewInfixExpressionGrammar()
-var symbols = tuple.NewSafeSymbolTable(tuple.ErrorIfFunctionNotFound)  // TODO perhaps another default function would be better
+var symbols = tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 
 
 func TestExpr1(t *testing.T) {
@@ -154,14 +154,19 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 	test("len(\"abcde\")==5")
 	test("1+len(\"abcde\")==6")
 	test("len(upper(\"abc\"))==3")
-	//test("upper(\"abc\")==\"ABC\"")
-	//test("upper(lower(\"aBc\"))==\"ABC\"")
+	test("eq(upper(\"abc\"),\"ABC\")")
+	test("eq(upper(lower(\"aBc\")),\"ABC\")")
+
+	test("eq(\"ab\",\"ab\")")
+	test("eq(eq(\"ad\",\"ab\"),false)")
+	test("eq(concat(\"ab\",\"cde\"),\"abcde\")")
+	test("eq(join(\"-\",(\"abc\",\"def\",\"ghi\")),\"abc-def-ghi\")")
 }
 
 
 func testExprDeclareFunctions(t *testing.T, grammar tuple.Grammar) {
 
-	var symbols = tuple.NewSafeSymbolTable(tuple.ErrorIfFunctionNotFound)  // TODO perhaps another default function would be better
+	var symbols = tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	tuple.AddDeclareFunctions(symbols)
 	
 	test := func (formula string) {
