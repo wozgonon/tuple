@@ -119,12 +119,18 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 		if t.IsVariadic() {
 			reflectedArgs[k] = reflect.ValueOf(v)
 		} else {
+			_, isTuple := v.(Tuple)
+			_, isAtom := v.(Atom)
+			
 			expectedType := t.In(k)
-			if expectedType == AtomType {
+			if expectedType == AtomType && isAtom {
+				// TODO make sure it is a Atom
 				reflectedArgs[k] = reflect.ValueOf(v)
-			} else if expectedType == TupleType {
+			} else if expectedType == TupleType && isTuple {
+				// TODO make sure it is a Tuple
 				reflectedArgs[k] = reflect.ValueOf(v)
 			} else if expectedType == ValueType {
+				// TODO make sure it is a Value
 				reflectedArgs[k] = reflect.ValueOf(v)
 			} else {
 				//fmt.Printf("Eval %s expectedType=%s\n", v, expectedType)
@@ -215,7 +221,7 @@ func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
 		result = v
 	default:
 		fmt.Printf("ERROR should not get here Expected type: '%s' v=%s", expected, v) // TODO
-		result = float64(v.(Float64)) // TODO???
+		result = v //float64(v.(Float64)) // TODO???
 	}
 	return reflect.ValueOf(result)
 }

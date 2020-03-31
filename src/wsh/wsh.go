@@ -57,10 +57,7 @@ func main () {
 
 	grammars := tuple.NewGrammars()
 	grammars.Add(inputGrammar)
-	files := []string{}
-	if len(os.Args) > 0 {
-		files = os.Args[1:]
-	}
+	files := tuple.GetRemainingNonFlagOsArgs()
 	errors := tuple.RunFiles(files, tuple.GetLogger(nil), *verbose, inputGrammar, &grammars, pipeline)
 
 	if errors > 0 {

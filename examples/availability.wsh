@@ -14,9 +14,11 @@ func minutes percent {
      concat("Minutes unavailable per year at " concat(percent concat("% = " round(24*360*(1-percent)*60))))}
 
 
-for period ("Days" "Hours") {
+for period (("Days" 1/24) ("Hours" 1) ("Minutes" 60)) {
 	for percent (.99 .995 .999 .9999) {
-		(concat (concat period " unavailable per year at ") concat(percent concat("% = " round2(24*360*(1-percent)/24))))        }}
+		set(s at(0 period))
+		set(m at(1 period))
+		(concat (concat s " unavailable per year at ") concat(percent concat("% = " round2(24*360*(1-percent)/m)))) }}
 
 days(.99)
 days(.995)

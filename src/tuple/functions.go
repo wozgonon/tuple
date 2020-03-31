@@ -244,6 +244,9 @@ func AddOperatingSystemFunctions(table SymbolTable) {
 		}
 		return true
 	})
+	table.Add("eval", func (context EvalContext, value Value) Value {
+		return Eval(context, value)
+	})
 }
 
 type ErrorIfFunctionNotFound struct {}

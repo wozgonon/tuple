@@ -111,9 +111,7 @@ func main() {
 		//
 		//  Run the translators over all the input files.
 		//
-		args := len(os.Args)
-		numberOfFiles := flag.NArg()
-		files := os.Args[args-numberOfFiles:]
+		files := tuple.GetRemainingNonFlagOsArgs()
 		errors := tuple.RunFiles(files, logger, *verbose, inputGrammar, &grammars, pipeline)
 
 		//

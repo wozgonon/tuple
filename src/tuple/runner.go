@@ -22,6 +22,7 @@ import 	"fmt"
 import 	"bufio"
 import 	"os"
 import 	"strings"
+import "flag"
 
 /////////////////////////////////////////////////////////////////////////////
 // For running the language translations
@@ -240,4 +241,10 @@ func SimplePipeline (symbols * SymbolTable, queryPattern string, outputGrammar G
 		}
 	}
 	return pipeline
+}
+
+func GetRemainingNonFlagOsArgs() []string {
+	args := len(os.Args)
+	numberOfFiles := flag.NArg()
+	return os.Args[args-numberOfFiles:]
 }
