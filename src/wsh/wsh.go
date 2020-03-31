@@ -56,7 +56,12 @@ func main () {
 	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
 
 	grammars := tuple.NewGrammars()
-	errors := tuple.RunFiles([]string{}, tuple.GetLogger(nil), *verbose, inputGrammar, &grammars, pipeline)
+	grammars.Add(inputGrammar)
+	files := []string{}
+	if len(os.Args) > 0 {
+		files = os.Args[1:]
+	}
+	errors := tuple.RunFiles(files, tuple.GetLogger(nil), *verbose, inputGrammar, &grammars, pipeline)
 
 	if errors > 0 {
 		os.Exit(1)

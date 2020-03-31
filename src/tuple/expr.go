@@ -148,7 +148,7 @@ func (grammar ShellGrammar) Name() string {
 }
 
 func (grammar ShellGrammar) FileSuffix() string {
-	return ".sh"
+	return ".wsh"
 }
 
 func (grammar ShellGrammar) Parse(context Context, next Next) {

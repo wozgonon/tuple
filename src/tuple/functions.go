@@ -215,6 +215,12 @@ func AddOperatinSystemFunctions(table SymbolTable) {
 	table.Add("spawn", spawnProcess)
 	table.Add("pipe", Pipe)
 
+	table.Add("echo", func (values... Value) bool {
+		for k,_:= range values {
+			fmt.Print(toString(values[k]))
+		}
+		return true
+	})
 }
 
 type ErrorIfFunctionNotFound struct {}

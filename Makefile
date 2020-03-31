@@ -86,9 +86,9 @@ test_arithmetic: ${TDIR}arithmetic.l test_dirs all
 	@bin/wozg --eval ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
-test_sh: ${TDIR}test.sh test_dirs all
-	bin/wozg --in .sh --out .sh $<  > ${T1DIR}$<
-	@bin/wozg --in .sh --out .sh ${T1DIR}$<  > ${T2DIR}$<
+test_sh: ${TDIR}test.wsh test_dirs all
+	bin/wozg --in .wsh --out .wsh $<  > ${T1DIR}$<
+	@bin/wozg --in .wsh --out .wsh ${T1DIR}$<  > ${T2DIR}$<
 	@diff -y --suppress-common-lines ${T1DIR}$< ${T2DIR}$<
 
 test_expr: ${TDIR}test.expr test_dirs all
@@ -163,7 +163,7 @@ test_wexpr: bin/wexpr all
 
 
 smoke: test test_dirs 
-	bin/wozg --out sh ${TDIR}test.sh
+	bin/wozg --out sh ${TDIR}test.wsh
 
 #############################################################################
 #  Clean up

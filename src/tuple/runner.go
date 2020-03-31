@@ -192,6 +192,7 @@ func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
 		context := NewRunnerContext(STDIN, reader, logger, verbose)
+		Verbose(&context, "STDIN isinteractive: %s", IsInteractive(&context))
 		context.EOL() // prompt
 		parse(&context)
 		errors += context.errors
