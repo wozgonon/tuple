@@ -66,6 +66,7 @@ func (context * RunnerContext) SourceName() string {
 }
 
 func (context * RunnerContext) Open() {
+	Verbose(context, "*OPEN")
 	context.depth += 1
 }
 
@@ -73,6 +74,7 @@ func (context * RunnerContext) Close() {
 	if context.depth > 0 {
 		context.depth -= 1
 	}
+	Verbose(context, "*CLOSE")
 }
 
 func (context * RunnerContext) EOL() {

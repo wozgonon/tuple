@@ -57,7 +57,10 @@ ${VERSION_FILE}:
 #   - rather than large numbers of tests with little coverage.
 #############################################################################
 
-test: version go_test test_basic test_arithmetic test_expr test_sh test_yaml test_json test_wexpr test_infix test_query 
+test: version go_test test_basic test_arithmetic test_expr test_sh test_yaml test_json test_wexpr test_infix test_query examples
+
+examples: test_dirs bin/wsh examples/availability.wsh
+	bin/wsh examples/availability.wsh > ${T1DIR}/availability.txt  && true
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/

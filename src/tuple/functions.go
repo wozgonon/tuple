@@ -29,7 +29,7 @@ func AddStringFunctions(table * SymbolTable) {
 	table.Add("len", func(value string) int64 { return int64(len(value)) })
 	table.Add("lower", strings.ToLower)
 	table.Add("join", func (context EvalContext, separator string, tuple Tuple) string { return strings.Join(EvalToStrings(context, tuple.List), separator) })
-	table.Add("concat", func (aa string, bb string) string { return aa + bb })
+	table.Add("concat", func (context EvalContext, values... Value) string  { return strings.Join(EvalToStrings(context, values), "") })
 	table.Add("upper", strings.ToUpper)
 }
 

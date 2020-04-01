@@ -116,21 +116,9 @@ func NewStyle(
 // Lexer
 /////////////////////////////////////////////////////////////////////////////
 
-func readRune(context Context, style Style) (rune, error) {
-	ch, err := context.ReadRune()
-	switch {
-	case err != nil: return ch, err
-	case ch == style.openChar, ch == style.openChar2  :
-		context.Open()
-	case ch == style.closeChar, ch == style.closeChar2 :
-		context.Close()
-	} 
-	return ch, nil
-}
-
 func (style Style) GetNext(context Context, eol func(), open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error {
 
-	ch, err := readRune(context, style)
+	ch, err := context.ReadRune()
 	switch {
 	case err != nil: return err
 	case err == io.EOF:
@@ -148,10 +136,10 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 			return err
 		}
 		// TODO next.NextComment
-	case ch == style.openChar : open(style.Open)
-	case ch == style.closeChar : close(style.Close)
-	case ch == style.openChar2 : open(style.Open2)
-	case ch == style.closeChar2 : close(style.Close2)
+	case ch == style.openChar : context.Open(); open(style.Open)
+	case ch == style.closeChar : context.Close(); close(style.Close)
+	case ch == style.openChar2 : context.Open(); open(style.Open2)
+	case ch == style.closeChar2 : context.Close(); close(style.Close2)
 		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
 	case ch == '"' :
 		value, err := ReadCLanguageString(context)

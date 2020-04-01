@@ -63,6 +63,7 @@ func NewSymbolTable(notFound CallHandler) SymbolTable {
 }*/
 
 func EvalToStrings(context EvalContext, values []Value) []string {
+
 	result := make([]string, len(values))
 	for k,_:= range values {
 		value := Eval(context, values[k])
@@ -71,9 +72,22 @@ func EvalToStrings(context EvalContext, values []Value) []string {
 	return result
 }
 
-func makeKey(name string, arity int) string {
+/*
+var b bytes.Buffer
+	for _,value := range values {
+		evaluated := Eval(context, value)
+		str := toString(context, evaluated)
+		b.WriteString(str)
+	}
+	return b.String()
+}*/
+
+func makeKey(name string, arity int, variadic bool) string {
 	//return name  // TODO do exact match then do a general match
-	 return fmt.Sprintf("%d_%s", arity, name)
+	if variadic {
+		return fmt.Sprintf("*_%s", name)
+	}
+	return fmt.Sprintf("%d_%s", arity, name)
 }
 
 
@@ -96,7 +110,7 @@ func (table * SymbolTable) Add(name string, function interface{}) {
 			nn -= 1
 		}
 	}
-	key := makeKey(name, nn)
+	key := makeKey(name, nn, typ.IsVariadic())
 	table.symbols[key] = reflectValue
 }
 
@@ -210,12 +224,15 @@ func (table * SymbolTable) Find(context EvalContext, head Atom, args []Value) re
 
 	//fmt.Printf("Call '%s' nn=%d count=%d\n", name, nn, table.Count())
 
-	key := makeKey(name, nn)
-	f, ok := table.symbols[key]
-	if ok {
-		context.Log ("TRACE", "FIND Found '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
-		return f
+	for _, variadic := range []bool{ false, true } {
+	key := makeKey(name, nn, variadic)
+		f, ok := table.symbols[key]
+		if ok {
+			context.Log ("TRACE", "FIND Found '%s' variadic=%s in this symbol table (%d entries), forwarding",  head, variadic, len(table.symbols))
+			return f
+		}
 	}
+	
 	context.Log ("TRACE", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
 	// TODO look up variatic functions
 	return table.ifFunctionNotFound.Find(context, head, args)

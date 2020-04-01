@@ -3,10 +3,14 @@
 func unavailable percent { 24*360*(1-percent) }
 
 func availabilityTable arg {
-    concat("Number of hours in a year: " 24*360)
-    for period (("Days" 1/24) ("Hours" 1) ("Minutes" 60)) {
+    (concat "Number of hours in a year: " 24*360)
+    (for period (("Days" 1/24) ("Hours" 1) ("Minutes" 60)) {
 	    for percent (.99 .995 .999 .9999) {
-		    (concat (concat at(0 period) " unavailable per year at ") concat(percent concat("% = " round2(unavailable(percent)/at(1 period))))) }}}
+		    concat  at(0 period) " unavailable per year at " percent "% = " round2(unavailable(percent)/at(1 period))
+		}
+	    })
+
+}
 
 
-
+availabilityTable(1)
