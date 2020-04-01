@@ -54,19 +54,19 @@ func NewSymbolTable(notFound CallHandler) SymbolTable {
 	return SymbolTable{map[string]reflect.Value{},notFound}
 }
 
-func ValuesToStrings(values []Value) []string {
+/*func ValuesToStrings(values []Value) []string {
 	result := make([]string, len(values))
 	for k,_:= range values {
 		result[k] = toString(values[k])
 	}
 	return result
-}
+}*/
 
 func EvalToStrings(context EvalContext, values []Value) []string {
 	result := make([]string, len(values))
 	for k,_:= range values {
 		value := Eval(context, values[k])
-		result[k] = toString(value)
+		result[k] = toString(context, value)
 	}
 	return result
 }
@@ -114,7 +114,7 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	//name := head.Name
 	nn := len(args)
 
-	f := table.Find(head, args)
+	f := table.Find(context, head, args)
 	t := f.Type()
 
 	start := 0
@@ -127,7 +127,6 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	}
 	
 	for key,v:= range args {
-
 		k := start + key
 		var result interface{}
 		if t.IsVariadic() {
@@ -142,34 +141,48 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 			switch  {
 			case expectedType == AtomType && isAtom: result = v
 			case expectedType == TupleType && isTuple: result = v.(Tuple) //newTuple := evalTuple(context, v.(Tuple))
+			case expectedType == ValueType: result = v //newTuple := evalTuple(context, v.(Tuple))
 			default:
-				v := Eval(context, v)
+				evaluated := Eval(context, v)
+				context.Log("TRACE", "** EVAL head=%s  v=%s-> evaluated=%s type=(%s) expectedType=%s", head, v, evaluated, reflect.TypeOf(evaluated), expectedType)
 				/// TODO should this take a Scalar or a Value?
 				switch expectedType {
-				case IntType: result = toInt64(v)
-				case FloatType: result = toFloat64(v)
-				case BoolType: result = toBool(v)
-				case StringType: result = toString(v)
+				case IntType: result = toInt64(context, evaluated)
+				case FloatType: result = toFloat64(context, evaluated)
+				case BoolType: result = toBool(evaluated)
+				case StringType: result = toString(context, evaluated)
 				case AtomType:
-					if isAtom {
-						result = v
+					if _, isAtom := evaluated.(Atom); isAtom {
+						result = evaluated
+					} else {
+						context.Log("ERROR", "Expected atom but got: %s", evaluated)
+						result = Atom{""}
 					}
 				case TupleType:
-					if isTuple {
-						result = v
+					context.Log("TRACE", "** TUPLE isTuple=%s evaluated=%s", isTuple, evaluated)
+					if _, isTuple := evaluated.(Tuple); isTuple {
+						result = evaluated
+					} else {
+						context.Log("ERROR", "Expected tuple but got: %s", evaluated)
+						result = NewTuple()
 					}
 				case ValueType:
-					result = v
+					result = evaluated
 				default:
-					fmt.Printf("ERROR should not get here Expected type: '%s' v=%s", expectedType, v) // TODO
-					result = v //float64(v.(Float64)) // TODO???
+					context.Log("ERROR", "should not get here Expected type: '%s' v=%s", expectedType, evaluated) // TODO
+					result = evaluated //float64(v.(Float64)) // TODO???
 				}
 			}
-			reflectedArgs[k] = reflect.ValueOf(result)
 		}
+		if result == nil {
+			context.Log("ERROR", "MUST not be nil v=%s head=%s", v, head)
+		}
+		context.Log("TRACE", "Call '%s' arg=%d value=%s", head, k, result)
+		reflectedArgs[k] = reflect.ValueOf(result)
 	}
+	context.Log("TRACE", "Call '%s' (%s)", head, reflectedArgs)
 	reflectValue := f.Call(reflectedArgs)
-	context.Log("TRACE", "Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValue)
+	context.Log("TRACE", "  Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValue)
 
 	in := reflectValue
 	if len(in) == 0  {
@@ -190,7 +203,7 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	}
 }
 
-func (table * SymbolTable) Find(head Atom, args []Value) reflect.Value {  // Reduce
+func (table * SymbolTable) Find(context EvalContext, head Atom, args []Value) reflect.Value {  // Reduce
 
 	name := head.Name
 	nn := len(args)
@@ -200,10 +213,12 @@ func (table * SymbolTable) Find(head Atom, args []Value) reflect.Value {  // Red
 	key := makeKey(name, nn)
 	f, ok := table.symbols[key]
 	if ok {
+		context.Log ("TRACE", "FIND Found '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
 		return f
 	}
+	context.Log ("TRACE", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
 	// TODO look up variatic functions
-	return table.ifFunctionNotFound.Find(head, args)
+	return table.ifFunctionNotFound.Find(context, head, args)
 }
 
 func Eval(context EvalContext, expression Value) Value {
@@ -244,7 +259,7 @@ var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
 var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
 
 
-func toString(value Value) string {
+func toString(context EvalContext, value Value) string {
 	switch val := value.(type) {
 	case Atom: return val.Name
 	case String: return string(val)  // Quote ???
@@ -256,7 +271,9 @@ func toString(value Value) string {
 		} else {
 			return "false"
 		}
-	default: return "..." // TODO
+	default: 
+		context.Log("ERROR", "cannot convert '%s' to string", value)
+		return "..." // TODO
 	}
 }
 
@@ -274,12 +291,10 @@ func toBool(value Value) bool {
 	}
 }
 
-func toFloat64(value Value) float64 {
+func toFloat64(context EvalContext, value Value) float64 {
 	switch val := value.(type) {
 	case Int64: return float64(val)
 	case Float64: return float64(val)
-	case Atom: return math.NaN()
-	case String: return math.NaN()
 	case Bool:
 		if val {
 			return 1
@@ -287,11 +302,12 @@ func toFloat64(value Value) float64 {
 			return 0
 		}
 	default:
+		context.Log("ERROR", "cannot convert '%s' to float", value)
 		return math.NaN()
 	}
 }
 
-func toInt64(value Value) int64 {
+func toInt64(context EvalContext, value Value) int64 {
 	switch val := value.(type) {
 	case Int64: return int64(val)
 	case Float64: return int64(val)
@@ -301,8 +317,8 @@ func toInt64(value Value) int64 {
 		} else {
 			return 0
 		}
-	case Atom: return -1 // TODO
 	default:
+		context.Log("ERROR", "cannot convert '%s' to int", value)
 		return -1 //TODO
 	}
 }

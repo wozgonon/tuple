@@ -125,10 +125,12 @@ func AddDeclareFunctions(table * SymbolTable) {
 	})
 	table.Add("set", Assign)
 	table.Add("func", func(context EvalContext, atom Atom, arg Atom, code Value) Value {
-		context.Add(atom.Name, func (argValue Value) Value {
-			newScope := NewSymbolTable(table)
+		context.Add(atom.Name, func (context1 EvalContext, argValue Value) Value {
+			evaluated := Eval(context1, argValue)
+			context.Log("TRACE", "** FUNC %s argName=%s argValue: %s evaluated:%s", atom.Name, arg.Name, argValue, evaluated)
+			newScope := NewSymbolTable(context1)
 			newScope.Add(arg.Name, func () Value {
-				return argValue
+				return evaluated
 			})
 			return Eval(&newScope, code)
 		})
@@ -257,7 +259,7 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 	table.Add("echo", func (context EvalContext, values... Value) bool {
 		for k,_:= range values {
 			evaluated := Eval(context, values[k])  // TODO This should use table from context so that it uses scope
-			fmt.Print(toString(evaluated))
+			fmt.Print(toString(context, evaluated))
 		}
 		return true
 	})
@@ -271,7 +273,7 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 
 type ErrorIfFunctionNotFound struct {}
 
-func (function * ErrorIfFunctionNotFound) Find(name Atom, args [] Value) reflect.Value {
+func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Atom, args [] Value) reflect.Value {
 	return reflect.ValueOf(func(args... Value) bool {
 		fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
 		return false
@@ -280,7 +282,7 @@ func (function * ErrorIfFunctionNotFound) Find(name Atom, args [] Value) reflect
 
 type ExecIfNotFound struct {}
 
-func (exec * ExecIfNotFound) Find (name Atom, args [] Value) reflect.Value {
+func (exec * ExecIfNotFound) Find (context EvalContext, name Atom, args [] Value) reflect.Value {
 
 	return reflect.ValueOf(func(context EvalContext, args... Value) bool {
 		return executeProcess(name.Name, EvalToStrings(context, args)...)

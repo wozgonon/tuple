@@ -177,7 +177,7 @@ type LocationContext interface {
 }
 
 type CallHandler interface {
-	Find(name Atom, args [] Value) reflect.Value
+	Find(context EvalContext, name Atom, args [] Value) reflect.Value
 }
 
 /*
