@@ -167,7 +167,7 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 func testExprDeclareFunctions(t *testing.T, grammar tuple.Grammar) {
 
 	var symbols = tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
-	tuple.AddDeclareFunctions(symbols)
+	tuple.AddDeclareFunctions(&symbols)
 	
 	test := func (formula string) {
 		val := tuple.ParseAndEval(grammar, symbols, formula)

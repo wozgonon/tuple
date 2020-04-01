@@ -42,8 +42,11 @@ func (context * SymbolTable) Call(head Atom, args []Value) Value {
 	return context.call3(context, head, args)
 }
 
-func (context * SymbolTable) Log(format string, level string, args ...interface{}) {
-	fmt.Printf(level + " " + format + "\n", args)
+func (context * SymbolTable) Log(level string, format string, args ...interface{}) {
+	if level == "VERBOSE" || level == "TRACE" {  // TODO
+		return
+	}
+	fmt.Printf(level + " " + format + "\n", args...)
 }
 
 
@@ -69,7 +72,8 @@ func EvalToStrings(context EvalContext, values []Value) []string {
 }
 
 func makeKey(name string, arity int) string {
-	return fmt.Sprintf("%d_%s", arity, name)
+	//return name  // TODO do exact match then do a general match
+	 return fmt.Sprintf("%d_%s", arity, name)
 }
 
 
@@ -96,6 +100,15 @@ func (table * SymbolTable) Add(name string, function interface{}) {
 	table.symbols[key] = reflectValue
 }
 
+func evalTuple(context EvalContext, tuple Tuple) Tuple {
+	newTuple := NewTuple()
+	for _,v:= range tuple.List {
+		newTuple.Append(Eval(context, v))
+	}
+	context.Log("TRACE", "Eval tuple return '%s'", newTuple)
+	return newTuple
+}
+
 func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) Value {  // Reduce
 
 	//name := head.Name
@@ -116,32 +129,65 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	for key,v:= range args {
 
 		k := start + key
+		var result interface{}
 		if t.IsVariadic() {
-			reflectedArgs[k] = reflect.ValueOf(v)
+			context.Log("VERBOSE", "isvariadic='%s' ", t) 
+			result = v
 		} else {
 			_, isTuple := v.(Tuple)
 			_, isAtom := v.(Atom)
 			
 			expectedType := t.In(k)
-			if expectedType == AtomType && isAtom {
-				// TODO make sure it is a Atom
-				reflectedArgs[k] = reflect.ValueOf(v)
-			} else if expectedType == TupleType && isTuple {
-				// TODO make sure it is a Tuple
-				reflectedArgs[k] = reflect.ValueOf(v)
-			} else if expectedType == ValueType {
-				// TODO make sure it is a Value
-				reflectedArgs[k] = reflect.ValueOf(v)
-			} else {
-				//fmt.Printf("Eval %s expectedType=%s\n", v, expectedType)
-				evaluated := Eval(context, v)
-				reflectedArgs[k] = mapToReflectValue(evaluated, expectedType)
+			context.Log("VERBOSE", "expected type='%s' got '%s'", expectedType, v)
+			switch  {
+			case expectedType == AtomType && isAtom: result = v
+			case expectedType == TupleType && isTuple: result = v.(Tuple) //newTuple := evalTuple(context, v.(Tuple))
+			default:
+				v := Eval(context, v)
+				/// TODO should this take a Scalar or a Value?
+				switch expectedType {
+				case IntType: result = toInt64(v)
+				case FloatType: result = toFloat64(v)
+				case BoolType: result = toBool(v)
+				case StringType: result = toString(v)
+				case AtomType:
+					if isAtom {
+						result = v
+					}
+				case TupleType:
+					if isTuple {
+						result = v
+					}
+				case ValueType:
+					result = v
+				default:
+					fmt.Printf("ERROR should not get here Expected type: '%s' v=%s", expectedType, v) // TODO
+					result = v //float64(v.(Float64)) // TODO???
+				}
 			}
+			reflectedArgs[k] = reflect.ValueOf(result)
 		}
 	}
-	//fmt.Printf("Call '%s' (%s)   f=%s\n", head, reflectedArgs, f)
 	reflectValue := f.Call(reflectedArgs)
-	return mapFromReflectValue(reflectValue)
+	context.Log("TRACE", "Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValue)
+
+	in := reflectValue
+	if len(in) == 0  {
+		return EMPTY  // TODO VOID
+	}
+	v:= in[0]
+	switch v.Type() {
+	case IntType: return Int64(v.Int())
+	case FloatType: return Float64(v.Float())
+	case BoolType: return Bool(v.Bool())
+	case StringType: return String(v.String())
+	case TupleType: return v.Interface().(Tuple)
+	case AtomType: return v.Interface().(Atom)
+	case ValueType: return v.Interface().(Value)
+	default:
+		context.Log("ERROR", "Cannot find type of '%s'", v)
+		return NAN
+	}
 }
 
 func (table * SymbolTable) Find(head Atom, args []Value) reflect.Value {  // Reduce
@@ -156,6 +202,7 @@ func (table * SymbolTable) Find(head Atom, args []Value) reflect.Value {  // Red
 	if ok {
 		return f
 	}
+	// TODO look up variatic functions
 	return table.ifFunctionNotFound.Find(head, args)
 }
 
@@ -173,7 +220,8 @@ func Eval(context EvalContext, expression Value) Value {
 		}
 		atom, ok := head.(Atom)
 		if ! ok {
-			return val // TODO Handle case of list: (1 2 3)
+			return evalTuple(context, val)
+			//return val // TODO Handle case of list: (1 2 3)
 		}
 		return context.Call(atom, val.List[1:])
 	case Atom:
@@ -195,52 +243,6 @@ var AtomType = reflect.TypeOf(Atom{""})
 var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
 var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
 
-
-func mapToReflectValue (v Value, expected reflect.Type) reflect.Value {
-
-	_, isTuple := v.(Tuple)
-	_, isAtom := v.(Atom)
-
-	var result interface{}
-	
-	/// TODO should this take a Scalar or a Value?
-	switch expected {
-	case IntType: result = toInt64(v)
-	case FloatType: result = toFloat64(v)
-	case BoolType: result = toBool(v)
-	case StringType: result = toString(v)
-	case AtomType:
-		if isAtom {
-			result = v
-		}
-	case TupleType:
-		if isTuple {
-			result = v
-		}
-	case ValueType:
-		result = v
-	default:
-		fmt.Printf("ERROR should not get here Expected type: '%s' v=%s", expected, v) // TODO
-		result = v //float64(v.(Float64)) // TODO???
-	}
-	return reflect.ValueOf(result)
-}
-
-func mapFromReflectValue (in []reflect.Value) Value {
-	v:= in[0]
-	switch v.Type() {
-	case IntType: return Int64(v.Int())
-	case FloatType: return Float64(v.Float())
-	case BoolType: return Bool(v.Bool())
-	case StringType: return String(v.String())
-	case TupleType: return v.Interface().(Tuple)
-	case AtomType: return v.Interface().(Atom)
-	case ValueType: return v.Interface().(Value)
-	default:
-		fmt.Printf("Cannot find type of '%s'\n", v)
-		return NAN
-	}
-}
 
 func toString(value Value) string {
 	switch val := value.(type) {

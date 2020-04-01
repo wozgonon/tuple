@@ -112,7 +112,7 @@ func (context * RunnerContext) LookAhead() rune {
 
 }
 
-func (context * RunnerContext) Log(format string, level string, args ...interface{}) {
+func (context * RunnerContext) Log(level string, format string, args ...interface{}) {
 
 	switch level {
 	case "VERBOSE":

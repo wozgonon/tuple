@@ -16,9 +16,9 @@ func TestBuildSymbolTable(t *testing.T) {
 
 	}
 	count := symbols.Count()
-	tuple.AddBooleanAndArithmeticFunctions(symbols)
-	tuple.AddDeclareFunctions(symbols)
-	tuple.AddOperatingSystemFunctions(symbols)
+	tuple.AddBooleanAndArithmeticFunctions(&symbols)
+	tuple.AddDeclareFunctions(&symbols)
+	tuple.AddOperatingSystemFunctions(&symbols)
 	if symbols.Count() <= count {
 		t.Errorf("Expected functions to be added to symbol table")
 	}

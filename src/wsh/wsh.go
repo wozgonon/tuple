@@ -47,6 +47,7 @@ func main () {
 
 	table := tuple.NewUnSafeSymbolTable()
 	table.Add("|", tuple.Pipe)
+	table.Add("=", tuple.Assign)
 
 	var symbols * tuple.SymbolTable = nil
 	if !*ast {

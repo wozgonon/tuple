@@ -173,7 +173,7 @@ type LocationContext interface {
 	Line() int64
 	Column() int64
 	Depth() int
-	Log(format string, level string, args ...interface{})
+	Log(level string, format string, args ...interface{})
 }
 
 type CallHandler interface {
@@ -192,7 +192,7 @@ type EvalContext interface {
 	CallHandler
 	//LocationContext
 
-	Log(format string, level string, args ...interface{})
+	Log(level string, format string, args ...interface{})
 	Add(name string, function interface{})
 	//Eval(expression Value) Value
 	Call(head Atom, args []Value) Value  // Reduce
@@ -211,16 +211,16 @@ type Context interface {
 	EOL()
 	ReadRune() (rune, error)
 	LookAhead() rune
-	Log(format string, level string, args ...interface{})
+	Log(level string, format string, args ...interface{})
 	Errors() int64
 }
 
 func Verbose(context Context, format string, args ...interface{}) {
-	context.Log(format, "VERBOSE", args...)
+	context.Log("VERBOSE", format, args...)
 }
 
 func Error(context Context, format string, args ...interface{}) {
-	context.Log(format, "ERROR", args...)
+	context.Log("ERROR", format, args...)
 }
 
 func UnexpectedCloseBracketError(context Context, token string) {

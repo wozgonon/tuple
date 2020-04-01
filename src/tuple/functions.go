@@ -25,12 +25,15 @@ import "os/exec"
 import "os"
 import "bytes"
 
-func AddStringFunctions(table SymbolTable) SymbolTable {
+func AddStringFunctions(table * SymbolTable) {
 	table.Add("len", func(value string) int64 { return int64(len(value)) })
 	table.Add("lower", strings.ToLower)
 	table.Add("join", func (context EvalContext, separator string, tuple Tuple) string { return strings.Join(EvalToStrings(context, tuple.List), separator) })
 	table.Add("concat", func (aa string, bb string) string { return aa + bb })
 	table.Add("upper", strings.ToUpper)
+}
+
+func AddTupleFunctions(table * SymbolTable)  {
 
 	table.Add("at", func(index int64, tuple Tuple) Value {
 		if index < 0 || index >= int64(tuple.Length()) {
@@ -39,14 +42,14 @@ func AddStringFunctions(table SymbolTable) SymbolTable {
 		return tuple.List[index]
 	})
 
-	return table
+	table.Add("list", func(_ EvalContext, values... Value) Value { return NewTuple(values...) })
+	// TODO table.Add("quote", func(value Value) Value { return NewTuple("quote", value) })
 }
 
 // These functions are harmless, one can execute them from a script and not cause any damage.
-func AddBooleanAndArithmeticFunctions(table SymbolTable) SymbolTable {
+func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
 
-	AddStringFunctions(table)
-	
+
 	table.Add("exp", math.Exp)
 	table.Add("log", math.Log)
 	table.Add("sin", math.Sin)
@@ -81,14 +84,25 @@ func AddBooleanAndArithmeticFunctions(table SymbolTable) SymbolTable {
 	table.Add("true", func () bool { return true })
 	table.Add("false", func () bool { return false })
 
-	return table
 }
 
 
 // These functions are harmless, one can execute them from a script and not cause any damage.
+func NewHarmlessSymbolTable(notFound CallHandler) SymbolTable {
+	table := NewSymbolTable(notFound)
+	AddBooleanAndArithmeticFunctions(&table)
+
+	return table
+}
+
 func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
 	table := NewSymbolTable(notFound)
-	AddBooleanAndArithmeticFunctions(table)
+
+	AddBooleanAndArithmeticFunctions(&table)
+
+	// These allocate memory and are not quite
+	AddStringFunctions(&table)
+	AddTupleFunctions(&table)
 	return table
 }
 
@@ -96,20 +110,23 @@ func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
 // Declare variables and functions
 /////////////////////////////////////////////////////////////////////////////
 
-func AddDeclareFunctions(table SymbolTable) {
+
+func Assign (context EvalContext, atom Atom, value Value) Value {
+	context.Add(atom.Name, func () Value {
+		return value
+	})
+	return value
+}
+
+func AddDeclareFunctions(table * SymbolTable) {
 
 	table.Add("get", func(context EvalContext, atom Atom) Value {
 		return context.Call(atom, []Value{})
 	})
-	table.Add("set", func(context EvalContext, atom Atom, value Value) Value {
-		context.Add(atom.Name, func () Value {
-			return value
-		})
-		return value
-	})
+	table.Add("set", Assign)
 	table.Add("func", func(context EvalContext, atom Atom, arg Atom, code Value) Value {
 		context.Add(atom.Name, func (argValue Value) Value {
-			newScope := NewSymbolTable(&table)
+			newScope := NewSymbolTable(table)
 			newScope.Add(arg.Name, func () Value {
 				return argValue
 			})
@@ -132,7 +149,7 @@ func AddDeclareFunctions(table SymbolTable) {
 		})
 		result := NewTuple()
 		for _, v := range list.List {
-			iterator = v
+			iterator = Eval(context, v)
 			value := Eval(&newScope, code)
 			result.Append(value)
 		}
@@ -228,7 +245,7 @@ func spawnProcess (arg string) bool {
 
 // These functions access the operating system and so an actor
 // could use them to harm the computer.
-func AddOperatingSystemFunctions(table SymbolTable) {
+func AddOperatingSystemFunctions(table * SymbolTable) {
 	//
 	//  Add shell specific commands
 	//  These are typically not a 'safe' in that they allow access to the file system
@@ -236,7 +253,7 @@ func AddOperatingSystemFunctions(table SymbolTable) {
 	table.Add("exec", executeProcess0)
 	table.Add("spawn", spawnProcess)
 	table.Add("pipe", Pipe)
-	
+
 	table.Add("echo", func (context EvalContext, values... Value) bool {
 		for k,_:= range values {
 			evaluated := Eval(context, values[k])  // TODO This should use table from context so that it uses scope
@@ -247,6 +264,9 @@ func AddOperatingSystemFunctions(table SymbolTable) {
 	table.Add("eval", func (context EvalContext, value Value) Value {
 		return Eval(context, value)
 	})
+	//table.Add("expr", func (context EvalContext, value Value) Value {
+	//	return ParseAndEval(context, value)
+	//})
 }
 
 type ErrorIfFunctionNotFound struct {}
@@ -270,8 +290,10 @@ func (exec * ExecIfNotFound) Find (name Atom, args [] Value) reflect.Value {
 // These functions are potentially not harmless
 func NewUnSafeSymbolTable() SymbolTable {
 	table := SymbolTable{map[string]reflect.Value{},&ExecIfNotFound{}}
-	AddBooleanAndArithmeticFunctions(table)
-	AddDeclareFunctions(table)
-	AddOperatingSystemFunctions(table)
+	AddBooleanAndArithmeticFunctions(&table)
+	AddStringFunctions(&table)
+	AddTupleFunctions(&table)
+	AddDeclareFunctions(&table)
+	AddOperatingSystemFunctions(&table)
 	return table
 }
