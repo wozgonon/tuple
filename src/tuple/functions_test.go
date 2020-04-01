@@ -23,4 +23,6 @@ func TestBuildSymbolTable(t *testing.T) {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
 
+
+	
 }

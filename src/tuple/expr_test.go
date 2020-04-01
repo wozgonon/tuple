@@ -164,7 +164,9 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 }
 
 
-func testExprDeclareFunctions(t *testing.T, grammar tuple.Grammar) {
+func TestExprDeclareFunctions(t *testing.T) {
+
+	grammar := tuple.NewShellGrammar()
 
 	var symbols = tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	tuple.AddDeclareFunctions(&symbols)
@@ -181,11 +183,35 @@ func testExprDeclareFunctions(t *testing.T, grammar tuple.Grammar) {
 	test("if(false,1, cos(PI)) == -1")
 
 
-	test("at 0 ( 1 2 3 ) == 1")
-	test("at 1 ( 1 2 3 ) == 2")
-	test("at 2 ( 1 2 3 ) == 3")
-	test("at -1 ( 1 2 3 ) != 1")
-	test("at 3 ( 1 2 3 ) != 4")
-	
-	// TODO test("for a (1 2) { for b (4 5) { a+b }} == ((5 6) (6 7))")
+	test("at(0  ( 1 2 3 )) == 1")
+	test("at(1  ( 1 2 3 )) == 2")
+	test("at(2  ( 1 2 3 )) == 3")
+	test("at(-1 ( 1 2 3 )) != 1")
+	test("at(3  ( 1 2 3 )) != 4")
+
+	//test("for a (1 2) { for b (4 5) { a+b }} == ((5 6) (6 7))")
+	test(`
+func aa a { a*2 }
+aa(2)==4`)
+
+	test(`
+func aa a { a*2 }
+func bb b { aa(b) }
+bb(2)==4`)
+
+	test(`
+func aa a { a*2 }
+func bb b { aa(b*3) }
+bb(2)==12`)
+
+	test(`
+func aa a { a*2 }
+func bb b { aa(b*3) }
+bb(2+1)==18`)
+
+	test(`
+func aa a { a*2 }
+func bb b { aa(b*3)*aa(1-b) }
+bb(3)==18*-4`)
+
 }
