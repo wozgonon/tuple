@@ -35,7 +35,7 @@ func AddStringFunctions(table * SymbolTable) {
 
 func AddTupleFunctions(table * SymbolTable)  {
 
-	table.Add("at", func(index int64, tuple Tuple) Value {
+	table.Add("nth", func(index int64, tuple Tuple) Value {
 		if index < 0 || index >= int64(tuple.Length()) {
 			return EMPTY
 		}
@@ -151,12 +151,23 @@ func AddDeclareFunctions(table * SymbolTable) {
 		})
 		result := NewTuple()
 		for _, v := range list.List {
-			iterator = Eval(context, v)
-			value := Eval(&newScope, code)
+			value := Eval(&newScope, v)
 			result.Append(value)
 		}
 		return result
 	})
+
+	// https://www.gnu.org/software/emacs/manual/html_node/eintr/progn.html
+	table.Add("progn", func(context EvalContext, values... Value) Value {
+		var result Value = EMPTY
+		for _, v := range values {
+			result = Eval(context, v)
+		}
+		return result
+
+	})
+
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
