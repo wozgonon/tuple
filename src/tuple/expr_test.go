@@ -190,6 +190,7 @@ func TestExprDeclareFunctions(t *testing.T) {
 	test("nth(3  ( 1 2 3 )) != 4")
 
 	test("-1 == progn (1+2) (3+4) cos(PI)")
+	// TODO uses assign test("6==progn (m=3) (s=2) (m*s)")
 	
 	//test("for a (1 2) { for b (4 5) { a+b }} == ((5 6) (6 7))")
 	test(`

@@ -112,10 +112,11 @@ func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
 
 
 func Assign (context EvalContext, atom Atom, value Value) Value {
+	evaluated := Eval(context, value)
 	context.Add(atom.Name, func () Value {
-		return value
+		return evaluated
 	})
-	return value
+	return evaluated
 }
 
 func AddDeclareFunctions(table * SymbolTable) {
@@ -151,7 +152,8 @@ func AddDeclareFunctions(table * SymbolTable) {
 		})
 		result := NewTuple()
 		for _, v := range list.List {
-			value := Eval(&newScope, v)
+			iterator = Eval(context, v)
+			value := Eval(&newScope, code)
 			result.Append(value)
 		}
 		return result
