@@ -128,7 +128,7 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	//name := head.Name
 	nn := len(args)
 
-	f := table.Find(context, head, args)
+	_, f := table.Find(context, head, args)
 	t := f.Type()
 
 	start := 0
@@ -217,22 +217,19 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	}
 }
 
-func (table * SymbolTable) Find(context EvalContext, head Atom, args []Value) reflect.Value {  // Reduce
+func (table * SymbolTable) Find(context EvalContext, head Atom, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
 
 	name := head.Name
 	nn := len(args)
 
-	//fmt.Printf("Call '%s' nn=%d count=%d\n", name, nn, table.Count())
-
 	for _, variadic := range []bool{ false, true } {
-	key := makeKey(name, nn, variadic)
+		key := makeKey(name, nn, variadic)
 		f, ok := table.symbols[key]
 		if ok {
 			context.Log ("TRACE", "FIND Found '%s' variadic=%s in this symbol table (%d entries), forwarding",  head, variadic, len(table.symbols))
-			return f
+			return table, f
 		}
 	}
-	
 	context.Log ("TRACE", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
 	// TODO look up variatic functions
 	return table.ifFunctionNotFound.Find(context, head, args)

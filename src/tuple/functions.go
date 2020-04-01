@@ -49,7 +49,6 @@ func AddTupleFunctions(table * SymbolTable)  {
 // These functions are harmless, one can execute them from a script and not cause any damage.
 func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
 
-
 	table.Add("exp", math.Exp)
 	table.Add("log", math.Log)
 	table.Add("sin", math.Sin)
@@ -113,9 +112,11 @@ func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
 
 func Assign (context EvalContext, atom Atom, value Value) Value {
 	evaluated := Eval(context, value)
-	context.Add(atom.Name, func () Value {
-		return evaluated
-	})
+	if table, _ := context.Find(context, atom, []Value{}); table != nil {
+		table.Add(atom.Name, func () Value { return evaluated })
+	} else {
+		context.Add(atom.Name, func () Value { return evaluated })
+	}
 	return evaluated
 }
 
@@ -284,10 +285,11 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 	//})
 }
 
+
 type ErrorIfFunctionNotFound struct {}
 
-func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Atom, args [] Value) reflect.Value {
-	return reflect.ValueOf(func(args... Value) bool {
+func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value) {
+	return nil, reflect.ValueOf(func(args... Value) bool {
 		fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
 		return false
 	})
@@ -295,9 +297,9 @@ func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Atom, a
 
 type ExecIfNotFound struct {}
 
-func (exec * ExecIfNotFound) Find (context EvalContext, name Atom, args [] Value) reflect.Value {
+func (exec * ExecIfNotFound) Find (context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value) {
 
-	return reflect.ValueOf(func(context EvalContext, args... Value) bool {
+	return nil, reflect.ValueOf(func(context EvalContext, args... Value) bool {
 		return executeProcess(name.Name, EvalToStrings(context, args)...)
 	})
 }

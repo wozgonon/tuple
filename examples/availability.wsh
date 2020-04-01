@@ -14,3 +14,22 @@ func availabilityTable arg {
 
 
 availabilityTable(1)
+
+func tag arg {
+    concat "<" tag 
+}
+
+func html arg {
+
+    (concat "<table>")
+    (concat "<tr>" arg "</tr>")
+    
+    for line arg {
+	    (concat "<tr>" line "</tr>")
+    }   
+    
+    (concat "</table>")
+
+}
+
+

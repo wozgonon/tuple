@@ -49,12 +49,17 @@ func main () {
 	table.Add("|", tuple.Pipe)
 	table.Add("=", tuple.Assign)
 
+	tuple.ParseAndEval(inputGrammar, table, "func count t { progn (c=0) (for v t { c=c+1 }) c }")
+
 	var symbols * tuple.SymbolTable = nil
 	if !*ast {
 		symbols = &table
 	}
 
+
+	
 	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
+
 
 	grammars := tuple.NewGrammars()
 	grammars.Add(inputGrammar)

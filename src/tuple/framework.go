@@ -177,16 +177,8 @@ type LocationContext interface {
 }
 
 type CallHandler interface {
-	Find(context EvalContext, name Atom, args [] Value) reflect.Value
+	Find(context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value)
 }
-
-/*
-type Eval interface {
-	Count() int
-	Add(name string, function interface{})
-	Call(head Atom, args []Value) Value  // Reduce
-	Eval(expression Value) Value
-}*/
 
 type EvalContext interface {
 	CallHandler
