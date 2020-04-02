@@ -43,7 +43,6 @@ var NewJSONGrammar = parsers.NewJSONGrammar
 var NewInfixExpressionGrammar = parsers.NewInfixExpressionGrammar
 var NewShellGrammar = parsers.NewShellGrammar
 var NewSafeSymbolTable = eval.NewSafeSymbolTable
-var AddDeclareFunctions = eval.AddDeclareFunctions
 var ParseAndEval = runner.ParseAndEval
 var ParseString = runner.ParseString
 var NewLispGrammar = parsers.NewLispGrammar

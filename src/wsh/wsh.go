@@ -48,7 +48,7 @@ func main () {
 	inputGrammar := parsers.NewShellGrammar()
 	outputGrammar := inputGrammar
 
-	table := eval.NewUnSafeSymbolTable()
+	table := eval.NewLessSafeSymbolTable()
 	table.Add("|", eval.Pipe)
 	table.Add("=", eval.Assign)
 

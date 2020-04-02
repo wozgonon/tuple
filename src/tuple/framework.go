@@ -33,6 +33,8 @@ type Next func(value Value)
 type Logger func(context Context, level string, message string)
 
 var CONS_ATOM = Atom{"cons"}
+var NAN Float64 = Float64(math.NaN())
+var EMPTY Tuple = NewTuple()
 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer and Values
@@ -53,9 +55,6 @@ type String string
 type Float64 float64
 type Int64 int64
 type Bool bool
-
-var NAN Float64 = Float64(math.NaN())
-var EMPTY Tuple = NewTuple()
 
 // An Atom - a name for something, an identifier or operator
 // TODO include location and source for editors
@@ -82,44 +81,6 @@ func NewComment(_ Context, token string) Comment {
 
 func (tuple Tuple) Arity() int { return len(tuple.List) }
 
-
-/*
-type Scalar interface {
-	Value
-	ToDefaultString() string
-}
-
-
-func (value Atom) ToDefaultString() string {
-	return value.Name
-}
-
-func (value Bool) ToDefaultString() string {
-	b := value
-	if b {
-		return "true"
-	} else {
-		return "false"
-	}
-}
-
-func (value String) ToDefaultString() string {
-	return DOUBLE_QUOTE + string(value) + DOUBLE_QUOTE  // TODO Escape
-}
-
-func (value Int64) ToDefaultString() string {
-	return strconv.FormatInt(int64(value), 10)
-}
-
-func (value Float64) ToDefaultString() string {
-	float := float64(value)
-	if math.IsInf(float, 64) {
-		return "Inf" // style.INF)  // Do not print +Inf
-	} else {
-		return fmt.Sprint(float)
-	}
-}
-*/
 /////////////////////////////////////////////////////////////////////////////
 // Tuple
 /////////////////////////////////////////////////////////////////////////////
@@ -204,7 +165,6 @@ func Error(context Context, format string, args ...interface{}) {
 func Suffix(context Context) string {
 	return path.Ext(context.SourceName())
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 //  Grammar

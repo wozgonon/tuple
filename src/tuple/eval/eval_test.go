@@ -5,7 +5,7 @@ import (
 	"tuple/eval"
 )
 
-func TestEval(t *testing.T) {
+func TestBuildSymbolTable(t *testing.T) {
 
 	symbols := eval.NewSymbolTable(&eval.ErrorIfFunctionNotFound{})
 	if symbols.Count() != 0 {
@@ -19,4 +19,6 @@ func TestEval(t *testing.T) {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
 
+
+	
 }

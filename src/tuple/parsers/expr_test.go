@@ -169,7 +169,6 @@ func TestExprDeclareFunctions(t *testing.T) {
 	grammar := NewShellGrammar()
 
 	var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
-	AddDeclareFunctions(&symbols)
 	
 	test := func (formula string) {
 		val := ParseAndEval(grammar, symbols, formula)
