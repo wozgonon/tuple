@@ -82,15 +82,16 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
 	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
 	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
-	operators.AddPrefix("+", "_prefix_plus", 110)
-	operators.AddPrefix("-", "_prefix_minus", 110)
+	operators.AddPrefix("+", 110)
+	operators.AddPrefix("-", 110)
 	// TODO operators.AddPostfix("++", "_postfix_incr", 120) // TODO check
-	operators.AddPrefix("!", "_prefix_not", 55) // TODO check
+	operators.AddPrefix("!", 55) // TODO check
 	operators.AddInfix("**", 100)
 	operators.AddInfix("*", 90)
 	operators.AddInfix("/", 90)
 	operators.AddInfix("+", 80)
 	operators.AddInfix("-", 80)
+	//operators.AddInfix("..", 70)  // Range operator
 	operators.AddInfix("<", 60)
 	operators.AddInfix(">", 60)
 	operators.AddInfix("<=", 60)
@@ -104,6 +105,9 @@ func AddStandardCOperators(operators *Operators) {
 	//operators.AddInfix(",", 30)
 	//operators.AddInfix(";", 20)
 	operators.AddInfix(SPACE_ATOM.Name, 10)  // TODO space???
+
+	//operators.AddInfix3(":", 30, CONS_OPERATOR)
+
 }
 
 

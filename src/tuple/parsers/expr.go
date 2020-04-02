@@ -207,8 +207,8 @@ func NewShellGrammar() Grammar {
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
 	//operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
-	operators.AddPrefix("$", "_prefix_dollar", 150)
-	operators.AddPostfix("&", "_postfix_spawn", 20)
+	operators.AddPrefix("$", 150)
+	operators.AddPostfix("&", 20)
 
 	return ShellGrammar{style, operators}
 }

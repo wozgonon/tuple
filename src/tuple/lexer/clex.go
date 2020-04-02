@@ -160,7 +160,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 			eol()
 		}
 		context.EOL()
-	case ch == ',' || unicode.IsSpace(ch) || ch == '\r': break // TODO fix comma
+	case unicode.IsSpace(ch) || ch == '\r': break // TODO fix comma
 	case ch == style.OneLineComment:
 		_, err = ReadUntilEndOfLine(context)
 		if err != nil {
@@ -189,8 +189,9 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		} else {
 			nextLiteral(value)
 		}
-	case ch == '.':  nextAtom(Atom{"."})
+	case ch == ',':  //nextAtom(Atom{","})
 	case ch == style.KeyValueSeparatorRune:		nextAtom(Atom{style.KeyValueSeparator})
+	case ReadAndLookAhead(ch, '.', '.'):
 	case ReadAndLookAhead(ch, '>', '='):
 	case ReadAndLookAhead(ch, '<', '='):
 	case ReadAndLookAhead(ch, '!', '='):

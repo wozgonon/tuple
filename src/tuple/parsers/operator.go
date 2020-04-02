@@ -53,34 +53,25 @@ func (stack * OperatorGrammar) popOperator() {
 	stack.operatorStack = stack.operatorStack[:lo-1]
 }
 
-func (stack * OperatorGrammar) reducePrefix(top Atom) {
-
-	var name Atom
-	switch top.Name {
-	case "_prefix_minus": name = Atom{"-"}
-	case "_prefix_plus": name = Atom{"+"}
-	default: name = top
-	}
-
-	values := &(stack.Values.List)
-	lv := stack.Values.Length()
-	val1 := (*values) [lv - 1]
-	stack.Values.List = append((*values)[:lv-1], NewTuple(name, val1))
-	Verbose(stack.context," REDUCE:\t%s\t'%s'\n", name.Name, val1)
-}
-
 // Replace top of value stack with an expression
 func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 
+	COMMA_ATOM := Atom{","}
 	values := &(stack.Values.List)
 	lv := stack.Values.Length()
+	name := stack.operators.Map(top)
 	stack.popOperator()
-	if strings.HasPrefix(top.Name, "_prefix_") {
-		stack.reducePrefix(top)
+	count := 0
+	index := 0
+	tuple := NewTuple()
+	if isPrefix(top) {
+		val1 := (*values) [lv - 1]
+		count = 1
+		tuple = NewTuple(name, val1)
+		Verbose(stack.context," REDUCE:\t%s\t'%s'\n", name.Name, val1)
 	} else {
-		count := 2
-		tuple := NewTuple()
-		if top == SPACE_ATOM { // TODO Could in principle generalize to make any binary operator n-ary
+		count = 2
+		if top == SPACE_ATOM || top == COMMA_ATOM { // TODO Could in principle generalize to make any binary operator n-ary
 			Verbose(stack.context,"** REDUCE\t'%s'\n", top.Name)
 			for {
 				ll := len(stack.operatorStack)
@@ -89,7 +80,7 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 				}
 				nextTop := stack.operatorStack[ll - 1]
 				Verbose(stack.context,"*** REDUCE\t'%s'\n", top.Name)
-				if nextTop != SPACE_ATOM {
+				if nextTop != SPACE_ATOM && nextTop != COMMA_ATOM {
 					break
 				}
 				stack.popOperator()
@@ -104,13 +95,13 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 		} else {
 			val1 := (*values) [lv - 2]
 			val2 := (*values) [lv - 1]
-			tuple = NewTuple(top, val1, val2)
-			Verbose(stack.context," REDUCE:\t'%s'\t'%s'\t'%s'\n", top.Name, val1, val2)
+			tuple = NewTuple(name, val1, val2)
+			Verbose(stack.context," REDUCE:\t'%s'\t'%s'\t'%s'\n", name, val1, val2)
 		}
-		stack.Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
-		return count - 2
+		index = count - 2
 	}
-	return 0
+	stack.Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
+	return index
 }
 
 func (stack * OperatorGrammar) PushValue(value Value) {
@@ -199,9 +190,9 @@ func (stack * OperatorGrammar) EndOfInput(next Next) {
 }
 
 func (stack * OperatorGrammar) PushOperator(atom Atom) {
-	Verbose(stack.context,"*PushOperator '%s'", atom.Name)
-
 	prefixOperator, ok := stack.operators.prefix[atom.Name]
+	Verbose(stack.context,"*PushOperator '%s' isPrefix=%s  (%s)", atom.Name, ok, prefixOperator)
+
 	nextIsPrefix := stack.wasOperator && ok
 	if atom != SPACE_ATOM {
 		if nextIsPrefix {
@@ -211,7 +202,7 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 		lo := len(stack.operatorStack)
 		for index := lo-1 ; index >= 0; index -= 1 {
 			top := stack.operatorStack[index]
-			topIsPrefix := strings.HasPrefix(top.Name, "_prefix_")
+			topIsPrefix := isPrefix(top)
 			Verbose(stack.context, "IsPrefix %s %s", top, topIsPrefix)
 			if !nextIsPrefix && (topIsPrefix || stack.operators.IsOpenBracket(top)) {
 				break
@@ -228,9 +219,6 @@ func (stack * OperatorGrammar) PushOperator(atom Atom) {
 	if ! nextIsPrefix && stack.wasOperator {
 		Error(stack.context,"Unexpected binary operator '%s'", atom.Name)
 	} else {
-		if atom.Name == "." {
-			atom = CONS_ATOM
-		}
 		stack.pushOperator(atom)
 		// TODO postfix
 		stack.wasOperator = true
@@ -247,44 +235,82 @@ type Operators struct {
 	Style
 	precedence map[string]int
 	prefix map[string]Atom
+	infix map[string]Atom
 	postfix map[string]Atom
 	brackets map[string]string
 	closeBrackets map[string]string
+	evalName map[string]Atom
 }
 
 func NewOperators(style Style) Operators {
-	atoms := make(map[string]Atom, 0)
-	strings := make(map[string]string, 0)
-	return Operators{style, make(map[string]int, 0), atoms, atoms, strings, strings}
+	atoms1 := make(map[string]Atom, 0)
+	atoms2 := make(map[string]Atom, 0)
+	atoms3 := make(map[string]Atom, 0)
+	atoms4 := make(map[string]Atom, 0)
+	strings1 := make(map[string]string, 0)
+	strings2 := make(map[string]string, 0)
+	return Operators{style, make(map[string]int, 0), atoms1, atoms2, atoms3, strings1, strings2, atoms4}
+}
+
+const PREFIX = "_prefix_"
+
+func isPrefix(top Atom) bool {
+	// stack.operators.prefix[atom.Name]
+	return strings.HasPrefix(top.Name, PREFIX)
+}
+
+func (operators *Operators) Map(top Atom) Atom {
+
+	atom, ok := operators.evalName[top.Name]
+	if ok {
+		return atom
+	}
+	return top
 }
 
 // Iterates through all operators, this is mainly for testing
 func (operators *Operators) Forall(next func (value string)) {
-	for k, _ := range operators.precedence {
+	for k, _ := range operators.prefix {
+		next(k)
+	}
+	for k, _ := range operators.infix {
+		next(k)
+	}
+	for k, _ := range operators.postfix {
 		next(k)
 	}
 	/* TODO for k, v := range operators.brackets {
 		next(k)
 		next(v)
 	}*/
-	for k, v := range operators.prefix {
-		next(k)
-		next(v.Name)
-	}
+	//for k, _ := range operators.prefix {
+		//next(k)
+		//next(v.Name)
+	//}
 }
 
 func (operators *Operators) AddInfix(operator string, precedence int) {
-	(*operators).precedence[operator] = precedence
+	operators.AddInfix3(operator, precedence, operator)
 }
 
-func (operators *Operators) AddPrefix(operator string, name string, precedence int) {
+func (operators *Operators) AddInfix3(operator string, precedence int, name string) {
+	operators.precedence[operator] = precedence
+	operators.infix[operator] = Atom{name}
+	operators.evalName[name] = Atom{operator}
+}
+
+func (operators *Operators) AddPrefix(operator string, precedence int) {
+	name := PREFIX + operator
 	operators.prefix[operator] = Atom{name}
 	operators.precedence[name] = precedence
+	operators.evalName[name] = Atom{operator}
 }
 
-func (operators *Operators) AddPostfix(operator string, name string, precedence int) {
+func (operators *Operators) AddPostfix(operator string, precedence int) {
+	name := "_postfix" + operator
 	operators.postfix[operator] = Atom{name}
 	operators.precedence[name] = precedence
+	operators.evalName[name] = Atom{operator}
 }
 
 func (operators *Operators) AddBracket(open string, close string) {

@@ -19,8 +19,15 @@ package eval_test
 
 import (
 	"testing"
+	"tuple"
 	"tuple/eval"
 )
+
+var NewTuple = tuple.NewTuple
+type Bool = tuple.Bool
+type Int64 = tuple.Int64
+type Float64 = tuple.Float64
+type Atom = tuple.Atom
 
 func TestHarmless(t *testing.T) {
 
@@ -28,4 +35,20 @@ func TestHarmless(t *testing.T) {
 	if symbols.Count() == 0  {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
+
+	test := func (expression tuple.Tuple) {
+		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+			t.Errorf("Expected '%s' to be true", expression)
+
+		}
+	}
+	
+	ONE := Int64(1)
+	TWO := Int64(2)
+	THREE := Int64(3)
+	A12 := NewTuple(Atom{"+"}, ONE, TWO)
+	M23 := NewTuple(Atom{"*"}, TWO, THREE)
+	test(NewTuple(Atom{"=="}, THREE, A12))
+	test(NewTuple(Atom{"=="}, A12, A12))
+	test(NewTuple(Atom{"=="}, M23, M23))
 }
