@@ -108,7 +108,7 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 		}
 		index = count - 2
 	}
-	stack.Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
+	stack.Values.List = append((*values)[:lv-count], tuple)
 	return index
 }
 
@@ -198,30 +198,40 @@ func (stack * OperatorGrammar) EndOfInput(next Next) {
 }
 
 func (stack * OperatorGrammar) PushOperator(operator Atom) {
+	_, ok := stack.operators.postfix[operator.Name]
+	operatorIsPostfix := ! stack.wasOperator && ok
 	prefixOperator, ok := stack.operators.prefix[operator.Name]
-	Verbose(stack.context,"*PushOperator '%s' isPrefix=%s  (%s)", operator.Name, ok, prefixOperator)
+	operatorIsPrefix := stack.wasOperator && ok
 
-	nextIsPrefix := stack.wasOperator && ok
-	head := operator
-	if true { // ! reduceToTuple(atom) {
-		if nextIsPrefix {
-			head = prefixOperator
-		}
+	Verbose(stack.context,"*PushOperator '%s' isPrefix=%s  (%s)", operator.Name, ok, prefixOperator)
+	// TODO postfix
+
+	if operatorIsPrefix {
+		stack.pushOperator(prefixOperator)
+	} else if operatorIsPostfix {
+		values := &(stack.Values.List)
+		lv := len(*values)
+		val1 := (*values) [lv - 1]
+		name := stack.operators.Map(operator)
+		tuple := NewTuple(name, val1)
+		stack.Values.List = append((*values)[:lv-1], tuple)
+		Verbose(stack.context," REDUCE POSTFIX:\t%s\t'%s'\n", name.Name, val1)
+		stack.wasOperator = false
+		return
+	} else {
 		atomPrecedence := stack.operators.Precedence(operator)
 		lo := len(stack.operatorStack)
 		for index := lo-1 ; index >= 0; index -= 1 {
 			top := stack.operatorStack[index]
 			topIsPrefix := isPrefix(top)
 			Verbose(stack.context, "IsPrefix %s %s  precedence=%d", top, topIsPrefix, stack.operators.Precedence(top))
-			if !nextIsPrefix && topIsPrefix {
+			if operatorIsPrefix {
+				break
+			} else if topIsPrefix {
 				index -= stack.reduceOperatorExpression(top)
-			} else if !nextIsPrefix && stack.operators.IsOpenBracket(top) {
+			} else if stack.operators.IsOpenBracket(top) {
 				break
-			} else if nextIsPrefix && topIsPrefix {
-				break
-			} else if nextIsPrefix && ! topIsPrefix {
-				break
-			} else if top == head && reduceToTuple(head) {
+			} else if top == operator && reduceToTuple(operator) {
 				break
 			} else if stack.operators.Precedence(top) >= atomPrecedence {
 				Verbose(stack.context,"* PushOperator - Reduce '%s'", top)
@@ -230,14 +240,13 @@ func (stack * OperatorGrammar) PushOperator(operator Atom) {
 				break
 			}
 		}
-	}
-	if ! nextIsPrefix && stack.wasOperator {
-		Error(stack.context,"Unexpected binary operator '%s'", operator.Name)
-	} else {
-		stack.pushOperator(head)
-		// TODO postfix
-		stack.wasOperator = true
-	}
+		if ! operatorIsPrefix && stack.wasOperator {
+			Error(stack.context,"Unexpected binary operator '%s'", operator.Name)
+			return
+		}
+		stack.pushOperator(operator)
+	} 
+	stack.wasOperator = true
 }
 
 

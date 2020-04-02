@@ -10,7 +10,7 @@ func availabilityTable arg {
 		 concat(unit " unavailable per year at ") {
 	         for percent (.99 .995 .999 .9999) {
 		     concat  percent "% = " round2(unavailable(percent)/divisor)
-	     }))})}
+	     }})})}
 
 
 av=availabilityTable(1)

@@ -38,12 +38,21 @@ func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
 	table.Add("round", math.Round)
 	table.Add("round2", func(value float64) float64 { return math.Round(value*100)/100 }) // Not needed
 	table.Add("**", math.Pow)
+	table.Add("%", func (aa float64) float64 { return aa/100.0 })
+	table.Add("++", func (aa float64) float64 { return aa+1 })
 	table.Add("+", func (aa float64) float64 { return aa })
 	table.Add("-", func (aa float64) float64 { return -aa })
 	table.Add("+", func (aa float64, bb float64) float64 { return aa+bb })
 	table.Add("-", func (aa float64, bb float64) float64 { return aa-bb })
 	table.Add("*", func (aa float64, bb float64) float64 { return aa*bb })
 	table.Add("/", func (aa float64, bb float64) float64 { return aa/bb })
+	table.Add("%", func (context EvalContext, aa int64, bb int64) int64 {
+		if bb == 0 {
+			context.Log("ERROR", "divide by zero in: %d %% %d", aa, bb)
+			return 0  // TODO
+		}
+		return aa%bb
+	})
 	table.Add("eq", func (aa string, bb string) bool { return aa==bb })  // Should take Value as argument
 	table.Add("==", func (aa float64, bb float64) bool { return aa==bb })  // Should take Value as argument
 	table.Add("!=", func (aa float64, bb float64) bool { return aa!=bb })

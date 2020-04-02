@@ -198,9 +198,11 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 	case ReadAndLookAhead(ch, '!', '='):
 	case ReadAndLookAhead(ch, '=', '='):
 	case ReadAndLookAhead(ch, '*', '*'):
+	case ReadAndLookAhead(ch, '+', '+'):
+	// TODO case ReadAndLookAhead(ch, '-', '-'):
 	case ReadAndLookAhead(ch, '|', '|'):
 	case ReadAndLookAhead(ch, '&', '&'):
-	case IsArithmetic(ch): nextAtom(Atom{string(ch)}) // }, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
+	case ch == '-' || ch== '/' || ch == '%': nextAtom(Atom{string(ch)})
 	case ch == '_' || unicode.IsLetter(ch):
 		value, err :=(ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) }))
 		if err != nil {
@@ -354,17 +356,6 @@ func cLanguageEscapeCharacters(ch rune) rune {
 	// TODO 
 	default:
 		return ch;
-	}
-}
-
-func IsArithmetic(ch rune) bool {
-	switch ch {
-		case '+': return true
-		case '-': return true
-		case '/': return true
-		case '*': return true
-		//case '^': return true
-		default: return false
 	}
 }
 

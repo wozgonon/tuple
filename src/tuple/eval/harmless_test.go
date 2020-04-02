@@ -46,9 +46,11 @@ func TestHarmless(t *testing.T) {
 	ONE := Int64(1)
 	TWO := Int64(2)
 	THREE := Int64(3)
+	A1 := NewTuple(Atom{"++"}, ONE)
 	A12 := NewTuple(Atom{"+"}, ONE, TWO)
 	M23 := NewTuple(Atom{"*"}, TWO, THREE)
 	test(NewTuple(Atom{"=="}, THREE, A12))
 	test(NewTuple(Atom{"=="}, A12, A12))
 	test(NewTuple(Atom{"=="}, M23, M23))
+	test(NewTuple(Atom{"=="}, TWO, A1))
 }

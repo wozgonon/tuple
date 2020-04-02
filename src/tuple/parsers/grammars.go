@@ -84,10 +84,13 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
 	operators.AddPrefix("+", 110)
 	operators.AddPrefix("-", 110)
-	// TODO operators.AddPostfix("++", "_postfix_incr", 120) // TODO check
+	operators.AddPostfix("++", 105)
+	// TODO operators.AddPostfix("%", 105)
+	// TODO operators.AddPostfix("--", 105)
 	operators.AddInfix("**", 100)
 	operators.AddInfix("*", 90)
 	operators.AddInfix("/", 90)
+	operators.AddInfix("%", 90)
 	operators.AddInfix("+", 80)
 	operators.AddInfix("-", 80)
 	//operators.AddInfix("..", 70)  // Range operator
