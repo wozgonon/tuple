@@ -2,35 +2,8 @@ The tuple package provides functions for parsing, printing and processing a numb
 The parsers produce a common [parse tree](https://en.wikipedia.org/wiki/Parse_tree)
 and [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree).
 
-
-# Read, write and processing
-
-Can read, write and convert between:
-
-* Arithmetic expression grammar similar to those used used by most programming languages, [expr](https://en.wikipedia.org/wiki/Expr) and EXCEL.
-* [JSON](https://en.wikipedia.org/wiki/JSON), which is a subset of Javascript.
-* [Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language)) like grammar prefix notation.
-* [Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language)) like grammar with [infix notation](https://en.wikipedia.org/wiki/Infix_notation)
-* JSON extended with variables and expressions (or Javascript without loops, objects and functions)
-* A [shell](https://en.wikipedia.org/wiki/Unix_shell) like grammar similar to that used by command line interpreters and [TCL](https://en.wikipedia.org/wiki/Tcl)
-
-## Write only
-
-Can write:
-* YAML
-* Properties
-* INI file
-
-## Processing:
-
-* Translation between grammars: for example prefix to and from infix, LISP to JSON, etc.
-* A command line [REPL](ehttps://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) interface
-* Eval - an [evaluator](https://en.wikipedia.org/wiki/Eval) or interpetter
-* Query - a utility to filter and select from the Abstract Syntax Tree, similar idea to [jq](https://stedolan.github.io/jq/)
-
 # API:
 
-* Supports UNICODE/UTF-8
 * Supports reading a writing from a text string
 * Supports reading a writing from files
 * Errors and warnings logs can optionally be formatted as any of the supported grammars.
@@ -85,7 +58,6 @@ However,the grammars provided are sufficient:
 * JSON (and YAML) are the mordern configuration languages and consists of nested scalars, arrays (fixed length list) and maps.
   Yet LISP from the 1950's supported the same concepts: nested scalars, lists and maps.
 * You can write complete programming languages with trivial syntax for instance Forth and Postscript use reverse polish notation and LISP syntax uses S-Expressions.
-
 
 
 The basic grammars provided are variations on S-Expressions and operator precedence grammars.

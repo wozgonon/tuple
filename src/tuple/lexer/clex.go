@@ -14,7 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package parsers
+package lexer
 
 import "fmt"
 import "io"
@@ -22,6 +22,27 @@ import "unicode"
 import "strconv"
 import "math"
 import "unicode/utf8"
+import "tuple"
+
+type Grammars = tuple.Grammars
+type Grammar = tuple.Grammar
+type Context = tuple.Context
+type Atom = tuple.Atom
+type Value = tuple.Value
+type Comment = tuple.Comment
+type StringFunction = tuple.StringFunction
+type String = tuple.String
+type Tuple = tuple.Tuple
+type Next = tuple.Next
+type Lexer = tuple.Lexer
+type Float64 = tuple.Float64
+type Int64 = tuple.Int64
+
+var NewComment = tuple.NewComment
+var PrintTuple = tuple.PrintTuple
+var NewTuple = tuple.NewTuple
+var Error = tuple.Error
+var Verbose = tuple.Verbose
 
 /////////////////////////////////////////////////////////////////////////////
 //  A lexer similar to that used by UNIX/C based languages
@@ -75,9 +96,9 @@ type Style struct {
 	//INF string
 	//NAN string
 
-	openChar rune
+	OpenChar rune
 	closeChar rune
-	openChar2 rune
+	OpenChar2 rune
 	closeChar2 rune
 	KeyValueSeparatorRune rune
 }
@@ -134,9 +155,9 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 			return err
 		}
 		// TODO next.NextComment
-	case ch == style.openChar : context.Open(); open(style.Open)
+	case ch == style.OpenChar : context.Open(); open(style.Open)
 	case ch == style.closeChar : context.Close(); close(style.Close)
-	case ch == style.openChar2 : context.Open(); open(style.Open2)
+	case ch == style.OpenChar2 : context.Open(); open(style.Open2)
 	case ch == style.closeChar2 : context.Close(); close(style.Close2)
 		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
 	case ch == '"' :
@@ -365,35 +386,6 @@ func IsCompare(ch rune) bool {
 	}
 }
 
-func AddStandardCOperators(operators *Operators) {
-	
-	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
-	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
-	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
-	operators.AddPrefix("+", "_prefix_plus", 110)
-	operators.AddPrefix("-", "_prefix_minus", 110)
-	// TODO operators.AddPostfix("++", "_postfix_incr", 120) // TODO check
-	operators.AddPrefix("!", "_prefix_not", 55) // TODO check
-	operators.AddInfix("**", 100)
-	operators.AddInfix("*", 90)
-	operators.AddInfix("/", 90)
-	operators.AddInfix("+", 80)
-	operators.AddInfix("-", 80)
-	operators.AddInfix("<", 60)
-	operators.AddInfix(">", 60)
-	operators.AddInfix("<=", 60)
-	operators.AddInfix(">=", 60)
-	operators.AddInfix("==", 60)
-	operators.AddInfix("!=", 60)
-	operators.AddInfix("|", 55)  // Pipe, what about redirect
-	operators.AddInfix("&&", 50)
-	operators.AddInfix("||", 50)
-	operators.AddInfix("=", 40)
-	//operators.AddInfix(",", 40)
-	//operators.AddInfix(";", 30)
-	operators.AddInfix(SPACE_ATOM.Name, 10)  // TODO space???
-}
-
 /////////////////////////////////////////////////////////////////////////////
 // Printer
 /////////////////////////////////////////////////////////////////////////////
@@ -463,13 +455,6 @@ func (printer Style) PrintFloat64(depth string, value float64, out StringFunctio
 	} else {
 		out(fmt.Sprint(value))
 	}
-}
-
-// TODO can this be removed
-func quote(value string, out func(value string)) {
-	out(DOUBLE_QUOTE)
-	out(value)   // TODO Escape
-	out(DOUBLE_QUOTE)
 }
 
 

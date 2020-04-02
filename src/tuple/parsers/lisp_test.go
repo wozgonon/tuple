@@ -8,7 +8,7 @@ import (
 
 func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, expected float64) {
 	//t.Logf("TRY: %s==%f", formula, expected)
-	val := tuple.ParseAndEval(grammar, symbols, formula)
+	val := ParseAndEval(grammar, symbols, formula)
 	floatExpected := tuple.Float64(expected)
 	floatVal, ok := val.(tuple.Float64)
 	if ok {
@@ -21,7 +21,7 @@ func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, ex
 }
 
 func testFloatExpressionFailParse(t *testing.T, grammar tuple.Grammar, formula string) {
-       val := tuple.ParseAndEval(grammar, symbols, formula)
+       val := ParseAndEval(grammar, symbols, formula)
        f,ok := val.(tuple.Float64);
        if !ok || (ok && ! math.IsNaN(float64(f))) {
                t.Errorf("%s != %s", grammar, val)
@@ -31,7 +31,7 @@ func testFloatExpressionFailParse(t *testing.T, grammar tuple.Grammar, formula s
 func TestLispCons(t *testing.T) {
 
 	test := func(formula string) {
-		c := tuple.ParseString(tuple.NewLispGrammar(), formula)
+		c := ParseString(NewLispGrammar(), formula)
 		tuple1 := c.(tuple.Tuple)
 		if ! tuple1.IsConsInTuple() {
 			t.Errorf("Expected a cons cell got %s", c)
@@ -49,12 +49,12 @@ func TestLispCons(t *testing.T) {
 }
 
 func TestEvalLisp1(t *testing.T) {
-	var grammar = tuple.NewLispGrammar()
+	var grammar = NewLispGrammar()
 	testFloatExpression(t, grammar, "(+ 1 1)", 2)
 }
 
 func TestEvalLispToInt64(t *testing.T) {
-	var grammar = tuple.NewLispGrammar()
+	var grammar = NewLispGrammar()
 	tests := map[string]float64{
 		//"(-1.)" : -1.,
 		"(+ 1 1)" : 2,
@@ -77,12 +77,12 @@ func TestEvalLispToInt64(t *testing.T) {
 }
 
 func TestEvalLispWithInfixGrammar1(t *testing.T) {
-	var grammar = tuple.NewLispWithInfixGrammar()
+	var grammar = NewLispWithInfixGrammar()
 	testFloatExpression(t, grammar, "(1+1)", 2)
 }
 
 func TestEvalLispWithInfixGrammarToInt64(t *testing.T) {
-	var grammar = tuple.NewLispWithInfixGrammar()
+	var grammar = NewLispWithInfixGrammar()
 	tests := map[string]float64{
 		"(1+1)" : 2,
 		"(1.)" : 1,
@@ -109,7 +109,7 @@ func TestEvalLispWithInfixGrammarToInt64(t *testing.T) {
 func TestLispInfixEquals(t *testing.T) {
 
 	test := func (formula string) {
-		val := tuple.ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(grammar, symbols, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}

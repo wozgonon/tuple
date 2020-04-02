@@ -7,8 +7,8 @@ import (
 )
 
 
-var grammar = tuple.NewInfixExpressionGrammar()
-var symbols = tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+var grammar = NewInfixExpressionGrammar()
+var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 
 
 func TestExpr1(t *testing.T) {
@@ -51,7 +51,7 @@ func TestExpr(t *testing.T) {
 	testFloatExpressionFailParse(t, grammar, "-")
 
 	test := func(formula string, expected tuple.Value) {
-		val := tuple.ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(grammar, symbols, formula)
 		if val != expected {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}
@@ -77,15 +77,15 @@ func TestExpr(t *testing.T) {
 
 func TestArithmeticAndLogic(t *testing.T) {
 
-	testArithmeticAndLogic(t, tuple.NewInfixExpressionGrammar())
-	testArithmeticAndLogic(t, tuple.NewShellGrammar())
+	testArithmeticAndLogic(t, NewInfixExpressionGrammar())
+	testArithmeticAndLogic(t, NewShellGrammar())
 }
 
 
 func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 	test := func (formula string) {
-		val := tuple.ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(grammar, symbols, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -166,13 +166,13 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 func TestExprDeclareFunctions(t *testing.T) {
 
-	grammar := tuple.NewShellGrammar()
+	grammar := NewShellGrammar()
 
-	var symbols = tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
-	tuple.AddDeclareFunctions(&symbols)
+	var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+	AddDeclareFunctions(&symbols)
 	
 	test := func (formula string) {
-		val := tuple.ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(grammar, symbols, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}

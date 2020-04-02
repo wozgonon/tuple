@@ -53,7 +53,7 @@ func handleAtom(atom Atom, style Style, context Context, operatorGrammar * Opera
 		operatorGrammar.PushOperator(atom)
 	} else {
 		ch := context.LookAhead()
-		if ch == style.openChar { //  || ch == style.openChar2
+		if ch == style.OpenChar { //  || ch == style.openChar2
 			_, err := context.ReadRune()
 			if err == io.EOF {
 				(*operatorGrammar).PushValue(atom)

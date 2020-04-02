@@ -49,7 +49,7 @@ loc () {
 # Reports lines of test code and percentage test coverage
 loct () {
     wc -l `find . -name '*_test.go'`
-    go test tuple -cover
+    go test tuple tuple/lexer tuple/eval tuple/parsers tuple/runner -cover
 }
 
 cov() {

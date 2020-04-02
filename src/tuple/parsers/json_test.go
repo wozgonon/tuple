@@ -11,10 +11,10 @@ var zero = tuple.Int64(0)
 var one = tuple.Int64(1)
 
 func TestEvalJson(t *testing.T) {
-	var grammar = tuple.NewJSONGrammar()
+	var grammar = NewJSONGrammar()
 
 	test := func(formula string, expected tuple.Value) {
-		val := tuple.ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(grammar, symbols, formula)
 		if ! reflect.DeepEqual(val, expected) {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}
@@ -37,10 +37,10 @@ func TestEvalJson(t *testing.T) {
 }
 
 func TestEvalParseJson(t *testing.T) {
-	var grammar = tuple.NewJSONGrammar()
+	var grammar = NewJSONGrammar()
 
 	test := func(formula string, expected tuple.Tuple) {
-		val := tuple.ParseString(grammar, formula)
+		val := ParseString(grammar, formula)
 
 		tup := val.(tuple.Tuple)
 
@@ -80,7 +80,7 @@ func TestEvalParseJson(t *testing.T) {
 }
 
 func TestJsonPrint(t *testing.T) {
-	var grammar = tuple.NewJSONGrammar()
+	var grammar = NewJSONGrammar()
 
 	test := func(value tuple.Value, expected string) {
 		result := ""

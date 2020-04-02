@@ -1,8 +1,10 @@
-package parsers_test
+package lexer_test
 
 import (
 	"testing"
 	"tuple"
+	"tuple/runner"
+	"tuple/parsers"
 	"bufio"
 	"strings"
 	"strconv"
@@ -10,14 +12,15 @@ import (
 )
 
 const NO_RESULT = "..."
+var GetLogger = runner.GetLogger
 
 func testGetNext(t *testing.T, logger tuple.Logger, expression string, expected string) {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := tuple.NewRunnerContext("<eval>", reader, logger, false)
+	context := runner.NewRunnerContext("<eval>", reader, logger, false)
 
 	result := NO_RESULT
-	style := tuple.LispWithInfixStyle
+	style := parsers.LispWithInfixStyle
 	err := style.GetNext(&context,
 		func() {},
 		func(open string) {
@@ -51,8 +54,8 @@ func testGetNext(t *testing.T, logger tuple.Logger, expression string, expected 
 
 func TestLex1(t *testing.T) {
 
-	testLex1(t, tuple.GetLogger(nil))
-	testLex1(t, tuple.GetLogger(tuple.NewLispWithInfixGrammar()))
+	testLex1(t, GetLogger(nil))
+	testLex1(t, GetLogger(parsers.NewLispWithInfixGrammar()))
 }
 
 func testLex1(t *testing.T, logger tuple.Logger) {
@@ -75,9 +78,9 @@ func testLex1(t *testing.T, logger tuple.Logger) {
 
 func TestCLanguageOperators(t *testing.T) {
 
-	logger := tuple.GetLogger(tuple.NewLispGrammar())
-	operators := tuple.NewOperators(tuple.LispWithInfixStyle)
-	tuple.AddStandardCOperators(&operators)
+	logger := GetLogger(parsers.NewLispGrammar())
+	operators := parsers.NewOperators(parsers.LispWithInfixStyle)
+	parsers.AddStandardCOperators(&operators)
 	operators.Forall(func(operator string) {
 		if operator != " " {  // TODO handle space
 			testGetNext(t, logger, operator, operator)

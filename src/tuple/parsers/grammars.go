@@ -17,6 +17,7 @@
 package parsers
 
 import "tuple"
+import "tuple/lexer"
 
 type Grammars = tuple.Grammars
 type Grammar = tuple.Grammar
@@ -31,6 +32,7 @@ type Next = tuple.Next
 type Lexer = tuple.Lexer
 type Float64 = tuple.Float64
 type Int64 = tuple.Int64
+type Style = lexer.Style
 
 var CONS_ATOM = tuple.CONS_ATOM
 var PrintTuple = tuple.PrintTuple
@@ -39,10 +41,21 @@ var PrintExpression1 = tuple.PrintExpression1
 var PrintScalar = tuple.PrintScalar
 var NewComment = tuple.NewComment
 var NewTuple = tuple.NewTuple
+var NewStyle = lexer.NewStyle
 //var NewScalar = tuple.NewScalar
 var Error = tuple.Error
 var Verbose = tuple.Verbose
 
+const OPEN_BRACKET = lexer.OPEN_BRACKET
+const CLOSE_BRACKET = lexer.CLOSE_BRACKET
+const OPEN_SQUARE_BRACKET = lexer.OPEN_SQUARE_BRACKET
+const CLOSE_SQUARE_BRACKET = lexer.CLOSE_SQUARE_BRACKET
+const OPEN_BRACE = lexer.OPEN_BRACE
+const CLOSE_BRACE = lexer.CLOSE_BRACE
+const NEWLINE = lexer.NEWLINE
+const DOUBLE_QUOTE = lexer.DOUBLE_QUOTE
+const CONS_OPERATOR = lexer.CONS_OPERATOR
+var SPACE_ATOM = lexer.SPACE_ATOM
 
 
 func AddAllKnownGrammars(grammars * Grammars) {
@@ -63,3 +76,41 @@ func UnexpectedCloseBracketError(context Context, token string) {
 func UnexpectedEndOfInputErrorBracketError(context Context) {
 	Error(context,"Unexpected end of input")
 }
+
+func AddStandardCOperators(operators *Operators) {
+	
+	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
+	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
+	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
+	operators.AddPrefix("+", "_prefix_plus", 110)
+	operators.AddPrefix("-", "_prefix_minus", 110)
+	// TODO operators.AddPostfix("++", "_postfix_incr", 120) // TODO check
+	operators.AddPrefix("!", "_prefix_not", 55) // TODO check
+	operators.AddInfix("**", 100)
+	operators.AddInfix("*", 90)
+	operators.AddInfix("/", 90)
+	operators.AddInfix("+", 80)
+	operators.AddInfix("-", 80)
+	operators.AddInfix("<", 60)
+	operators.AddInfix(">", 60)
+	operators.AddInfix("<=", 60)
+	operators.AddInfix(">=", 60)
+	operators.AddInfix("==", 60)
+	operators.AddInfix("!=", 60)
+	operators.AddInfix("|", 55)  // Pipe, what about redirect
+	operators.AddInfix("&&", 50)
+	operators.AddInfix("||", 50)
+	operators.AddInfix("=", 40)
+	//operators.AddInfix(",", 40)
+	//operators.AddInfix(";", 30)
+	operators.AddInfix(SPACE_ATOM.Name, 10)  // TODO space???
+}
+
+
+// TODO can this be removed
+func quote(value string, out func(value string)) {
+	out(DOUBLE_QUOTE)
+	out(value)   // TODO Escape
+	out(DOUBLE_QUOTE)
+}
+

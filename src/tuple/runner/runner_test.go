@@ -5,9 +5,11 @@ import (
 	"tuple"
 	"tuple/parsers"
 	"tuple/runner"
+	"tuple/eval"
 	"math"
 )
 
+var symbols = eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
 
 func TestEval1(t *testing.T) {
 	var grammar = parsers.NewInfixExpressionGrammar()
@@ -46,12 +48,12 @@ func TestEvalToInt64(t *testing.T) {
 func testFiles(t *testing.T) {
 
 	grammars := tuple.NewGrammars()
-	grammars.Add((tuple.NewLispGrammar()))
+	grammars.Add((parsers.NewLispGrammar()))
 	expected := 5
 
 	count := 0
 	files := []string{"../wozg/testdata/test.l"}
-	errors := tuple.RunFiles(files, tuple.GetLogger(nil), false, tuple.NewLispGrammar(), &grammars, func (next tuple.Value) { count += 1})
+	errors := runner.RunFiles(files, runner.GetLogger(nil), false, parsers.NewLispGrammar(), &grammars, func (next tuple.Value) { count += 1})
 
 	if errors > 0 {
 		t.Errorf("Found unexpected errors: %d", errors)
@@ -62,8 +64,7 @@ func testFiles(t *testing.T) {
 }
 
 func TestSimplePipeline(t *testing.T) {
-
-	table := tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})
-	tuple.SimplePipeline(&table, "*", tuple.NewLispGrammar(), func (_ string) {})
+	table := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	runner.SimplePipeline(&table, "*", parsers.NewLispGrammar(), func (_ string) {})
 	// TODO
 }
