@@ -1,4 +1,4 @@
-package tuple_test
+package runner_test
 
 import (
 	"testing"

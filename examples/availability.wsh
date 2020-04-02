@@ -5,31 +5,42 @@ func unavailable percent { 24*360*(1-percent) }
 func availabilityTable arg {
     (concat "Number of hours in a year: " 24*360)
     (for period (("Days" 1/24) ("Hours" 1) ("Minutes" 60)) {
-	     for percent (.99 .995 .999 .9999) {
-		     progn (unit=nth(0 period)) (divisor=nth(1 period)) (concat  unit " unavailable per year at " percent "% = " round2(unavailable(percent)/divisor))
-		}
-	    })
+	     progn (unit=nth(0 period)) (divisor=nth(1 period)) (
+		 (concat  unit " unavailable per year at ") (
+	         for percent (.99 .995 .999 .9999) {
+		     progn (concat  percent "% = " round2(unavailable(percent)/divisor))
+	     }))})}
 
-}
 
+av=availabilityTable(1)
 
-availabilityTable(1)
+n=nth(1 av)
+o=nth(1 n)
 
 func tag arg {
     concat "<" tag 
 }
 
+func str arg {
+
+    if(istuple(arg), join(" " arg), arg)
+}
+
 func html arg {
 
     (concat "<table>")
-    (concat "<tr>" arg "</tr>")
     
-    for line arg {
-	    (concat "<tr>" line "</tr>")
-    }   
+    (for line arg {
+	    (concat "<tr>" str(line) "</tr>")
+    })   
     
     (concat "</table>")
 
 }
 
 
+#html {
+#    (1 2 3)
+#    (4 5 6)
+#    (7 8 9)
+#}

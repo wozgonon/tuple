@@ -17,6 +17,9 @@
 package main
 
 import "tuple"
+import "tuple/eval"
+import "tuple/runner"
+import "tuple/parsers"
 import "os"
 import "fmt"
 import "flag"
@@ -42,29 +45,26 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	inputGrammar := tuple.NewShellGrammar()
+	inputGrammar := parsers.NewShellGrammar()
 	outputGrammar := inputGrammar
 
-	table := tuple.NewUnSafeSymbolTable()
-	table.Add("|", tuple.Pipe)
-	table.Add("=", tuple.Assign)
+	table := eval.NewUnSafeSymbolTable()
+	table.Add("|", eval.Pipe)
+	table.Add("=", eval.Assign)
 
-	tuple.ParseAndEval(inputGrammar, table, "func count t { progn (c=0) (for v t { c=c+1 }) c }")
+	runner.ParseAndEval(inputGrammar, table, "func count t { progn (c=0) (for v t { c=c+1 }) c }")
 
-	var symbols * tuple.SymbolTable = nil
+	var symbols * eval.SymbolTable = nil
 	if !*ast {
 		symbols = &table
 	}
-
-
 	
-	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
-
+	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
 
 	grammars := tuple.NewGrammars()
 	grammars.Add(inputGrammar)
-	files := tuple.GetRemainingNonFlagOsArgs()
-	errors := tuple.RunFiles(files, tuple.GetLogger(nil), *verbose, inputGrammar, &grammars, pipeline)
+	files := runner.GetRemainingNonFlagOsArgs()
+	errors := runner.RunFiles(files, runner.GetLogger(nil), *verbose, inputGrammar, &grammars, pipeline)
 
 	if errors > 0 {
 		os.Exit(1)

@@ -14,12 +14,22 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package tuple
+package eval
 
 import "math"
 import "reflect"
 import "fmt"
 import "strconv"
+import "tuple"
+
+type Atom = tuple.Atom
+type Value = tuple.Value
+type Tuple = tuple.Tuple
+type Int64 = tuple.Int64
+type Float64 = tuple.Float64
+type Bool = tuple.Bool
+type String = tuple.String
+
 
 //  A simple toy evaluator.
 //
@@ -32,6 +42,22 @@ import "strconv"
 //  * [Eval](https://en.wikipedia.org/wiki/Eval)
 //  * [Meta-circular_evaluator](https://en.wikipedia.org/wiki/Meta-circular_evaluator)
 //  
+
+type CallHandler interface {
+	Find(context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value)
+}
+
+type EvalContext interface {
+	CallHandler
+	//LocationContext
+
+	Log(level string, format string, args ...interface{})
+	Add(name string, function interface{})
+	//Eval(expression Value) Value
+	Call(head Atom, args []Value) Value  // Reduce
+}
+
+
 
 type SymbolTable struct {
 	symbols map[string]reflect.Value
@@ -114,9 +140,9 @@ func (table * SymbolTable) Add(name string, function interface{}) {
 	table.symbols[key] = reflectValue
 }
 
-func evalTuple(context EvalContext, tuple Tuple) Tuple {
-	newTuple := NewTuple()
-	for _,v:= range tuple.List {
+func evalTuple(context EvalContext, value Tuple) Tuple {
+	newTuple := tuple.NewTuple()
+	for _,v:= range value.List {
 		newTuple.Append(Eval(context, v))
 	}
 	context.Log("TRACE", "Eval tuple return '%s'", newTuple)
@@ -178,7 +204,7 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 						result = evaluated
 					} else {
 						context.Log("ERROR", "Expected tuple but got: %s", evaluated)
-						result = NewTuple()
+						result = tuple.NewTuple()
 					}
 				case ValueType:
 					result = evaluated
@@ -200,20 +226,20 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 
 	in := reflectValue
 	if len(in) == 0  {
-		return EMPTY  // TODO VOID
+		return tuple.EMPTY  // TODO VOID
 	}
 	v:= in[0]
 	switch v.Type() {
-	case IntType: return Int64(v.Int())
-	case FloatType: return Float64(v.Float())
-	case BoolType: return Bool(v.Bool())
-	case StringType: return String(v.String())
+	case IntType: return tuple.Int64(v.Int())
+	case FloatType: return tuple.Float64(v.Float())
+	case BoolType: return tuple.Bool(v.Bool())
+	case StringType: return tuple.String(v.String())
 	case TupleType: return v.Interface().(Tuple)
 	case AtomType: return v.Interface().(Atom)
 	case ValueType: return v.Interface().(Value)
 	default:
 		context.Log("ERROR", "Cannot find type of '%s'", v)
-		return NAN
+		return tuple.NAN
 	}
 }
 
@@ -265,7 +291,7 @@ var IntType = reflect.TypeOf(int64(1))
 var FloatType = reflect.TypeOf(float64(1.0))
 var BoolType = reflect.TypeOf(true)
 var StringType = reflect.TypeOf("")
-var TupleType = reflect.TypeOf(NewTuple())
+var TupleType = reflect.TypeOf(tuple.NewTuple())
 
 
 var AtomType = reflect.TypeOf(Atom{""})

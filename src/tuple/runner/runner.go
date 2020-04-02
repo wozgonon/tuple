@@ -14,8 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package tuple
+package runner
 
+import "tuple"
 import 	"io"
 import 	"log"
 import 	"fmt"
@@ -23,12 +24,27 @@ import 	"bufio"
 import 	"os"
 import 	"strings"
 import "flag"
+import "tuple/eval"
+
+type Logger = tuple.Logger
+type Grammar = tuple.Grammar
+type Grammars = tuple.Grammars
+type Value = tuple.Value
+type Next = tuple.Next
+type Context = tuple.Context
+type String = tuple.String
+type Int64 = tuple.Int64
 
 /////////////////////////////////////////////////////////////////////////////
 // For running the language translations
 /////////////////////////////////////////////////////////////////////////////
 
+const STDIN = "<stdin>"
 const PROMPT = "$ "
+
+func IsInteractive(context Context) bool {
+	return context.SourceName() == STDIN
+}
 
 type RunnerContext struct {
 	sourceName string
@@ -43,7 +59,7 @@ type RunnerContext struct {
 
 func NewRunnerContext(sourceName string, scanner io.RuneScanner, logger Logger, verbose bool) RunnerContext {
 	context :=  RunnerContext{sourceName, 1, 0, 0, 0, scanner, logger, verbose}
-	Verbose(&context,"Parsing file [%s] suffix [%s]", sourceName, Suffix(&context))
+	tuple.Verbose(&context,"Parsing file [%s] suffix [%s]", sourceName, tuple.Suffix(&context))
 	return context
 }
 
@@ -66,7 +82,7 @@ func (context * RunnerContext) SourceName() string {
 }
 
 func (context * RunnerContext) Open() {
-	Verbose(context, "*OPEN")
+	tuple.Verbose(context, "*OPEN")
 	context.depth += 1
 }
 
@@ -74,7 +90,7 @@ func (context * RunnerContext) Close() {
 	if context.depth > 0 {
 		context.depth -= 1
 	}
-	Verbose(context, "*CLOSE")
+	tuple.Verbose(context, "*CLOSE")
 }
 
 func (context * RunnerContext) EOL() {
@@ -95,7 +111,7 @@ func (context * RunnerContext) ReadRune() (rune, error) {
 	case ch == '\n':
 		context.line ++
 		context.column = 0
-		Verbose(context,"New line")
+		tuple.Verbose(context,"New line")
 	default:
 		context.column ++
 	}
@@ -136,23 +152,23 @@ func GetLogger(logGrammar Grammar) Logger {
 		}
 	} else {
 		return func(context Context, level string, message string) {
-			tuple := NewTuple()
-			tuple.Append(String(level))
-			tuple.Append(Int64(context.Line()))
-			tuple.Append(Int64(context.Column()))
-			tuple.Append(Int64(context.Depth()))
-			tuple.Append(String(context.SourceName()))
-			tuple.Append(String(message))
-			logGrammar.Print(tuple, func (value string) { fmt.Print(value) })
+			record := tuple.NewTuple()
+			record.Append(String(level))
+			record.Append(Int64(context.Line()))
+			record.Append(Int64(context.Column()))
+			record.Append(Int64(context.Depth()))
+			record.Append(String(context.SourceName()))
+			record.Append(String(message))
+			logGrammar.Print(record, func (value string) { fmt.Print(value) })
 		}
 	}
 }
 
-func ParseAndEval(grammar Grammar, symbols SymbolTable, expression string) Value {
+func ParseAndEval(grammar Grammar, symbols eval.SymbolTable, expression string) Value {
 
-	var result Value = NAN
+	var result Value = tuple.NAN
 	pipeline := func(value Value) {
-		result = Eval(&symbols, value)
+		result = eval.Eval(&symbols, value)
 	}
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := NewRunnerContext("<eval>", reader, GetLogger(nil), false)
@@ -162,7 +178,7 @@ func ParseAndEval(grammar Grammar, symbols SymbolTable, expression string) Value
 }
 
 func ParseString(grammar Grammar, expression string) Value {
-	var result Value = NAN
+	var result Value = tuple.NAN
 	pipeline := func(value Value) {
 		result = value
 	}
@@ -178,7 +194,7 @@ func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, 
 	errors := int64(0)
 	// TODO this can be improved
 	parse := func (context Context) {
-		suffix := Suffix(context)
+		suffix := tuple.Suffix(context)
 		var grammar Grammar
 		if suffix == "" {
 			if inputGrammar == nil {
@@ -188,14 +204,14 @@ func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, 
 		} else {
 			grammar = grammars.FindBySuffixOrPanic(suffix)
 		}
-		Verbose(context,"source [%s] suffix [%s]", context.SourceName(), grammar.FileSuffix ())
+		tuple.Verbose(context,"source [%s] suffix [%s]", context.SourceName(), grammar.FileSuffix ())
 		grammar.Parse(context, next)
 	}
 
 	if len(args) == 0 {
 		reader := bufio.NewReader(os.Stdin)
 		context := NewRunnerContext(STDIN, reader, logger, verbose)
-		Verbose(&context, "STDIN isinteractive: %s", IsInteractive(&context))
+		tuple.Verbose(&context, "STDIN isinteractive: %s", IsInteractive(&context))
 		context.EOL() // prompt
 		parse(&context)
 		errors += context.errors
@@ -223,7 +239,7 @@ func PrintString(value string) {
 //
 //  Set up the translator pipeline.
 //
-func SimplePipeline (symbols * SymbolTable, queryPattern string, outputGrammar Grammar, out func(value string)) Next {
+func SimplePipeline (symbols * eval.SymbolTable, queryPattern string, outputGrammar Grammar, out func(value string)) Next {
 
 	prettyPrint := func(tuple Value) {
 		outputGrammar.Print(tuple, out)
@@ -232,7 +248,7 @@ func SimplePipeline (symbols * SymbolTable, queryPattern string, outputGrammar G
 	if symbols != nil {
 		next := pipeline
 		pipeline = func(value Value) {
-			next(Eval(symbols, value))
+			next(eval.Eval(symbols, value))
 		}
 	}
 	if queryPattern != "" {

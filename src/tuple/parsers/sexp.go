@@ -14,12 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package tuple
+package parsers
 
 import "io"
-//import "unicode"
-//import "unicode/utf8"
-//import "errors"
 
 // A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
 //

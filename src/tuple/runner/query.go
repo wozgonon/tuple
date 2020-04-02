@@ -14,10 +14,13 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package tuple
+package runner
 
 import "strings"
-//import "fmt"
+import "tuple"
+
+type Tuple = tuple.Tuple
+type Atom = tuple.Atom
 
 //  The Query type is used for filtering the AST produced by the parser.
 type Query struct {

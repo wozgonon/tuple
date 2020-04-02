@@ -17,6 +17,9 @@
 package main
 
 import (
+	"tuple/runner"
+	"tuple/eval"
+	"tuple/parsers"
 	"tuple"
 	"os"
 	"fmt"
@@ -25,6 +28,7 @@ import (
 	"bufio"
 )
 
+type SymbolTable = eval.SymbolTable
 
 func main() {
 
@@ -36,7 +40,7 @@ func main() {
 	var out = flag.String("out", ".l", "The format of the output.")
 	var loggerGrammarSuffix = flag.String("log", "", "The format of the error logging.")
 	var verbose = flag.Bool("verbose", false, "Verbose logging.")
-	var eval = flag.Bool("eval", false, "Run 'eval' interpretter.")
+	var runEval = flag.Bool("eval", false, "Run 'eval' interpretter.")
 	var queryPattern = flag.String("query", "", "Select parts of the AST matching a query pattern.")
 	var version = flag.Bool("version", false, "Print version of this software.")
 	var command = flag.Bool("command", false, "Execute command lines arguments rather than files.")
@@ -57,7 +61,7 @@ func main() {
 	// Set up and then look up the set of supported grammars.
 	//
 	grammars := tuple.NewGrammars()
-	tuple.AddAllKnownGrammars(&grammars)
+	parsers.AddAllKnownGrammars(&grammars)
 
 	if *listGrammars {
 		grammars.Forall(func (grammar tuple.Grammar) {
@@ -68,7 +72,7 @@ func main() {
 
 	outputGrammar := grammars.FindBySuffixOrPanic(*out)
 	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
-	logger := tuple.GetLogger(loggerGrammar)
+	logger := runner.GetLogger(loggerGrammar)
 	var inputGrammar tuple.Grammar = nil
 	if *in != "" {
 		inputGrammar = grammars.FindBySuffixOrPanic(*in)
@@ -77,13 +81,13 @@ func main() {
 	//
 	//  Set up the translator pipeline.
 	//
-	var symbols * tuple.SymbolTable = nil
-	table := tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})
-	if *eval {
+	var symbols * SymbolTable = nil
+	table := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	if *runEval {
 		symbols = &table
 	}
 
-	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
+	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
 
 	if *command {
 		//
@@ -98,7 +102,7 @@ func main() {
 		//  Set up the translator pipeline.
 		//
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := tuple.NewRunnerContext("<cli>", reader, logger, *verbose)
+		context := runner.NewRunnerContext("<cli>", reader, logger, *verbose)
 		grammar := grammars.FindBySuffixOrPanic(*in)
 
 		grammar.Parse(&context, pipeline)
@@ -111,8 +115,8 @@ func main() {
 		//
 		//  Run the translators over all the input files.
 		//
-		files := tuple.GetRemainingNonFlagOsArgs()
-		errors := tuple.RunFiles(files, logger, *verbose, inputGrammar, &grammars, pipeline)
+		files := runner.GetRemainingNonFlagOsArgs()
+		errors := runner.RunFiles(files, logger, *verbose, inputGrammar, &grammars, pipeline)
 
 		//
 		//  Exit with non-zero response code if any errors occurred.

@@ -1,22 +1,24 @@
-package tuple_test
+package runner_test
 
 import (
 	"testing"
 	"tuple"
+	"tuple/parsers"
+	"tuple/runner"
 	"math"
 )
 
 
 func TestEval1(t *testing.T) {
-	var grammar = tuple.NewInfixExpressionGrammar()
-	val := tuple.ParseAndEval(grammar, symbols, "1+1")
+	var grammar = parsers.NewInfixExpressionGrammar()
+	val := runner.ParseAndEval(grammar, symbols, "1+1")
 	if val != tuple.Float64(2) {
 		t.Errorf("1+1=%s", val)
 	}
 }
 
 func TestEvalToInt64(t *testing.T) {
-	var grammar = tuple.NewInfixExpressionGrammar()
+	var grammar = parsers.NewInfixExpressionGrammar()
 	tests := map[string]float64{
 		"1+1" : 2,
 		"1." : 1,
@@ -34,7 +36,7 @@ func TestEvalToInt64(t *testing.T) {
 		"acos(cos(PI))" : math.Pi,
 	}
 	for k, v := range tests {
-		val := tuple.ParseAndEval(grammar, symbols, k)
+		val := runner.ParseAndEval(grammar, symbols, k)
 		if val != tuple.Float64(v) {
 			t.Errorf("%s=%d   %s", k, int64(v), val)
 		}

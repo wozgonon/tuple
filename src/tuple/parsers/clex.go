@@ -14,10 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package tuple
+package parsers
 
 import "fmt"
-//import "log"
 import "io"
 import "unicode"
 import "strconv"
@@ -46,7 +45,6 @@ const CONS_OPERATOR = "."
 
 var (
 	SPACE_ATOM = Atom{" "}
-	CONS_ATOM = Atom{"cons"}
 )
 
 /////////////////////////////////////////////////////////////////////////////

@@ -18,10 +18,11 @@ package main
 
 import (
 	"tuple"
+	"tuple/runner"
+	"tuple/parsers"
 	"fmt"
 	"net/http"
 	"bufio"
-	//"strings"
 )
 
 func do(w http.ResponseWriter, req *http.Request) {
@@ -38,11 +39,11 @@ func do(w http.ResponseWriter, req *http.Request) {
 		grammarName = grammarNames[0]
 	}
 	grammars := tuple.NewGrammars()
-	tuple.AddAllKnownGrammars(&grammars)
+	parsers.AddAllKnownGrammars(&grammars)
 	grammar, ok := grammars.FindBySuffix(grammarName)
 	if ok {
 		reader := bufio.NewReader(r) // TODO read from request
-		context := tuple.NewRunnerContext("<http>", reader, tuple.GetLogger(nil), false)
+		context := runner.NewRunnerContext("<http>", reader, runner.GetLogger(nil), false)
 		grammar.Parse(&context, func (value tuple.Value) {
 			fmt.Fprintf(w, "%s", value)
 		})

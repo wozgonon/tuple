@@ -1,4 +1,4 @@
-package tuple_test
+package parsers_test
 
 import (
 	"testing"

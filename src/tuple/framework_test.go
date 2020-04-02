@@ -5,13 +5,14 @@ import (
 	"tuple"
 	"strings"
 	"math"
+	"tuple/parsers"
 )
 
 
 func TestGrammars(t *testing.T) {
 
 	grammars := tuple.NewGrammars()
-	tuple.AddAllKnownGrammars(&grammars)
+	parsers.AddAllKnownGrammars(&grammars)
 
 	count := 0
 	grammars.Forall(func (grammar tuple.Grammar) {

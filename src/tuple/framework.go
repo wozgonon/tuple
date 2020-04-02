@@ -24,8 +24,6 @@ import "math"
 //import "fmt"
 //import "strconv"
 
-const STDIN = "<stdin>"
-
 /////////////////////////////////////////////////////////////////////////////
 //  Callback signatures
 /////////////////////////////////////////////////////////////////////////////
@@ -33,6 +31,8 @@ const STDIN = "<stdin>"
 type StringFunction func(value string)
 type Next func(value Value)
 type Logger func(context Context, level string, message string)
+
+var CONS_ATOM = Atom{"cons"}
 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer and Values
@@ -176,20 +176,6 @@ type LocationContext interface {
 	Log(level string, format string, args ...interface{})
 }
 
-type CallHandler interface {
-	Find(context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value)
-}
-
-type EvalContext interface {
-	CallHandler
-	//LocationContext
-
-	Log(level string, format string, args ...interface{})
-	Add(name string, function interface{})
-	//Eval(expression Value) Value
-	Call(head Atom, args []Value) Value  // Reduce
-}
-
 // The Context interface represents the current state of parsing and translation.
 // It can provide: the name of the input and current depth and number of errors
 type Context interface {
@@ -213,18 +199,6 @@ func Verbose(context Context, format string, args ...interface{}) {
 
 func Error(context Context, format string, args ...interface{}) {
 	context.Log("ERROR", format, args...)
-}
-
-func UnexpectedCloseBracketError(context Context, token string) {
-	Error(context,"Unexpected close bracket '%s'", token)
-}
-
-func UnexpectedEndOfInputErrorBracketError(context Context) {
-	Error(context,"Unexpected end of input")
-}
-
-func IsInteractive(context Context) bool {
-	return context.SourceName() == STDIN
 }
 
 func Suffix(context Context) string {
@@ -292,17 +266,6 @@ func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
 		panic("Unsupported file suffix: '" + suffix + "'")
 	}
 	return syntax
-}
-
-func AddAllKnownGrammars(grammars * Grammars) {
-	grammars.Add(NewLispWithInfixGrammar())
-	grammars.Add(NewLispGrammar())
-	grammars.Add(NewInfixExpressionGrammar())
-	grammars.Add(NewYamlGrammar())
-	grammars.Add(NewIniGrammar())
-	grammars.Add(NewPropertyGrammar())
-	grammars.Add(NewJSONGrammar())
-	grammars.Add(NewShellGrammar())
 }
 
 /////////////////////////////////////////////////////////////////////////////

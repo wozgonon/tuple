@@ -14,7 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package tuple
+package eval
 
 import "math"
 import "strings"
@@ -24,6 +24,7 @@ import "log"
 import "os/exec"
 import "os"
 import "bytes"
+import "tuple"
 
 func AddStringFunctions(table * SymbolTable) {
 	table.Add("len", func(value string) int64 { return int64(len(value)) })
@@ -35,15 +36,22 @@ func AddStringFunctions(table * SymbolTable) {
 
 func AddTupleFunctions(table * SymbolTable)  {
 
-	table.Add("nth", func(index int64, tuple Tuple) Value {
-		if index < 0 || index >= int64(tuple.Length()) {
-			return EMPTY
+	table.Add("nth", func(index int64, value Tuple) Value {
+		if index < 0 || index >= int64(value.Length()) {
+			return tuple.EMPTY
 		}
-		return tuple.List[index]
+		return value.List[index]
 	})
 
-	table.Add("list", func(_ EvalContext, values... Value) Value { return NewTuple(values...) })
+	table.Add("list", func(_ EvalContext, values... Value) Value { return tuple.NewTuple(values...) })
 	// TODO table.Add("quote", func(value Value) Value { return NewTuple("quote", value) })
+
+	table.Add("istuple", func (context EvalContext, value Value) bool {
+		evaluated := Eval(context, value)
+		_, ok := evaluated.(Tuple)
+		return ok
+	})
+
 }
 
 // These functions are harmless, one can execute them from a script and not cause any damage.
@@ -102,6 +110,9 @@ func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
 	// These allocate memory and are not quite
 	AddStringFunctions(&table)
 	AddTupleFunctions(&table)
+
+
+
 	return table
 }
 
@@ -151,7 +162,7 @@ func AddDeclareFunctions(table * SymbolTable) {
 		newScope.Add(atom.Name, func () Value {
 			return iterator
 		})
-		result := NewTuple()
+		result := tuple.NewTuple()
 		for _, v := range list.List {
 			iterator = Eval(context, v)
 			value := Eval(&newScope, code)
@@ -162,7 +173,7 @@ func AddDeclareFunctions(table * SymbolTable) {
 
 	// https://www.gnu.org/software/emacs/manual/html_node/eintr/progn.html
 	table.Add("progn", func(context EvalContext, values... Value) Value {
-		var result Value = EMPTY
+		var result Value = tuple.EMPTY
 		for _, v := range values {
 			result = Eval(context, v)
 		}

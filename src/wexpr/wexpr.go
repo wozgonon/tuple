@@ -1,11 +1,17 @@
 package main
 
-import "tuple"
+import (
+	"tuple/runner"
+	"tuple/eval"
+	"tuple/parsers"
+)
 import "os"
 import "strings"
 import "bufio"
 import "fmt"
 import "flag"
+
+type SymbolTable = eval.SymbolTable
 
 func main () {
 
@@ -31,18 +37,18 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	outputGrammar := tuple.NewInfixExpressionGrammar()
-	var symbols * tuple.SymbolTable = nil
-	table := tuple.NewSafeSymbolTable(&tuple.ErrorIfFunctionNotFound{})
+	outputGrammar := parsers.NewInfixExpressionGrammar()
+	var symbols * SymbolTable = nil
+	table := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
 	if !*ast {
 		symbols = &table
 	}
 	//table.Add("func", func(name string, body tuple.Tuple) { fmt.Printf("TODO Implement 'func' '%s' '%s'", name, body) })
 
-	pipeline := tuple.SimplePipeline (symbols, *queryPattern, outputGrammar, tuple.PrintString)
+	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := tuple.NewRunnerContext("<cli>", reader, tuple.GetLogger(nil), *verbose)
-	grammar := tuple.NewInfixExpressionGrammar()
+	context := runner.NewRunnerContext("<cli>", reader, runner.GetLogger(nil), *verbose)
+	grammar := parsers.NewInfixExpressionGrammar()
 
 	//
 	//  Set up the translator pipeline.
