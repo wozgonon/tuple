@@ -52,7 +52,7 @@ func main () {
 	table.Add("|", eval.Pipe)
 	table.Add("=", eval.Assign)
 
-	runner.ParseAndEval(inputGrammar, table, "func count t { progn (c=0) (for v t { c=c+1 }) c }")
+	//runner.ParseAndEval(inputGrammar, table, "func count t { progn (c=0) (for v t { c=c+1 }) c }")
 
 	var symbols * eval.SymbolTable = nil
 	if !*ast {

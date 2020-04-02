@@ -190,6 +190,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 			nextLiteral(value)
 		}
 	case ch == ',':  //nextAtom(Atom{","})
+	case ch == ';':  nextAtom(Atom{";"})
 	case ch == style.KeyValueSeparatorRune:		nextAtom(Atom{style.KeyValueSeparator})
 	case ReadAndLookAhead(ch, '.', '.'):
 	case ReadAndLookAhead(ch, '>', '='):

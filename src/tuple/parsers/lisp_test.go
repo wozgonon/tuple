@@ -143,6 +143,6 @@ func TestLispInfixEquals(t *testing.T) {
 
 
 	test("(3 != -(1+2))")
-	test("(1 == -(-(-1)+2))")
+	test("(-3 == -(-(-1)+2))")
 }
 

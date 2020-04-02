@@ -33,7 +33,7 @@ func TestExprToInt64(t *testing.T) {
 		"-1**7*2+3" : 1,
 		"0*(7)" : 0,
 		"8/4" : 2,
-		"-(-(-1)+2)" : 1,
+		"-(-(-1)+2)" : -3,
 		"cos(PI)" : -1,
 		"acos(cos(PI))" : math.Pi,
 		"asin(sin(0))" : 0,
@@ -127,7 +127,7 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 	test("PI == PI")
 
 	test("3 != -(1+2)")
-	test("1 == -(-(-1)+2)")
+	test("-3 == -(-(-1)+2)")
 
 	test("1 >= 1")
 	test("1 >= 0")
@@ -188,7 +188,7 @@ func TestExprDeclareFunctions(t *testing.T) {
 	test("nth(-1 ( 1 2 3 )) != 1")
 	test("nth(3  ( 1 2 3 )) != 4")
 
-	test("-1 == progn (1+2) (3+4) cos(PI)")
+	test("-1 == progn(1+2 3+4 cos(PI)")
 	// TODO uses assign test("6==progn (m=3) (s=2) (m*s)")
 	
 	//test("for a (1 2) { for b (4 5) { a+b }} == ((5 6) (6 7))")

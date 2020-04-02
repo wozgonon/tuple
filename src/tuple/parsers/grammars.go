@@ -85,7 +85,6 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddPrefix("+", 110)
 	operators.AddPrefix("-", 110)
 	// TODO operators.AddPostfix("++", "_postfix_incr", 120) // TODO check
-	operators.AddPrefix("!", 55) // TODO check
 	operators.AddInfix("**", 100)
 	operators.AddInfix("*", 90)
 	operators.AddInfix("/", 90)
@@ -98,12 +97,13 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddInfix(">=", 60)
 	operators.AddInfix("==", 60)
 	operators.AddInfix("!=", 60)
+	operators.AddPrefix("!", 55) // TODO check
 	operators.AddInfix("|", 55)  // Pipe, what about redirect
 	operators.AddInfix("&&", 50)
 	operators.AddInfix("||", 50)
 	operators.AddInfix("=", 40)
 	//operators.AddInfix(",", 30)
-	//operators.AddInfix(";", 20)
+	operators.AddInfix(";", 20)
 	operators.AddInfix(SPACE_ATOM.Name, 10)  // TODO space???
 
 	//operators.AddInfix3(":", 30, CONS_OPERATOR)

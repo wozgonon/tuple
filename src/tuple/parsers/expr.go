@@ -56,7 +56,7 @@ func handleAtom(atom Atom, style Style, context Context, operatorGrammar * Opera
 		if ch == style.OpenChar { //  || ch == style.openChar2
 			_, err := context.ReadRune()
 			if err == io.EOF {
-				(*operatorGrammar).PushValue(atom)
+				operatorGrammar.PushValue(atom)
 				//operatorGrammar.EOF(next)
 				return // TODO eof
 			}
@@ -65,9 +65,9 @@ func handleAtom(atom Atom, style Style, context Context, operatorGrammar * Opera
 				return
 			}
 			context.Open()
-			(*operatorGrammar).OpenBracket(Atom{open})
+			operatorGrammar.OpenBracket(Atom{open})
 		}
-		(*operatorGrammar).PushValue(atom)
+		operatorGrammar.PushValue(atom)
 	}
 }
 

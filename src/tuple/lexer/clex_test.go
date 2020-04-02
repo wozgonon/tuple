@@ -82,7 +82,7 @@ func TestCLanguageOperators(t *testing.T) {
 	operators := parsers.NewOperators(parsers.LispWithInfixStyle)
 	parsers.AddStandardCOperators(&operators)
 	operators.Forall(func(operator string) {
-		if operator != " " {  // TODO handle space
+		if operator != " " && operator != ";" && operator != "," {  // TODO handle space
 			testGetNext(t, logger, operator, operator)
 		}
 	})
