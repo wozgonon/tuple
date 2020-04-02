@@ -93,7 +93,7 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddInfix("%", 90)
 	operators.AddInfix("+", 80)
 	operators.AddInfix("-", 80)
-	//operators.AddInfix("..", 70)  // Range operator
+	operators.AddInfix("..", 70)  // Range operator
 	operators.AddInfix("<", 60)
 	operators.AddInfix(">", 60)
 	operators.AddInfix("<=", 60)
