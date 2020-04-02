@@ -101,8 +101,8 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddInfix("&&", 50)
 	operators.AddInfix("||", 50)
 	operators.AddInfix("=", 40)
-	//operators.AddInfix(",", 40)
-	//operators.AddInfix(";", 30)
+	//operators.AddInfix(",", 30)
+	//operators.AddInfix(";", 20)
 	operators.AddInfix(SPACE_ATOM.Name, 10)  // TODO space???
 }
 

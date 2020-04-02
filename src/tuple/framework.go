@@ -119,7 +119,7 @@ func (tuple *Tuple) IsConsInTuple() bool {
 	return cons
 }
 
-func NewTuple(values...Value) Tuple {
+func NewTuple(values... Value) Tuple {
 	return Tuple{values}
 }
 

@@ -74,14 +74,14 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 
 	values := &(stack.Values.List)
 	lv := stack.Values.Length()
+	stack.popOperator()
 	if strings.HasPrefix(top.Name, "_prefix_") {
-		stack.popOperator()
 		stack.reducePrefix(top)
 	} else {
+		count := 2
+		tuple := NewTuple()
 		if top == SPACE_ATOM { // TODO Could in principle generalize to make any binary operator n-ary
 			Verbose(stack.context,"** REDUCE\t'%s'\n", top.Name)
-			stack.popOperator()
-			count := 2
 			for {
 				ll := len(stack.operatorStack)
 				if ll == 0 {
@@ -96,24 +96,19 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 				count += 1
 			}
 			// TODO the following is not efficient and should be replaced with a slice: tuple := NewTuple(args...)
-			tuple := NewTuple()
-			//if top != SPACE_ATOM {
-			//	tuple.Append(top)
-			//}
 			args := (*values) [lv-count:]
 			for _,v := range args {
 				tuple.Append(v)
 			}
 			Verbose(stack.context," REDUCE:\t'SPACE'\t'%s'\t'%s'\t...%d...   \n", tuple.List[0], tuple.List[1], tuple.Length()) //, tuple.List==(*values))
-			stack.Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
-			return count - 2
 		} else {
 			val1 := (*values) [lv - 2]
 			val2 := (*values) [lv - 1]
-			stack.popOperator()
-			stack.Values.List = append((*values)[:lv-2], NewTuple(top, val1, val2))
+			tuple = NewTuple(top, val1, val2)
 			Verbose(stack.context," REDUCE:\t'%s'\t'%s'\t'%s'\n", top.Name, val1, val2)
 		}
+		stack.Values.List = append((*values)[:lv-count], tuple) // TODO should not need a special case
+		return count - 2
 	}
 	return 0
 }

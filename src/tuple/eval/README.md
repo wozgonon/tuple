@@ -23,9 +23,18 @@ Risks:
 * One could include 'safe functions' in a file sent between processes with the risk that an operation might cause an memory outage so only behind a firewall.
 * Include 'less safe functions' in a file sent between processes might potentially be used to access remote resources, so best server (or client) side only.
 
-y
+
+##  Intelligent configuration and messages
+
+
+
+
 ##  DSL and DevSecOps
 
 In terms of security one can see this as DENY by default, one can only use a function if explicitly ALLOWED.
-In Groovy and I believe in Scala a DSL has access to the entire environment, one can disable features at the JVM level
-but this is ALLOW by default and less safe than DENY by default.
+In Groovy and I believe in Scala a DSL has access to the entire environment.  Of course in principle one can
+disable features at the JVM level but this is ALLOW by default and less safe than DENY by default.
+
+I would imagine this is one of the better use cases for a domain specific language where you want a DSL
+that does just explicitly what you want it to do with the flexibity provided by the 'harmless' functions.
+

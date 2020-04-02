@@ -47,6 +47,8 @@ var Verbose = tuple.Verbose
 /////////////////////////////////////////////////////////////////////////////
 //  A lexer similar to that used by UNIX/C based languages
 //  such as C, C#, C++, Java, Go and also bash
+//
+//  TODO This is a first attempt to get something running, it can be much improed
 /////////////////////////////////////////////////////////////////////////////
 
 const NEWLINE = '\n'
@@ -63,10 +65,7 @@ const CLOSE_BRACE = "}"
 
 // LISP cons operator (https://en.wikipedia.org/wiki/Cons)
 const CONS_OPERATOR = "."
-
-var (
-	SPACE_ATOM = Atom{" "}
-)
+var SPACE_ATOM = Atom{" "}
 
 /////////////////////////////////////////////////////////////////////////////
 //  Style
@@ -74,7 +73,7 @@ var (
 
 //  Style is a configurable 'lexer' (https://en.wikipedia.org/wiki/Lexical_analysis).
 //  It is not a general purpose lexer but can manage most C-like operators and tokens.
-//  It implements the 'Lexer' interface
+//  Implements the 'Lexer' interface
 type Style struct {
 	StartDoc string
 	EndDoc string
@@ -137,6 +136,19 @@ func NewStyle(
 
 func (style Style) GetNext(context Context, eol func(), open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error {
 
+	ReadAndLookAhead := func(ch rune, expect1 rune, expect2 rune) bool {
+		if ch == expect1 {
+			if context.LookAhead() == expect2 {
+				context.ReadRune()
+				nextAtom(Atom{string(expect1)+string(expect2)})
+			} else {
+				nextAtom(Atom{string(expect1)})
+			}
+			return true
+		}
+		return false
+	}
+
 	ch, err := context.ReadRune()
 	switch {
 	case err != nil: return err
@@ -178,37 +190,15 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 			nextLiteral(value)
 		}
 	case ch == '.':  nextAtom(Atom{"."})
-	case ch == style.KeyValueSeparatorRune:
-		nextAtom(Atom{style.KeyValueSeparator})
-	case ch == '>' && context.LookAhead() == '=':
-		context.ReadRune()
-		nextAtom(Atom{">="})
-	case ch == '<' && context.LookAhead() == '=':
-		context.ReadRune()
-		nextAtom(Atom{"<="})
-	case ch == '*' && context.LookAhead() == '*':
-		context.ReadRune()
-		nextAtom(Atom{"**"})
+	case ch == style.KeyValueSeparatorRune:		nextAtom(Atom{style.KeyValueSeparator})
+	case ReadAndLookAhead(ch, '>', '='):
+	case ReadAndLookAhead(ch, '<', '='):
+	case ReadAndLookAhead(ch, '!', '='):
+	case ReadAndLookAhead(ch, '=', '='):
+	case ReadAndLookAhead(ch, '*', '*'):
+	case ReadAndLookAhead(ch, '|', '|'):
+	case ReadAndLookAhead(ch, '&', '&'):
 	case IsArithmetic(ch): nextAtom(Atom{string(ch)}) // }, nil // ReadAtom(context, string(ch), func(r rune) bool { return IsArithmetic(r) })
-	case ch == '|' && context.LookAhead() == '|':
-		context.ReadRune()
-		nextAtom(Atom{"||"})
-	case ch == '|':
-		context.ReadRune()
-		nextAtom(Atom{"|"})
-	case ch == '&' && context.LookAhead() == '&':
-		context.ReadRune()
-		nextAtom(Atom{"&&"})
-	case IsCompare(ch):
-		value, err := (ReadAtom(context, string(ch), func(r rune) bool { return IsCompare(r) }))
-		if err != nil {
-			return err
-		}
-		if atom, ok := value.(Atom); ok {
-			nextAtom(atom)
-		} else {
-			nextLiteral(value)
-		}
 	case ch == '_' || unicode.IsLetter(ch):
 		value, err :=(ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) }))
 		if err != nil {
@@ -219,9 +209,9 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		} else {
 			nextLiteral(value)
 		}		
-	case unicode.IsGraphic(ch): Error(context,"Error graphic character not recognised '%s'", string(ch))
-	case unicode.IsControl(ch): Error(context,"Error control character not recognised '%d'", ch)
-	default: Error(context,"Error character not recognised '%d'", ch)
+	case unicode.IsGraphic(ch): Error(context,"Graphic character not recognised '%s'", string(ch))
+	case unicode.IsControl(ch): Error(context,"Control character not recognised '%d'", ch)
+	default: Error(context,"Character not recognised '%d'", ch)
 	}
 	return nil
 }
@@ -456,7 +446,6 @@ func (printer Style) PrintFloat64(depth string, value float64, out StringFunctio
 		out(fmt.Sprint(value))
 	}
 }
-
 
 func (printer Style) PrintString(depth string, value string, out StringFunction) {
 	out(DOUBLE_QUOTE)
