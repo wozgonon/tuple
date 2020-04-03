@@ -164,7 +164,7 @@ func (grammar ShellGrammar) Parse(context Context, next Next) {
 				if context.Depth() == 0 {
 					operatorGrammar.EndOfInput(next)
 				} else if ! operatorGrammar.wasOperator {
-				//	operatorGrammar.PushOperator(Atom{";"})
+					operatorGrammar.PushOperator(Atom{";"})
 				}
 			},
 			func (open string) {

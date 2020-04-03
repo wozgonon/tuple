@@ -93,6 +93,10 @@ func AddHarmlessTupleFunctions(table * SymbolTable)  {
 		_, ok := evaluated.(Tuple)
 		return ok
 	})
+
+	table.Add("eqt", func (context EvalContext, aa Tuple, bb Tuple) bool {
+		return reflect.DeepEqual(aa, bb)
+	})
 }
 
 /////////////////////////////////////////////////////////////////////////////

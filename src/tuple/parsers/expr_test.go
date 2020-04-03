@@ -163,6 +163,38 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 	test("eq(join(\"-\",(\"abc\",\"def\",\"ghi\")),\"abc-def-ghi\")")
 }
 
+func TestNewLinesInBraces(t *testing.T) {
+
+	grammar := NewShellGrammar()
+
+	var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+	
+	test := func (formula string) {
+		val := ParseAndEval(grammar, symbols, formula)
+		if val != tuple.Bool(true) {
+			t.Errorf("Expected '%s' to be TRUE", formula)
+		}
+	}
+
+	test("eqt { 1 2 ; 3 4 ; } { 1 2 ; 3 4 }")
+
+	test(`eqt { 1 2 ; 3 4 ; 5 6 } { 1 2
+ 3 4
+ 5 6
+}`)
+
+	test(`eqt { 1 2 ; 3 4 ; 5 6 } {
+ 1 2
+ 3 4
+ 5 6
+}`)
+
+	test(`eqt { 1 2 ; 3 4 ; 5 6 } {
+ 1 2
+ 3 4
+ 5 6}`)
+
+}
 
 func TestExprDeclareFunctions(t *testing.T) {
 
