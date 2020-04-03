@@ -63,17 +63,41 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 		return context.Call(atom, []Value{})
 	})
 	table.Add("set", Assign)
-	table.Add("func", func(context EvalContext, atom Atom, arg Atom, code Value) Value {
-		context.Add(atom.Name, func (context1 EvalContext, argValue Value) Value {
-			evaluated := Eval(context1, argValue)
-			context.Log("TRACE", "** FUNC %s argName=%s argValue: %s evaluated:%s", atom.Name, arg.Name, argValue, evaluated)
-			newScope := NewSymbolTable(context1)
-			newScope.Add(arg.Name, func () Value {
-				return evaluated
+	table.Add("func", func(context EvalContext, values... Value) Value {
+		lv := len(values)
+		if lv <= 1 {
+			context.Log("ERROR", "No name or arguments provided to 'func'")
+			return tuple.EMPTY
+		} else {
+			atom := values[0]
+			args := values[1:lv-1]
+			code := values[lv-1]
+			for k,v := range values[:lv-2] {
+				if _, ok := v.(Atom); ! ok {
+					context.Log("ERROR", "Expected identifier not '%s' for arg %d", v, k)
+					return tuple.EMPTY
+				}
+			}
+			functionName := atom.(Atom).Name
+			context.Add(functionName, func (context1 EvalContext, values... Value) Value {
+				if len(values) != len(args) {
+					context.Log("ERROR", "Expected %d arguments not %d", len(args), len(values))
+					return tuple.EMPTY
+				} else {
+					context.Log("TRACE", "** FUNC %s argValue: %s", functionName, values)
+					newScope := NewSymbolTable(context1)
+					for k,v := range values {
+						evaluated := Eval(context1, v)
+						name := args[k].(Atom).Name
+						newScope.Add(name, func () Value {
+							return evaluated
+						})
+					}
+					return Eval(&newScope, code)
+				}
 			})
-			return Eval(&newScope, code)
-		})
-		return atom
+			return atom
+		}
 	})
 }
 

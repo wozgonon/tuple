@@ -73,7 +73,9 @@ func (grammar LispWithInfixGrammar) Parse(context Context, next Next) {
 	for {
 		err := grammar.style.GetNext(context,
 			func() {
-				operatorGrammar.EndOfInput(next)
+				if context.Depth() == 0 {
+					operatorGrammar.EndOfInput(next)
+				}
 			},
 			func (open string) {
 				operatorGrammar.OpenBracket(Atom{open})

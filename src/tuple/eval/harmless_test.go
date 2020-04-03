@@ -21,6 +21,8 @@ import (
 	"testing"
 	"tuple"
 	"tuple/eval"
+	"math"
+	"math/rand"
 )
 
 var NewTuple = tuple.NewTuple
@@ -42,7 +44,7 @@ func TestHarmless(t *testing.T) {
 
 		}
 	}
-	
+
 	ONE := Int64(1)
 	TWO := Int64(2)
 	THREE := Int64(3)
@@ -53,4 +55,58 @@ func TestHarmless(t *testing.T) {
 	test(NewTuple(Atom{"=="}, A12, A12))
 	test(NewTuple(Atom{"=="}, M23, M23))
 	test(NewTuple(Atom{"=="}, TWO, A1))
+}
+
+func TestBinaryFloat64(t *testing.T) {
+
+	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	test := func (arg string, aa float64, bb float64, expected float64) {
+		op := Atom{arg}
+		a1 := Float64(aa)
+		b1 := Float64(bb)
+		lhs := Float64(expected)
+		rhs := NewTuple(op, a1, b1)
+		expression := NewTuple(Atom{"=="}, lhs, rhs)
+		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+			t.Errorf("Expected '%s' to be true", expression)
+
+		}
+	}
+
+	r1 := rand.Float64()
+	r2 := rand.Float64()
+	test("*", r1, r2, r1*r2)
+	test("+", r1, r2, r1+r2)
+	test("-", r1, r2, r1-r2)
+	test("/", r1, r2, r1/r2)
+	test("atan2", r1, r2, math.Atan2(r1,r2))
+}
+
+func TestUnaryFloat64(t *testing.T) {
+
+	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	test := func (arg string, aa float64, expected float64) {
+		op := Atom{arg}
+		a1 := Float64(aa)
+		lhs := Float64(expected)
+		rhs := NewTuple(op, a1)
+		expression := NewTuple(Atom{"=="}, lhs, rhs)
+		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+			t.Errorf("Expected '%s' to be true", expression)
+
+		}
+	}
+
+	r1 := rand.Float64()
+	test("-", r1, -r1)
+	test("+", r1, +r1)
+	test("exp", r1, math.Exp(r1))
+	test("log", r1, math.Log(r1))
+	test("sin", r1, math.Sin(r1))
+	test("cos", r1, math.Cos(r1))
+	test("tan", r1, math.Tan(r1))
+	test("asin", r1, math.Asin(r1))
+	test("acos", r1, math.Acos(r1))
+	test("atan", r1, math.Atan(r1))
+	test("round", r1, math.Round(r1))
 }

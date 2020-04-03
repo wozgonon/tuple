@@ -19,7 +19,10 @@ package eval_test
 
 import (
 	"testing"
+	"tuple"
+	"tuple/runner"
 	"tuple/eval"
+	"tuple/parsers"
 )
 
 func TestSafe(t *testing.T) {
@@ -28,4 +31,36 @@ func TestSafe(t *testing.T) {
 	if symbols.Count() == 0  {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
+
+
+	
+}
+
+
+func TestDeclareFunctions(t *testing.T) {
+
+	grammar := parsers.NewShellGrammar()
+
+	var symbols = eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+	
+	test := func (formula string) {
+		val := runner.ParseAndEval(grammar, symbols, formula)
+		if val != tuple.Bool(true) {
+			t.Errorf("Expected '%s' to be TRUE", formula)
+		}
+	}
+
+	test(`
+func aa a { a*2 }
+aa(2)==4`)
+
+	test("123  == (progn (func a { 123 }) a())")
+	test("1234 == (progn (func a b { b }) a(1234))")
+	test("15   == (progn (func a b c { b+c }) a(13 2))")
+	test("23   == (progn (func a b c d { b+c*d }) a(13 2 5))")
+
+	test("if(true,1,2) == 1")
+	test("if(false,1,2) == 2")
+	test("if(false,1, cos(PI)) == -1")
+
 }

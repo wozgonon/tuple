@@ -156,9 +156,9 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		//next.NextEOF()
 		return err
 	case ch == NEWLINE:
-		if context.Depth() == 0 {
+		//if context.Depth() == 0 {
 			eol()
-		}
+		//}
 		context.EOL()
 	case unicode.IsSpace(ch) || ch == '\r': break // TODO fix comma
 	case ch == style.OneLineComment:

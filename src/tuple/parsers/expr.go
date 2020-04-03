@@ -78,7 +78,9 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 	for {
 		err := grammar.style.GetNext(context,
 			func() {
-				operatorGrammar.EndOfInput(next)
+				if context.Depth() == 0 {
+					operatorGrammar.EndOfInput(next)
+				}
 			},
 			func (open string) {
 				operatorGrammar.OpenBracket(Atom{open})
@@ -159,7 +161,11 @@ func (grammar ShellGrammar) Parse(context Context, next Next) {
 	for {
 		err := grammar.style.GetNext(context,
 			func() {
-				operatorGrammar.EndOfInput(next)
+				if context.Depth() == 0 {
+					operatorGrammar.EndOfInput(next)
+				} else if ! operatorGrammar.wasOperator {
+				//	operatorGrammar.PushOperator(Atom{";"})
+				}
 			},
 			func (open string) {
 				operatorGrammar.OpenBracket(Atom{open})
