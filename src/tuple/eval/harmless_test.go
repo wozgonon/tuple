@@ -82,6 +82,32 @@ func TestBinaryFloat64(t *testing.T) {
 	test("atan2", r1, r2, math.Atan2(r1,r2))
 }
 
+func TestBinaryFloat64Bool(t *testing.T) {
+
+	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	test := func (arg string, aa float64, bb float64) {
+		op := Atom{arg}
+		a1 := Float64(aa)
+		b1 := Float64(bb)
+		expression := NewTuple(op, a1, b1)
+		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+			t.Errorf("Expected '%s' to be true", expression)
+
+		}
+	}
+
+	r1 := rand.Float64()
+	r2 := rand.Float64() + r1
+	test("==", r1, r1)
+	test("!=", r1, r2)
+	test("<", r1, r2)
+	test("<=", r1, r1)
+	test("<=", r1, r2)
+	test(">", r2, r1)
+	test(">=", r2, r2)
+	test(">=", r2, r1)
+}
+
 func TestUnaryFloat64(t *testing.T) {
 
 	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
