@@ -129,6 +129,17 @@ func AddControlStatementFunctions(table * SymbolTable) {
 		}
 		return result
 	})
+	table.Add("while", func(context EvalContext, condition Value, code Value) Value {
+		var result Value = tuple.EMPTY
+		for {
+			condition := Eval(context, condition)
+			conditionResult, ok := condition.(Bool)
+			if ! ok || ! bool(conditionResult) {
+				return result
+			}
+			result = Eval(context, code)
+		}
+	})
 
 	// https://www.gnu.org/software/emacs/manual/html_node/eintr/progn.html
 	table.Add("progn", func(context EvalContext, values... Value) Value {

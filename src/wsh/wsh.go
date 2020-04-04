@@ -54,6 +54,8 @@ func main () {
 	table.Add("ast", func (expression string) tuple.Value { return runner.ParseString(inputGrammar, expression) })
 	table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(inputGrammar, table, expression) })
 
+	//func reduce f t { progn c=1 accumulator=first(t) (for v t { accumulator = f(accumulator v))  accumulator}
+		
 	runner.ParseAndEval(inputGrammar, table, "func count  t { progn (c=0) (for v t { c=c+1 }) c }")
 	runner.ParseAndEval(inputGrammar, table, "func first  t { nth 0 t }")
 	runner.ParseAndEval(inputGrammar, table, "func second t { nth 1 t }")

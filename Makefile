@@ -61,6 +61,7 @@ test: version go_test test_basic test_arithmetic test_expr test_sh test_yaml tes
 
 examples: test_dirs bin/wsh examples/availability.wsh
 	bin/wsh examples/availability.wsh > ${T1DIR}/availability.txt  && true
+	bin/wsh examples/fibonnacci.wsh > ${T1DIR}/fibonnacci.txt  && true
 
 TDIR=src/wozg/testdata/
 T1DIR=target/test/1/
