@@ -95,7 +95,9 @@ func (context * RunnerContext) Close() {
 
 func (context * RunnerContext) EOL() {
 	if IsInteractive(context) {
-		fmt.Print (context.SourceName())
+
+		// TODO display grammar name: fmt.Printf("%s (%s) ", os.Args[0], tuple.Suffix(context))
+		fmt.Printf("%s", os.Args[0])
 		if context.depth > 0 {
 			fmt.Printf (" %d%s", context.depth, PROMPT)
 		} else {

@@ -1,0 +1,35 @@
+
+
+#  Test function
+
+func test {
+     1 	== fib(0)
+     1 	== fib(1)
+     2 	== fib(2)
+     3 	== fib(3)
+     5 	== fib(4)
+     8 	== fib(5)
+     13 == fib(6)
+}
+
+# Solution using Tail Recursive
+
+func fib4 n1 n2 c nth { if(c == nth, n2, fib4(n1+n2, n1, c+1, nth)) }
+func fib nth { fib4(1, 1, 0, nth) }
+test()
+
+# Traditional Recursive solution
+
+func fib n { if(n<=1, 1, fib(n-1)+fib(n-2)) }
+test()
+
+
+# Iterative solution
+
+...
+
+
+# Closed form solution
+
+func fib n { progn n=n+1 s5=sqrt(5) (1/s5*( ((1+s5)/2)**n - ((1-s5)/2)**n )) }
+test()

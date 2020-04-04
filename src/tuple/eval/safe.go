@@ -81,7 +81,7 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 			functionName := atom.(Atom).Name
 			context.Add(functionName, func (context1 EvalContext, values... Value) Value {
 				if len(values) != len(args) {
-					context.Log("ERROR", "Expected %d arguments not %d", len(args), len(values))
+					context.Log("ERROR", "For '%s' Expected %d arguments not %d", functionName, len(args), len(values))
 					return tuple.EMPTY
 				} else {
 					context.Log("TRACE", "** FUNC %s argValue: %s", functionName, values)

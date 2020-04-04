@@ -107,7 +107,9 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 
 func (stack * OperatorGrammar) PushValue(value Value) {
 	if ! stack.wasOperator {
-		stack.PushOperator(SPACE_ATOM)
+		// This is an extension to ignore commas
+		// TODO make this optional so that a strict grammar can insist on commas
+		stack.PushOperator(SPACE_ATOM)  // TODO should this just add a comma rather than a space
 	}
 	Verbose(stack.context,"PUSH VALUE\t'%s'\n", value)
 	stack.Values.Append(value)

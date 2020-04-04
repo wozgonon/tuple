@@ -27,6 +27,7 @@ import "fmt"
 func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
 
 	table.Add("exp", math.Exp)
+	table.Add("sqrt", math.Sqrt)
 	table.Add("log", math.Log)
 	table.Add("sin", math.Sin)
 	table.Add("cos", math.Cos)

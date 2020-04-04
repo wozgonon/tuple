@@ -51,8 +51,13 @@ func main () {
 	table := eval.NewLessSafeSymbolTable()
 	table.Add("|", eval.Pipe)
 	table.Add("=", eval.Assign)
+	table.Add("ast", func (expression string) tuple.Value { return runner.ParseString(inputGrammar, expression) })
+	table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(inputGrammar, table, expression) })
 
-	//runner.ParseAndEval(inputGrammar, table, "func count t { progn (c=0) (for v t { c=c+1 }) c }")
+	runner.ParseAndEval(inputGrammar, table, "func count  t { progn (c=0) (for v t { c=c+1 }) c }")
+	runner.ParseAndEval(inputGrammar, table, "func first  t { nth 0 t }")
+	runner.ParseAndEval(inputGrammar, table, "func second t { nth 1 t }")
+	runner.ParseAndEval(inputGrammar, table, "func third  t { nth 2 t }")
 
 	var symbols * eval.SymbolTable = nil
 	if !*ast {

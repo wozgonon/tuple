@@ -100,6 +100,8 @@ type Style struct {
 	OpenChar2 rune
 	closeChar2 rune
 	KeyValueSeparatorRune rune
+
+	RecognizeNegative bool
 }
 
 func NewStyle(
@@ -127,7 +129,7 @@ func NewStyle(
 	KeyValueSeparatorRune, _ := utf8.DecodeRuneInString(KeyValueSeparator)
 
 	return Style{StartDoc,EndDoc,Indent, Open,Close,Open2,Close2,KeyValueSeparator,Separator,LineBreak,True,False,OneLineComment,ScalarPrefix,
-		openChar,closeChar,openChar2,closeChar2,KeyValueSeparatorRune}
+		openChar,closeChar,openChar2,closeChar2,KeyValueSeparatorRune, false}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -178,7 +180,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 			return err
 		}
 		nextLiteral(value)
-	case ((ch == '.'|| ch == '-') && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch): // TODO || ch == '+' 
+	case ((ch == '.' || (ch== '-' && style.RecognizeNegative)) && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch): // TODO || ch == '+' 
 		//case ch == '.' || unicode.IsNumber(ch):
 		value, err := ReadNumber(context, string(ch))    // TODO minus
 		if err != nil {
@@ -199,7 +201,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 	case ReadAndLookAhead(ch, '=', '='):
 	case ReadAndLookAhead(ch, '*', '*'):
 	case ReadAndLookAhead(ch, '+', '+'):
-	// TODO case ReadAndLookAhead(ch, '-', '-'):
+	//case ReadAndLookAhead(ch, '-', '-'):
 	case ReadAndLookAhead(ch, '|', '|'):
 	case ReadAndLookAhead(ch, '&', '&'):
 	case ch == '-' || ch== '/' || ch == '%': nextAtom(Atom{string(ch)})

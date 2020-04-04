@@ -18,9 +18,17 @@ av=availabilityTable(1)
 #n=nth(1 av)
 #o=nth(1 n)
 
-func tag arg {
-    concat "<" tag 
+func tag tag value {
+    concat "<" tag ">" value "</" tag ">"
 }
+
+func h1 value { tag "h1" value }
+func h2 value { tag "h2" value }
+func p  value { tag "p" value }
+func tr value { tag "tr" value }
+func th value { tag "th" value }
+func td value { tag "td" value }
+
 
 func str arg {
 

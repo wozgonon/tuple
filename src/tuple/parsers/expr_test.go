@@ -62,7 +62,7 @@ func TestExpr(t *testing.T) {
 
 	test("0", tuple.Int64(0))
 	test("1", tuple.Int64(1))
-	test("-1", tuple.Int64(-1))
+	test("-1", tuple.Float64(-1))
 
 	test("-1.", tuple.Float64(-1.))
 	test(".0", tuple.Float64(.0))

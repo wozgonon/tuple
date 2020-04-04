@@ -31,6 +31,12 @@ type Int64 = tuple.Int64
 type Float64 = tuple.Float64
 type Atom = tuple.Atom
 
+// A random float64 for testing.
+// Using random rather than fixed values increases 'statistical sample size' and reduces 'statistical bias'.
+func randomFloat64() float64 {
+	return rand.Float64()  // TODO perhaps use a normal distribution to be more representative
+}
+
 func TestHarmless(t *testing.T) {
 
 	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
@@ -73,8 +79,8 @@ func TestBinaryFloat64(t *testing.T) {
 		}
 	}
 
-	r1 := rand.Float64()
-	r2 := rand.Float64()
+	r1 := randomFloat64()
+	r2 := randomFloat64()
 	test("*", r1, r2, r1*r2)
 	test("+", r1, r2, r1+r2)
 	test("-", r1, r2, r1-r2)
@@ -96,8 +102,8 @@ func TestBinaryFloat64Bool(t *testing.T) {
 		}
 	}
 
-	r1 := rand.Float64()
-	r2 := rand.Float64() + r1
+	r1 := randomFloat64()
+	r2 := randomFloat64() + r1
 	test("==", r1, r1)
 	test("!=", r1, r2)
 	test("<", r1, r2)
@@ -123,9 +129,10 @@ func TestUnaryFloat64(t *testing.T) {
 		}
 	}
 
-	r1 := rand.Float64()
+	r1 := randomFloat64()
 	test("-", r1, -r1)
 	test("+", r1, +r1)
+	test("sqrt", r1, math.Sqrt(r1))
 	test("exp", r1, math.Exp(r1))
 	test("log", r1, math.Log(r1))
 	test("sin", r1, math.Sin(r1))

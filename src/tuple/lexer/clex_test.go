@@ -20,7 +20,7 @@ func testGetNext(t *testing.T, logger tuple.Logger, expression string, expected 
 	context := runner.NewRunnerContext("<eval>", reader, logger, false)
 
 	result := NO_RESULT
-	style := parsers.LispWithInfixStyle
+	style := parsers.LispWithInfixStyle()
 	err := style.GetNext(&context,
 		func() {},
 		func(open string) {
@@ -61,9 +61,9 @@ func TestLex1(t *testing.T) {
 func testLex1(t *testing.T, logger tuple.Logger) {
 
 	testGetNext(t, logger, "1", "1")
-	testGetNext(t, logger, "-1", "-1")
+	testGetNext(t, logger, "-", "-")
 	testGetNext(t, logger, ".1", "0.1")
-	//testGetNext(t, logger, "-1.", "-1.")
+	//testGetNext(t, logger, "1.", "-1.")
 	// TODO testGetNext(t, logger, "-.1", ".1")
 	testGetNext(t, logger, "abc123", "abc123")
 	testGetNext(t, logger, "+", "+")
@@ -79,7 +79,7 @@ func testLex1(t *testing.T, logger tuple.Logger) {
 func TestCLanguageOperators(t *testing.T) {
 
 	logger := GetLogger(parsers.NewLispGrammar())
-	operators := parsers.NewOperators(parsers.LispWithInfixStyle)
+	operators := parsers.NewOperators(parsers.LispWithInfixStyle())
 	parsers.AddStandardCOperators(&operators)
 	operators.Forall(func(operator string) {
 		if operator != " " && operator != ";" && operator != "," {  // TODO handle space
