@@ -92,7 +92,7 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 				handleAtom(atom, grammar.style, context, &operatorGrammar)
 			},
 			func (literal Value) {
-				operatorGrammar.PushValue(literal)
+				operatorGrammar.PushValue(literal)  // TODO WithoutInsertingMissingSepator
 			})
 	
 		if err == io.EOF {

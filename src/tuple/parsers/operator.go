@@ -105,15 +105,22 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
 	return index
 }
 
-func (stack * OperatorGrammar) PushValue(value Value) {
-	if ! stack.wasOperator {
-		// This is an extension to ignore commas
-		// TODO make this optional so that a strict grammar can insist on commas
-		stack.PushOperator(SPACE_ATOM)  // TODO should this just add a comma rather than a space
-	}
+
+func (stack * OperatorGrammar) PushValueWithoutInsertingMissingSepator(value Value) {
 	Verbose(stack.context,"PUSH VALUE\t'%s'\n", value)
 	stack.Values.Append(value)
 	stack.wasOperator = false
+}
+
+// If a list of space separated values are entered such as (1 2 3 4) without any separating operator
+// such as (1,2,3,4) then a separator is inserted automatically.
+// A strict grammar might insist of having comma separators and less strict would be happy with space
+// separated values.
+func (stack * OperatorGrammar) PushValue(value Value) {
+	if ! stack.wasOperator {
+		stack.PushOperator(SPACE_ATOM)  // TODO should this just add a comma rather than a space
+	}
+	stack.PushValueWithoutInsertingMissingSepator(value)
 }
 
 func (stack * OperatorGrammar) OpenBracket(token Atom) {

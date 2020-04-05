@@ -120,4 +120,3 @@ func quote(value string, out func(value string)) {
 	out(value)   // TODO Escape
 	out(DOUBLE_QUOTE)
 }
-

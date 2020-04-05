@@ -47,6 +47,7 @@ func AddAllocatingTupleFunctions(table * SymbolTable)  {
 // Declare variables and functions
 /////////////////////////////////////////////////////////////////////////////
 
+// This assign might set the value of a global variable if one exists
 func Assign (context EvalContext, atom Atom, value Value) Value {
 	evaluated := Eval(context, value)
 	if table, _ := context.Find(context, atom, []Value{}); table != nil {
@@ -57,12 +58,19 @@ func Assign (context EvalContext, atom Atom, value Value) Value {
 	return evaluated
 }
 
+// This assign will only set a loca variable in the top most context.
+func AssignLocal (context EvalContext, atom Atom, value Value) Value {
+	evaluated := Eval(context, value)
+	context.Add(atom.Name, func () Value { return evaluated })
+	return evaluated
+}
+
 func AddSetAndDeclareFunctions(table * SymbolTable) {
 
 	table.Add("get", func(context EvalContext, atom Atom) Value {
 		return context.Call(atom, []Value{})
 	})
-	table.Add("set", Assign)
+	table.Add("set", Assign)  // TODO Assign or AssignLocal
 	table.Add("func", func(context EvalContext, values... Value) Value {
 		lv := len(values)
 		if lv <= 1 {

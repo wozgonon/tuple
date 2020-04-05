@@ -137,9 +137,6 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 	table.Add("eval", func (context EvalContext, value Value) Value {
 		return Eval(context, value)
 	})
-	//table.Add("expr", func (context EvalContext, value Value) Value {
-	//	return ParseAndEval(context, value)
-	//})
 }
 
 /////////////////////////////////////////////////////////////////////////////

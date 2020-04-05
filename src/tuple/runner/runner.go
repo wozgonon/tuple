@@ -25,6 +25,7 @@ import 	"os"
 import 	"strings"
 import "flag"
 import "tuple/eval"
+//import "tuple/parsers"
 
 type Logger = tuple.Logger
 type Grammar = tuple.Grammar
@@ -267,4 +268,18 @@ func GetRemainingNonFlagOsArgs() []string {
 	args := len(os.Args)
 	numberOfFiles := flag.NArg()
 	return os.Args[args-numberOfFiles:]
+}
+
+
+func AddSafeGrammarFunctions(table * eval.SymbolTable) {
+
+//	table.Add("expr", func (context eval.EvalContext, value Value) Value {
+//		grammar := parsers.NewShellGrammar()
+//		return ParseAndEval(grammar, context, value)
+//	})
+
+	//table.Add("grammars", func (context eval.EvalContext, value Value) Value {
+	//	return ParseAndEval(grammar, context, value)
+	//})
+
 }

@@ -50,7 +50,7 @@ func main () {
 
 	table := eval.NewLessSafeSymbolTable()
 	table.Add("|", eval.Pipe)
-	table.Add("=", eval.Assign)
+	table.Add("=", eval.AssignLocal)
 	table.Add("ast", func (expression string) tuple.Value { return runner.ParseString(inputGrammar, expression) })
 	table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(inputGrammar, table, expression) })
 

@@ -63,4 +63,9 @@ aa(2)==4`)
 	test("if(false,1,2) == 2")
 	test("if(false,1, cos(PI)) == -1")
 
+	symbols.Add("=", eval.AssignLocal)
+
+	// Test assignment to a variable updates the a local variable or a global variable
+	test("progn n=12 { func a b { progn n=b n } } a(234)!=n")
+	test("progn n=12 { func a b { progn set(b n) n  } } a(234)==n")
 }
