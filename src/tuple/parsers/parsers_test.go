@@ -44,7 +44,6 @@ var NewInfixExpressionGrammar = parsers.NewInfixExpressionGrammar
 var NewShellGrammar = parsers.NewShellGrammar
 var NewSafeSymbolTable = eval.NewSafeSymbolTable
 var ParseAndEval = runner.ParseAndEval
-var ParseString = runner.ParseString
 var NewLispGrammar = parsers.NewLispGrammar
 var NewLispWithInfixGrammar = parsers.NewLispWithInfixGrammar
 

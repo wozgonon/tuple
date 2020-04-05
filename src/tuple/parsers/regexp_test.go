@@ -13,23 +13,42 @@ import (
 
 func TestRegexp(t *testing.T) {
 
+	star := Atom{"*"}
+	plus := Atom{"+"}
+	question := Atom{"?"}
 	or := Atom{"|"}
+	hythen := Atom{"-"}
 	a := tuple.String("a")
 	b := tuple.String("b")
 	c := tuple.String("c")
+	z := tuple.String("z")
 	abc := tuple.NewTuple(a, b, c)
+	haz := tuple.NewTuple(hythen, a, z)
+	bstar := tuple.NewTuple(star, b)
+	aquestion := tuple.NewTuple(question, a)
 
 	test := func (expression string, expected Value) {
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := runner.NewRunnerContext("<eval>", reader, runner.GetLogger(nil), false)
+		context := parsers.NewParserContext("<eval>", reader, runner.GetLogger(nil), false)
 		value := parsers.ParseRegexp(&context)
 		if ! reflect.DeepEqual(expected, value) {
 			t.Errorf("Expected '%s' got '%s'", expected, value)
 		}
 	}
 
+	test("[a-z]", haz)
+	test("[a-z]|abc", NewTuple(or, haz, abc))
+	test("a[a-z]|abc", NewTuple(or, NewTuple(a, haz), abc))
 	test("abc", abc)
-	test("a|c", tuple.NewTuple(or, a, c)) 
+	test("a|c", NewTuple(or, a, c)) 
+	test("abc|c", NewTuple(or, abc, c)) 
+	test("abc|abc", NewTuple(or, abc, abc)) 
+	test("abc|[a-z]|z", NewTuple(or, NewTuple(or, abc, haz), z))  // TODO should collapse into a single Tuple for 
+	test("a?", aquestion) 
+	test("b*", bstar) 
+	test("c+", NewTuple(plus, c)) 
+	test("b*|a?", NewTuple(or, bstar, aquestion)) 
+	test("a?|b*", NewTuple(or, aquestion, bstar))
 	// TODO
 	
 }

@@ -51,7 +51,7 @@ func main () {
 	table := eval.NewLessSafeSymbolTable()
 	table.Add("|", eval.Pipe)
 	table.Add("=", eval.AssignLocal)
-	table.Add("ast", func (expression string) tuple.Value { return runner.ParseString(inputGrammar, expression) })
+	table.Add("ast", func (expression string) tuple.Value { return parsers.ParseString(inputGrammar, expression) })
 	table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(inputGrammar, table, expression) })
 
 	//func reduce f t { progn c=1 accumulator=first(t) (for v t { accumulator = f(accumulator v))  accumulator}

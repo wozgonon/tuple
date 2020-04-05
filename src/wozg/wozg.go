@@ -102,7 +102,7 @@ func main() {
 		//  Set up the translator pipeline.
 		//
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := runner.NewRunnerContext("<cli>", reader, logger, *verbose)
+		context := runner.NewParserContext("<cli>", reader, logger, *verbose)
 		grammar := grammars.FindBySuffixOrPanic(*in)
 
 		grammar.Parse(&context, pipeline)

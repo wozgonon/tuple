@@ -43,7 +43,7 @@ func do(w http.ResponseWriter, req *http.Request) {
 	grammar, ok := grammars.FindBySuffix(grammarName)
 	if ok {
 		reader := bufio.NewReader(r) // TODO read from request
-		context := runner.NewRunnerContext("<http>", reader, runner.GetLogger(nil), false)
+		context := runner.NewParserContext("<http>", reader, runner.GetLogger(nil), false)
 		grammar.Parse(&context, func (value tuple.Value) {
 			fmt.Fprintf(w, "%s", value)
 		})

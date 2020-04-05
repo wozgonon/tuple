@@ -3,6 +3,7 @@ package parsers_test
 import (
 	"testing"
 	"tuple"
+	"tuple/parsers"
 	"math"
 )
 
@@ -31,7 +32,7 @@ func testFloatExpressionFailParse(t *testing.T, grammar tuple.Grammar, formula s
 func TestLispCons(t *testing.T) {
 
 	test := func(formula string) {
-		c := ParseString(NewLispGrammar(), formula)
+		c := parsers.ParseString(NewLispGrammar(), formula)
 		tuple1 := c.(tuple.Tuple)
 		if ! tuple1.IsConsInTuple() {
 			t.Errorf("Expected a cons cell got %s", c)

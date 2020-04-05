@@ -38,6 +38,7 @@ func NewRegexpGrammar(context Context) OperatorGrammar {
 	operators.AddPostfix("?", 105)
 	operators.AddInfix("-", 100)
 	operators.AddInfix("|", 5)
+	operators.AddInfix(" ", 50)
 
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 	return operatorGrammar;

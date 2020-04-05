@@ -18,6 +18,10 @@ package parsers
 
 import "tuple"
 import "tuple/lexer"
+import "log"
+import "fmt"
+import "bufio"
+import "strings"
 
 type Grammars = tuple.Grammars
 type Grammar = tuple.Grammar
@@ -119,4 +123,38 @@ func quote(value string, out func(value string)) {
 	out(DOUBLE_QUOTE)
 	out(value)   // TODO Escape
 	out(DOUBLE_QUOTE)
+}
+
+
+func ParseString(grammar Grammar, expression string) Value {
+	var result Value = tuple.NAN
+	pipeline := func(value Value) {
+		result = value
+	}
+
+	reader := bufio.NewReader(strings.NewReader(expression))
+	context := NewParserContext("<parse>", reader, GetLogger(nil), false)
+	grammar.Parse(&context, pipeline)
+	return result
+}
+
+
+func GetLogger(logGrammar Grammar) Logger {
+	if logGrammar == nil {
+		return func (context Context, level string, message string) {
+			prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': %s", level, context.Line(), context.Column(), context.Depth(), context.SourceName(), message)
+			log.Print(prefix)
+		}
+	} else {
+		return func(context Context, level string, message string) {
+			record := tuple.NewTuple()
+			record.Append(String(level))
+			record.Append(Int64(context.Line()))
+			record.Append(Int64(context.Column()))
+			record.Append(Int64(context.Depth()))
+			record.Append(String(context.SourceName()))
+			record.Append(String(message))
+			logGrammar.Print(record, func (value string) { fmt.Print(value) })
+		}
+	}
 }

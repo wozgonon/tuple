@@ -193,7 +193,7 @@ type Grammar interface {
 
 // A set of Grammars
 type Grammars struct {
-	all map[string]Grammar
+	All map[string]Grammar
 }
 
 // Returns a new empty set of syntaxes
@@ -202,21 +202,21 @@ func NewGrammars() Grammars{
 }
 
 func (syntaxes * Grammars) Forall(next func(grammar Grammar)) {
-	for _, grammar := range syntaxes.all {
+	for _, grammar := range syntaxes.All {
 		next (grammar)
 	}
 }
 
 func (syntaxes * Grammars) Add(syntax Grammar) {
 	suffix := syntax.FileSuffix()
-	syntaxes.all[suffix] = syntax
+	syntaxes.All[suffix] = syntax
 }
 
 func (syntaxes * Grammars) FindBySuffix(suffix string) (Grammar, bool) {
 	if ! strings.HasPrefix(suffix, ".") {
 		suffix = "." + suffix
 	}
-	syntax, ok := syntaxes.all[suffix]
+	syntax, ok := syntaxes.All[suffix]
 	return syntax, ok
 }
 

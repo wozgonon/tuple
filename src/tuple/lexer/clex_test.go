@@ -17,7 +17,7 @@ var GetLogger = runner.GetLogger
 func testGetNext(t *testing.T, logger tuple.Logger, expression string, expected string) {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := runner.NewRunnerContext("<eval>", reader, logger, false)
+	context := parsers.NewParserContext("<eval>", reader, logger, false)
 
 	result := NO_RESULT
 	style := parsers.LispWithInfixStyle()

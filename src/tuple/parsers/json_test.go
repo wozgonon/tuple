@@ -3,6 +3,7 @@ package parsers_test
 import (
 	"testing"
 	"tuple"
+	"tuple/parsers"
 	"reflect"
 	"strings"
 )
@@ -40,7 +41,7 @@ func TestEvalParseJson(t *testing.T) {
 	var grammar = NewJSONGrammar()
 
 	test := func(formula string, expected tuple.Tuple) {
-		val := ParseString(grammar, formula)
+		val := parsers.ParseString(grammar, formula)
 
 		tup := val.(tuple.Tuple)
 
