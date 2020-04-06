@@ -106,7 +106,7 @@ func TestGrammars(t *testing.T) {
 				t.Errorf("Expected '%s' in output", expected)
 			}
 		}
-		test(tuple.Atom{"abcde"}, "abcde")
+		test(tuple.Tag{"abcde"}, "abcde")
 		test(tuple.Float64(-1.123), "-1.123")
 		test(tuple.Float64(math.NaN()), "NaN")
 		test(tuple.Float64(math.Inf(1)), "Inf")

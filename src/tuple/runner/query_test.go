@@ -21,9 +21,9 @@ func TestQuery(t *testing.T) {
 		}
 	}
 
-	a := (tuple.Atom{"a"})
-	b := (tuple.Atom{"b"})
-	c := (tuple.Atom{"c"})
+	a := (tuple.Tag{"a"})
+	b := (tuple.Tag{"b"})
+	c := (tuple.Tag{"c"})
 
 	empty := tuple.NewTuple()
 	abc := tuple.NewTuple(a, b, c)

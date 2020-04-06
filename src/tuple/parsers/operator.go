@@ -33,16 +33,16 @@ import "strings"
 type OperatorGrammar struct {
 	context Context
 	operators * Operators
-	operatorStack []Atom
+	operatorStack []Tag
 	Values Tuple
 	wasOperator bool
 }
 
 func NewOperatorGrammar(context Context, operators * Operators) OperatorGrammar {
-	return OperatorGrammar{context, operators, make([]Atom, 0), NewTuple(),true}
+	return OperatorGrammar{context, operators, make([]Tag, 0), NewTuple(),true}
 }
 
-func (stack * OperatorGrammar) pushOperator(token Atom) {
+func (stack * OperatorGrammar) pushOperator(token Tag) {
 	Verbose(stack.context,"PUSH OPERATOR\t '%s'", token.Name)
 	stack.operatorStack = append(stack.operatorStack, token)
 }
@@ -55,7 +55,7 @@ func (stack * OperatorGrammar) popOperator() {
 }
 
 // Replace top of value stack with an expression
-func (stack * OperatorGrammar) reduceOperatorExpression(top Atom) int {
+func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
 
 	values := &(stack.Values.List)
 	lv := stack.Values.Length()
@@ -123,7 +123,7 @@ func (stack * OperatorGrammar) PushValue(value Value) {
 	stack.PushValueWithoutInsertingMissingSepator(value)
 }
 
-func (stack * OperatorGrammar) OpenBracket(token Atom) {
+func (stack * OperatorGrammar) OpenBracket(token Tag) {
 
 	Verbose(stack.context,"OPEN '%s'", token.Name)
 	if ! stack.wasOperator {
@@ -133,7 +133,7 @@ func (stack * OperatorGrammar) OpenBracket(token Atom) {
 	stack.wasOperator = true
 }
 
-func (stack * OperatorGrammar) CloseBracket(token Atom) {
+func (stack * OperatorGrammar) CloseBracket(token Tag) {
 	Verbose(stack.context,"CLOSE '%s'", token.Name)
 
 	stack.postfix()
@@ -212,11 +212,11 @@ func (stack * OperatorGrammar) EndOfInput(next Next) {
 		}
 	}
 	stack.Values = NewTuple()
-	stack.operatorStack = make([]Atom, 0)
+	stack.operatorStack = make([]Tag, 0)
 	stack.wasOperator = true
 }
 
-func (stack * OperatorGrammar) PushOperator(operator Atom) {
+func (stack * OperatorGrammar) PushOperator(operator Tag) {
 	_, ok := stack.operators.postfix[operator.Name]
 	operatorIsPostfix := ! stack.wasOperator && ok
 	prefixOperator, ok := stack.operators.prefix[operator.Name]
@@ -238,7 +238,7 @@ func (stack * OperatorGrammar) PushOperator(operator Atom) {
 		stack.wasOperator = false
 		return
 	} else {
-		atomPrecedence := stack.operators.Precedence(operator)
+		tagPrecedence := stack.operators.Precedence(operator)
 		lo := len(stack.operatorStack)
 		for index := lo-1 ; index >= 0; index -= 1 {
 			top := stack.operatorStack[index]
@@ -252,7 +252,7 @@ func (stack * OperatorGrammar) PushOperator(operator Atom) {
 				break
 			} else if top == operator && stack.operators.IsReduceAllRepeats(operator) {
 				break
-			} else if stack.operators.Precedence(top) >= atomPrecedence {
+			} else if stack.operators.Precedence(top) >= tagPrecedence {
 				Verbose(stack.context,"* PushOperator - Reduce '%s'", top)
 				index -= stack.reduceOperatorExpression(top)
 			} else {
@@ -277,36 +277,36 @@ func (stack * OperatorGrammar) PushOperator(operator Atom) {
 type Operators struct {
 	Style
 	precedence map[string]int
-	prefix map[string]Atom
-	infix map[string]Atom
-	postfix map[string]Atom
+	prefix map[string]Tag
+	infix map[string]Tag
+	postfix map[string]Tag
 	brackets map[string]string
 	closeBrackets map[string]string
-	evalName map[string]Atom
+	evalName map[string]Tag
 }
 
 func NewOperators(style Style) Operators {
-	atoms1 := make(map[string]Atom, 0)
-	atoms2 := make(map[string]Atom, 0)
-	atoms3 := make(map[string]Atom, 0)
-	atoms4 := make(map[string]Atom, 0)
+	tags1 := make(map[string]Tag, 0)
+	tags2 := make(map[string]Tag, 0)
+	tags3 := make(map[string]Tag, 0)
+	tags4 := make(map[string]Tag, 0)
 	strings1 := make(map[string]string, 0)
 	strings2 := make(map[string]string, 0)
-	return Operators{style, make(map[string]int, 0), atoms1, atoms2, atoms3, strings1, strings2, atoms4}
+	return Operators{style, make(map[string]int, 0), tags1, tags2, tags3, strings1, strings2, tags4}
 }
 
 const PREFIX = "_prefix_"
 
-func isPrefix(top Atom) bool {
-	// stack.operators.prefix[atom.Name]
+func isPrefix(top Tag) bool {
+	// stack.operators.prefix[tag.Name]
 	return strings.HasPrefix(top.Name, PREFIX)
 }
 
-func (operators *Operators) Map(top Atom) Atom {
+func (operators *Operators) Map(top Tag) Tag {
 
-	atom, ok := operators.evalName[top.Name]
+	tag, ok := operators.evalName[top.Name]
 	if ok {
-		return atom
+		return tag
 	}
 	return top
 }
@@ -332,9 +332,9 @@ func (operators *Operators) Forall(next func (value string)) {
 	//}
 }
 
-var	COMMA_ATOM = Atom{";"}
+var	COMMA_ATOM = Tag{";"}
 
-func (_ *Operators) IsReduceAllRepeats(top Atom) bool {
+func (_ *Operators) IsReduceAllRepeats(top Tag) bool {
 	return top == SPACE_ATOM || top == COMMA_ATOM
 }
 
@@ -344,24 +344,24 @@ func (operators *Operators) AddInfix(operator string, precedence int) {
 
 func (operators *Operators) AddInfix3(operator string, precedence int, name string) {
 	operators.precedence[operator] = precedence
-	operators.infix[operator] = Atom{name}
-	operators.evalName[name] = Atom{operator}
+	operators.infix[operator] = Tag{name}
+	operators.evalName[name] = Tag{operator}
 }
 
 func (operators *Operators) AddPrefix(operator string, precedence int) {
 	name := PREFIX + operator
-	operators.prefix[operator] = Atom{name}
+	operators.prefix[operator] = Tag{name}
 	operators.precedence[operator] = precedence
 	operators.precedence[name] = precedence
-	operators.evalName[name] = Atom{operator}
+	operators.evalName[name] = Tag{operator}
 }
 
 func (operators *Operators) AddPostfix(operator string, precedence int) {
 	name := "_postfix" + operator
-	operators.postfix[operator] = Atom{name}
+	operators.postfix[operator] = Tag{name}
 	operators.precedence[operator] = precedence
 	operators.precedence[name] = precedence
-	operators.evalName[name] = Atom{operator}
+	operators.evalName[name] = Tag{operator}
 }
 
 func (operators *Operators) AddBracket(open string, close string) {
@@ -369,7 +369,7 @@ func (operators *Operators) AddBracket(open string, close string) {
 	operators.closeBrackets[close] = open
 }
 
-func (operators *Operators) Precedence(token Atom) int {
+func (operators *Operators) Precedence(token Tag) int {
 	value, ok := operators.precedence[token.Name]
 	//fmt.Printf("Precedence %s %s %s\n", token, value, ok)
 	if ok {
@@ -379,13 +379,13 @@ func (operators *Operators) Precedence(token Atom) int {
 }
 
 // TODO generalize
-func (operators *Operators) IsOpenBracket(atom Atom) bool {
-	token := atom.Name
+func (operators *Operators) IsOpenBracket(tag Tag) bool {
+	token := tag.Name
 	_, ok := operators.brackets[token]
 	return ok
 }
 
-func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
+func (operators *Operators) MatchBrackets(open Tag, close Tag) bool {
 	expectedClose, ok := operators.brackets[open.Name]
 	return ok && expectedClose == close.Name
 }
@@ -394,17 +394,17 @@ func (operators *Operators) MatchBrackets(open Atom, close Atom) bool {
 // Printer
 /////////////////////////////////////////////////////////////////////////////
 
-func (printer Operators) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
-	PrintTuple(&printer, depth, NewTuple(atom), out)
+func (printer Operators) PrintNullaryOperator(depth string, tag Tag, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(tag), out)
 }
 
-func (printer Operators) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {  // Prefix and Postfix???
-	PrintTuple(&printer, depth, NewTuple(atom, value), out)
+func (printer Operators) PrintUnaryOperator(depth string, tag Tag, value Value, out StringFunction) {  // Prefix and Postfix???
+	PrintTuple(&printer, depth, NewTuple(tag, value), out)
 }
 
-func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {  // TODO binary to infix
+func (printer Operators) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {  // TODO binary to infix
 
-	if _, ok := printer.precedence[atom.Name]; ok {
+	if _, ok := printer.precedence[tag.Name]; ok {
 		out(printer.Style.Open)
 		newDepth := depth + "  "
 		printer.PrintSuffix(newDepth, out)
@@ -413,7 +413,7 @@ func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 Val
 
 		//printer.PrintIndent(newDepth, out)
 		out(" ")
-		out(atom.Name)
+		out(tag.Name)
 		out(" ")
 		//printer.PrintSuffix(newDepth, out)
 
@@ -423,6 +423,6 @@ func (printer Operators) PrintBinaryOperator(depth string, atom Atom, value1 Val
 		printer.PrintIndent(depth, out)
 		out(printer.Style.Close)
 	} else {
-		PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
+		PrintTuple(&printer, depth, NewTuple(tag, value1, value2), out)
 	}
 }

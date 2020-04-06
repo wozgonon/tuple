@@ -79,16 +79,16 @@ func (grammar LispWithInfixGrammar) Parse(context Context, next Next) {
 				}
 			},
 			func (open string) {
-				operatorGrammar.OpenBracket(Atom{open})
+				operatorGrammar.OpenBracket(Tag{open})
 			},
 			func (close string) {
-				operatorGrammar.CloseBracket(Atom{close})
+				operatorGrammar.CloseBracket(Tag{close})
 			},
-			func (atom Atom) {
-				if operators.Precedence(atom) != -1 {
-					operatorGrammar.PushOperator(atom)
+			func (tag Tag) {
+				if operators.Precedence(tag) != -1 {
+					operatorGrammar.PushOperator(tag)
 				} else {
-					operatorGrammar.PushValue(atom)
+					operatorGrammar.PushValue(tag)
 				}
 			},
 			func (literal Value) {

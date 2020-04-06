@@ -29,7 +29,7 @@ var NewTuple = tuple.NewTuple
 type Bool = tuple.Bool
 type Int64 = tuple.Int64
 type Float64 = tuple.Float64
-type Atom = tuple.Atom
+type Tag = tuple.Tag
 
 // A random float64 for testing.
 // Using random rather than fixed values increases 'statistical sample size' and reduces 'statistical bias'.
@@ -54,25 +54,25 @@ func TestHarmless(t *testing.T) {
 	ONE := Int64(1)
 	TWO := Int64(2)
 	THREE := Int64(3)
-	A1 := NewTuple(Atom{"++"}, ONE)
-	A12 := NewTuple(Atom{"+"}, ONE, TWO)
-	M23 := NewTuple(Atom{"*"}, TWO, THREE)
-	test(NewTuple(Atom{"=="}, THREE, A12))
-	test(NewTuple(Atom{"=="}, A12, A12))
-	test(NewTuple(Atom{"=="}, M23, M23))
-	test(NewTuple(Atom{"=="}, TWO, A1))
+	A1 := NewTuple(Tag{"++"}, ONE)
+	A12 := NewTuple(Tag{"+"}, ONE, TWO)
+	M23 := NewTuple(Tag{"*"}, TWO, THREE)
+	test(NewTuple(Tag{"=="}, THREE, A12))
+	test(NewTuple(Tag{"=="}, A12, A12))
+	test(NewTuple(Tag{"=="}, M23, M23))
+	test(NewTuple(Tag{"=="}, TWO, A1))
 }
 
 func TestBinaryFloat64(t *testing.T) {
 
 	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
 	test := func (arg string, aa float64, bb float64, expected float64) {
-		op := Atom{arg}
+		op := Tag{arg}
 		a1 := Float64(aa)
 		b1 := Float64(bb)
 		lhs := Float64(expected)
 		rhs := NewTuple(op, a1, b1)
-		expression := NewTuple(Atom{"=="}, lhs, rhs)
+		expression := NewTuple(Tag{"=="}, lhs, rhs)
 		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
 			t.Errorf("Expected '%s' to be true", expression)
 
@@ -92,7 +92,7 @@ func TestBinaryFloat64Bool(t *testing.T) {
 
 	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
 	test := func (arg string, aa float64, bb float64) {
-		op := Atom{arg}
+		op := Tag{arg}
 		a1 := Float64(aa)
 		b1 := Float64(bb)
 		expression := NewTuple(op, a1, b1)
@@ -118,11 +118,11 @@ func TestUnaryFloat64(t *testing.T) {
 
 	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
 	test := func (arg string, aa float64, expected float64) {
-		op := Atom{arg}
+		op := Tag{arg}
 		a1 := Float64(aa)
 		lhs := Float64(expected)
 		rhs := NewTuple(op, a1)
-		expression := NewTuple(Atom{"=="}, lhs, rhs)
+		expression := NewTuple(Tag{"=="}, lhs, rhs)
 		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
 			t.Errorf("Expected '%s' to be true", expression)
 

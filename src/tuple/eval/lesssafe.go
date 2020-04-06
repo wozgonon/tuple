@@ -143,7 +143,7 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 
 type ExecIfNotFound struct {}
 
-func (exec * ExecIfNotFound) Find (context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value) {
+func (exec * ExecIfNotFound) Find (context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value) {
 
 	return nil, reflect.ValueOf(func(context EvalContext, args... Value) bool {
 		return executeProcess(name.Name, EvalToStrings(context, args)...)

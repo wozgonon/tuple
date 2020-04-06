@@ -24,7 +24,7 @@ import "io"
 //
 //  Not quite since these are not CONS cells
 //
-// A nested structure of scalars (atoms and numbers), lists and key-values pairs (called cons cells).
+// A nested structure of scalars (tags and numbers), lists and key-values pairs (called cons cells).
 // These are used for the syntax of LISP but also any other language can typically be converted to an S-Expression,
 // it is in particular a very useful format for debugging a parser by printing out the Abstract Syntaxt Tree (AST) created by parsing.
 //
@@ -70,9 +70,9 @@ func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *T
 			func (close string) {
 				Error(context,"Unexpected close bracket '%s'", close)
 			},
-			func (atom Atom) {
-				Verbose(context,"parse atom: %s", atom)
-				right = atom
+			func (tag Tag) {
+				Verbose(context,"parse tag: %s", tag)
+				right = tag
 			},
 			func (literal Value) {
 				right = literal
@@ -111,11 +111,11 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 			func (close string) {
 				closeBracketFound = true
 			},
-			func (atom Atom) {
-				if atom.Name == parser.keyValueSeparator {
+			func (tag Tag) {
+				if tag.Name == parser.keyValueSeparator {
 					parser.parserKeyValueOperator(context, tuple)
 				} else {
-					tuple.Append(atom)
+					tuple.Append(tag)
 				}
 			},
 			func (literal Value) {
@@ -149,8 +149,8 @@ func (parser SExpressionParser) parse(context Context, next Next) (error) {
 		func (close string) {
 			Error(context,"Unexpected close bracket '%s'", close)
 		},
-		func (atom Atom) {
-			next(atom)
+		func (tag Tag) {
+			next(tag)
 		},
 		func (literal Value) {
 			Verbose(context,"parse literal: %s", literal)

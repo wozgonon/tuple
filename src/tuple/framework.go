@@ -28,7 +28,7 @@ import "math"
 type StringFunction func(value string)
 type Next func(value Value)
 
-var CONS_ATOM = Atom{"cons"}
+var CONS_ATOM = Tag{"cons"}
 var NAN Float64 = Float64(math.NaN())
 var EMPTY Tuple = NewTuple()
 
@@ -38,7 +38,7 @@ var EMPTY Tuple = NewTuple()
 
 type Lexer interface {
 	Printer
-	GetNext(context Context, eol func(), open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error
+	GetNext(context Context, eol func(), open func(open string), close func(close string), nextTag func(tag Tag), nextLiteral func (literal Value)) error
 }
 
 // The Value interface must be implected by any of the small number of types that can be produced by the lexer
@@ -52,13 +52,13 @@ type Float64 float64
 type Int64 int64
 type Bool bool
 
-// An Atom - a name for something, an identifier or operator
+// An Tag - a name for something, an identifier or operator
 // TODO include location and source for editors
-type Atom struct {
+type Tag struct {
 	Name string
 }
 
-func (atom Atom) Arity() int { return 0 }
+func (tag Tag) Arity() int { return 0 }
 func (value String) Arity() int { return 0 }
 func (comment Comment) Arity() int { return 0 }
 func (value Float64) Arity() int { return 0 }
@@ -97,8 +97,8 @@ func (tuple *Tuple) Length() int {
 func (tuple *Tuple) IsCons() bool {
 	if tuple.Length() > 0 {
 		head := tuple.List[0]
-		atom, ok := head.(Atom)
-		if ok && atom == CONS_ATOM {
+		tag, ok := head.(Tag)
+		if ok && tag == CONS_ATOM {
 			return true
 		}
 	}
@@ -178,13 +178,13 @@ type Printer interface {
 	PrintScalarPrefix(depth string, out StringFunction)
 	PrintSeparator(depth string, out StringFunction)
 	PrintEmptyTuple(depth string, out StringFunction)
-	PrintNullaryOperator(depth string, atom Atom, out StringFunction)
-	PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction)
-	PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction)
+	PrintNullaryOperator(depth string, tag Tag, out StringFunction)
+	PrintUnaryOperator(depth string, tag Tag, value Value, out StringFunction)
+	PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction)
 	PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string
 	PrintCloseTuple(depth string, tuple Tuple, out StringFunction)
-	PrintHeadAtom(value Atom, out StringFunction)
-	PrintAtom(depth string, value Atom, out StringFunction)
+	PrintHeadTag(value Tag, out StringFunction)
+	PrintTag(depth string, value Tag, out StringFunction)
 	PrintInt64(depth string, value int64, out StringFunction)
 	PrintFloat64(depth string, value float64, out StringFunction)
 	PrintString(depth string, value string, out StringFunction)
@@ -195,8 +195,8 @@ type Printer interface {
 func PrintScalar(printer Printer, depth string, token Value, out StringFunction) {
 	printer.PrintScalarPrefix(depth, out)
 	switch token.(type) {
-	case Atom:
-		printer.PrintAtom(depth, token.(Atom), out)
+	case Tag:
+		printer.PrintTag(depth, token.(Tag), out)
 	case String:
 		printer.PrintString(depth, string(token.(String)), out)
 	case Bool:
@@ -218,12 +218,12 @@ func PrintTuple(printer Printer, depth string, tuple Tuple, out StringFunction) 
 	ll := len(tuple.List)
 	first := false
 	if ll > 0 {
-		_, first = tuple.List[0].(Atom)
+		_, first = tuple.List[0].(Tag)
 	}
 	for k, value := range tuple.List {
 		printer.PrintIndent(newDepth, out)
 		if first && k == 0 {
-			printer.PrintHeadAtom(value.(Atom), out)
+			printer.PrintHeadTag(value.(Tag), out)
 		} else {
 			PrintExpression1(printer, newDepth, value, out)
 		}
@@ -252,16 +252,16 @@ func PrintExpression1(printer Printer, depth string, token Value, out StringFunc
 			printer.PrintEmptyTuple(depth, out)
 		} else {
 			head := tuple.List[0]
-			atom, ok := head.(Atom)
-			//log.Printf("Tuple [%s] %d\n", atom, len)
+			tag, ok := head.(Tag)
+			//log.Printf("Tuple [%s] %d\n", tag, len)
 			if ok {  // TODO and head in a (binary) operator
 				switch len {
 				case 1:
-					printer.PrintNullaryOperator(depth, atom, out)
+					printer.PrintNullaryOperator(depth, tag, out)
 				case 2:
-					printer.PrintUnaryOperator(depth, atom, tuple.List[1], out)
+					printer.PrintUnaryOperator(depth, tag, tuple.List[1], out)
 				case 3:
-					printer.PrintBinaryOperator(depth, atom, tuple.List[1], tuple.List[2], out)
+					printer.PrintBinaryOperator(depth, tag, tuple.List[1], tuple.List[2], out)
 				default:
 					PrintTuple(printer, depth, tuple, out)
 				}

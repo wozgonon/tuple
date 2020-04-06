@@ -104,7 +104,7 @@ func AddHarmlessTupleFunctions(table * SymbolTable)  {
 
 type ErrorIfFunctionNotFound struct {}
 
-func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value) {
+func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value) {
 	return nil, reflect.ValueOf(func(args... Value) bool {
 		fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
 		return false

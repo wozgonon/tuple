@@ -53,11 +53,11 @@ func (grammar Yaml) printObject(depth string, token Value, out func(value string
 		out(style.LineBreak)
 		depth = depth + style.Indent
 		head := tuple.List[0]
-		atom, first := head.(Atom)
+		tag, first := head.(Tag)
 		newDepth := depth
 		if first {
 			out(depth)
-			quote(atom.Name, out)
+			quote(tag.Name, out)
 			out(style.Open)
 			out(style.LineBreak)
 			newDepth = depth + style.Indent
@@ -76,8 +76,8 @@ func (grammar Yaml) printObject(depth string, token Value, out func(value string
 		out(style.ScalarPrefix)
 
 		switch token.(type) {
-		case Atom:
-			quote(token.(Atom).Name, out)
+		case Tag:
+			quote(token.(Tag).Name, out)
 		default:
 			PrintScalar(style, "", token, out)
 		}
@@ -116,32 +116,32 @@ func (parser Yaml) PrintOpenTuple(depth string, tuple Tuple, out StringFunction)
 	return depth + "  "
 }
 
-func (parser Yaml) PrintHeadAtom(atom Atom, out StringFunction) {
-	quote(atom.Name, out)
+func (parser Yaml) PrintHeadTag(tag Tag, out StringFunction) {
+	quote(tag.Name, out)
 	out(": ")
 }
 
 func (parser Yaml) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {}
 
-func (parser Yaml) PrintAtom(depth string, atom Atom, out StringFunction) {
-	quote(atom.Name, out)
-	//bout(atom.Name)
+func (parser Yaml) PrintTag(depth string, tag Tag, out StringFunction) {
+	quote(tag.Name, out)
+	//bout(tag.Name)
 }
 
 func (parser Yaml) PrintScalarPrefix(depth string, out StringFunction) {
 	out ("- ")
 }
 
-func (parser Yaml) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
-	PrintTuple(&parser, depth, NewTuple(atom), out)
+func (parser Yaml) PrintNullaryOperator(depth string, tag Tag, out StringFunction) {
+	PrintTuple(&parser, depth, NewTuple(tag), out)
 }
 
-func (parser Yaml) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
-	PrintTuple(&parser, depth, NewTuple(atom, value), out)
+func (parser Yaml) PrintUnaryOperator(depth string, tag Tag, value Value, out StringFunction) {
+	PrintTuple(&parser, depth, NewTuple(tag, value), out)
 }
 
-func (parser Yaml) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
-	PrintTuple(&parser, depth, NewTuple(atom, value1, value2), out)
+func (parser Yaml) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {
+	PrintTuple(&parser, depth, NewTuple(tag, value1, value2), out)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ func (grammar Ini ) printObject(depth string, key string, token Value, out func(
 
 		var newDepth string
 		head := tuple.List[0]
-		atom, ok := head.(Atom)
+		tag, ok := head.(Tag)
 		first := false
 
 		var prefix string
@@ -190,8 +190,8 @@ func (grammar Ini ) printObject(depth string, key string, token Value, out func(
 			prefix = depth + "."
 		}
 		if ok {
-			key = atom.Name
-			newDepth = prefix + atom.Name
+			key = tag.Name
+			newDepth = prefix + tag.Name
 			first = true
 		} else {
 			key = "."
@@ -264,7 +264,7 @@ func (grammar PropertyGrammar) printObject(depth string, token Value, out func(v
 		}
 		var newDepth string
 		head := tuple.List[0]
-		atom, first := head.(Atom)
+		tag, first := head.(Tag)
 
 		var prefix string
 		if depth == "" {
@@ -273,7 +273,7 @@ func (grammar PropertyGrammar) printObject(depth string, token Value, out func(v
 			prefix = depth + "."
 		}
 		if first {
-			newDepth = prefix + atom.Name
+			newDepth = prefix + tag.Name
 		} else {
 			newDepth = depth + "."
 		}

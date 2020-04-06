@@ -13,11 +13,11 @@ import (
 
 func TestRegexp(t *testing.T) {
 
-	star := Atom{"*"}
-	plus := Atom{"+"}
-	question := Atom{"?"}
-	or := Atom{"|"}
-	hythen := Atom{"-"}
+	star := Tag{"*"}
+	plus := Tag{"+"}
+	question := Tag{"?"}
+	or := Tag{"|"}
+	hythen := Tag{"-"}
 	a := tuple.String("a")
 	b := tuple.String("b")
 	c := tuple.String("c")

@@ -28,8 +28,8 @@ func testGetNext(t *testing.T, logger tuple.LocationLogger, expression string, e
 		func(close string) {
 			result = close
 		},
-		func(atom tuple.Atom) {
-			result = atom.Name
+		func(tag tuple.Tag) {
+			result = tag.Name
 		},
 		func (literal tuple.Value) {
 			switch literal.(type) {

@@ -26,7 +26,7 @@ import "tuple"
 
 type Grammar = tuple.Grammar
 type Context = tuple.Context
-type Atom = tuple.Atom
+type Tag = tuple.Tag
 type Value = tuple.Value
 type Comment = tuple.Comment
 type StringFunction = tuple.StringFunction
@@ -64,7 +64,7 @@ const CLOSE_BRACE = "}"
 
 // LISP cons operator (https://en.wikipedia.org/wiki/Cons)
 const CONS_OPERATOR = "."
-var SPACE_ATOM = Atom{" "}
+var SPACE_ATOM = Tag{" "}
 
 /////////////////////////////////////////////////////////////////////////////
 //  Style
@@ -135,15 +135,15 @@ func NewStyle(
 // Lexer
 /////////////////////////////////////////////////////////////////////////////
 
-func (style Style) GetNext(context Context, eol func(), open func(open string), close func(close string), nextAtom func(atom Atom), nextLiteral func (literal Value)) error {
+func (style Style) GetNext(context Context, eol func(), open func(open string), close func(close string), nextTag func(tag Tag), nextLiteral func (literal Value)) error {
 
 	ReadAndLookAhead := func(ch rune, expect1 rune, expect2 rune) bool {
 		if ch == expect1 {
 			if context.LookAhead() == expect2 {
 				context.ReadRune()
-				nextAtom(Atom{string(expect1)+string(expect2)})
+				nextTag(Tag{string(expect1)+string(expect2)})
 			} else {
-				nextAtom(Atom{string(expect1)})
+				nextTag(Tag{string(expect1)})
 			}
 			return true
 		}
@@ -185,15 +185,15 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		if err != nil {
 			return err
 		}
-		if atom, ok := value.(Atom); ok {
-			nextAtom(atom)
+		if tag, ok := value.(Tag); ok {
+			nextTag(tag)
 		} else {
 			nextLiteral(value)
 		}
-	case ch == ',':  //nextAtom(Atom{","})
-	case ch == ';':  nextAtom(Atom{";"})
+	case ch == ',':  //nextTag(Tag{","})
+	case ch == ';':  nextTag(Tag{";"})
 	case ReadAndLookAhead(ch, '.', '.'):
-	case ch == style.KeyValueSeparatorRune:		nextAtom(Atom{style.KeyValueSeparator})
+	case ch == style.KeyValueSeparatorRune:		nextTag(Tag{style.KeyValueSeparator})
 	case ReadAndLookAhead(ch, '>', '='):
 	case ReadAndLookAhead(ch, '<', '='):
 	case ReadAndLookAhead(ch, '!', '='):
@@ -203,14 +203,14 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 	//case ReadAndLookAhead(ch, '-', '-'):
 	case ReadAndLookAhead(ch, '|', '|'):
 	case ReadAndLookAhead(ch, '&', '&'):
-	case ch == '-' || ch== '/' || ch == '%': nextAtom(Atom{string(ch)})
+	case ch == '-' || ch== '/' || ch == '%': nextTag(Tag{string(ch)})
 	case ch == '_' || unicode.IsLetter(ch):
-		value, err :=(ReadAtom(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) }))
+		value, err :=(ReadTag(context, string(ch), func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) }))
 		if err != nil {
 			return err
 		}
-		if atom, ok := value.(Atom); ok {
-			nextAtom(atom)
+		if tag, ok := value.(Tag); ok {
+			nextTag(tag)
 		} else {
 			nextLiteral(value)
 		}		
@@ -249,15 +249,15 @@ func ReadString (context Context, token string, unReadLast bool, test func(r run
 	}
 }
 
-func ReadAtom(context Context, prefix string, test func(rune) bool) (Value, error) {
-	atom, err := ReadString(context, prefix, true, test)
+func ReadTag(context Context, prefix string, test func(rune) bool) (Value, error) {
+	tag, err := ReadString(context, prefix, true, test)
 	if err != nil {
-		return Atom{""}, err
+		return Tag{""}, err
 	}
-	switch atom {
+	switch tag {
 	case "NaN": return Float64(math.NaN()), nil
 	case "Inf": return Float64(math.Inf(1)), nil // TODO "+Inf", and "-Inf" 
-	default: return Atom{atom}, err
+	default: return Tag{tag}, err
 	}
 }
 
@@ -288,7 +288,7 @@ func ReadNumber(context Context, token string) (Value, error) {  // Number
 		}
 	}
 	if token == "." {
-		return Atom{"."}, nil
+		return Tag{"."}, nil
 	}
 	switch dots {
 	case 0:
@@ -391,16 +391,16 @@ func (printer Style) PrintEmptyTuple(depth string, out StringFunction) {
 	out(printer.Close)
 }
 
-func (printer Style) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
-	PrintTuple(&printer, depth, NewTuple(atom), out)
+func (printer Style) PrintNullaryOperator(depth string, tag Tag, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(tag), out)
 }
 
-func (printer Style) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
-	PrintTuple(&printer, depth, NewTuple(atom, value), out)
+func (printer Style) PrintUnaryOperator(depth string, tag Tag, value Value, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(tag, value), out)
 }
 
-func (printer Style) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
-	PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
+func (printer Style) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(tag, value1, value2), out)
 }
 
 func (printer Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
@@ -421,12 +421,12 @@ func (printer Style) PrintCloseTuple(depth string, tuple Tuple, out StringFuncti
 	}
 }
 
-func (printer Style) PrintHeadAtom(atom Atom, out StringFunction) {
-	out(atom.Name)
+func (printer Style) PrintHeadTag(tag Tag, out StringFunction) {
+	out(tag.Name)
 }
 
-func (printer Style) PrintAtom(depth string, atom Atom, out StringFunction) {
-	out(atom.Name)
+func (printer Style) PrintTag(depth string, tag Tag, out StringFunction) {
+	out(tag.Name)
 }
 
 func (printer Style) PrintInt64(depth string, value int64, out StringFunction) {

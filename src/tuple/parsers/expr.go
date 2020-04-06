@@ -46,17 +46,17 @@ func (grammar InfixExpressionGrammar) FileSuffix() string {
 	return ".expr"
 }
 
-func handleAtom(atom Atom, style Style, context Context, operatorGrammar * OperatorGrammar) {
+func handleTag(tag Tag, style Style, context Context, operatorGrammar * OperatorGrammar) {
 	open := style.Open
 	operators := (*operatorGrammar).operators
-	if operators.Precedence(atom) != -1 {
-		operatorGrammar.PushOperator(atom)
+	if operators.Precedence(tag) != -1 {
+		operatorGrammar.PushOperator(tag)
 	} else {
 		ch := context.LookAhead()
 		if ch == style.OpenChar { //  || ch == style.openChar2
 			_, err := context.ReadRune()
 			if err == io.EOF {
-				operatorGrammar.PushValue(atom)
+				operatorGrammar.PushValue(tag)
 				//operatorGrammar.EOF(next)
 				return // TODO eof
 			}
@@ -65,9 +65,9 @@ func handleAtom(atom Atom, style Style, context Context, operatorGrammar * Opera
 				return
 			}
 			context.Open()
-			operatorGrammar.OpenBracket(Atom{open})
+			operatorGrammar.OpenBracket(Tag{open})
 		}
-		operatorGrammar.PushValue(atom)
+		operatorGrammar.PushValue(tag)
 	}
 }
 
@@ -83,13 +83,13 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 				}
 			},
 			func (open string) {
-				operatorGrammar.OpenBracket(Atom{open})
+				operatorGrammar.OpenBracket(Tag{open})
 			},
 			func (close string) {
-				operatorGrammar.CloseBracket(Atom{close})
+				operatorGrammar.CloseBracket(Tag{close})
 			},
-			func(atom Atom) {
-				handleAtom(atom, grammar.style, context, &operatorGrammar)
+			func(tag Tag) {
+				handleTag(tag, grammar.style, context, &operatorGrammar)
 			},
 			func (literal Value) {
 				operatorGrammar.PushValue(literal)  // TODO WithoutInsertingMissingSepator
@@ -164,17 +164,17 @@ func (grammar ShellGrammar) Parse(context Context, next Next) {
 				if context.Location().Depth() == 0 {
 					operatorGrammar.EndOfInput(next)
 				} else if ! operatorGrammar.wasOperator {
-					operatorGrammar.PushOperator(Atom{";"})
+					operatorGrammar.PushOperator(Tag{";"})
 				}
 			},
 			func (open string) {
-				operatorGrammar.OpenBracket(Atom{open})
+				operatorGrammar.OpenBracket(Tag{open})
 			},
 			func (close string) {
-				operatorGrammar.CloseBracket(Atom{close})
+				operatorGrammar.CloseBracket(Tag{close})
 			},
-			func(atom Atom) {
-				handleAtom(atom, grammar.style, context, &operatorGrammar)
+			func(tag Tag) {
+				handleTag(tag, grammar.style, context, &operatorGrammar)
 			},
 			func (literal Value) {
 				operatorGrammar.PushValue(literal)

@@ -23,7 +23,7 @@ import "strings"
 
 type Grammar = tuple.Grammar
 type Context = tuple.Context
-type Atom = tuple.Atom
+type Tag = tuple.Tag
 type Value = tuple.Value
 type Comment = tuple.Comment
 type StringFunction = tuple.StringFunction

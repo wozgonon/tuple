@@ -48,27 +48,27 @@ func AddAllocatingTupleFunctions(table * SymbolTable)  {
 /////////////////////////////////////////////////////////////////////////////
 
 // This assign might set the value of a global variable if one exists
-func Assign (context EvalContext, atom Atom, value Value) Value {
+func Assign (context EvalContext, tag Tag, value Value) Value {
 	evaluated := Eval(context, value)
-	if table, _ := context.Find(context, atom, []Value{}); table != nil {
-		table.Add(atom.Name, func () Value { return evaluated })
+	if table, _ := context.Find(context, tag, []Value{}); table != nil {
+		table.Add(tag.Name, func () Value { return evaluated })
 	} else {
-		context.Add(atom.Name, func () Value { return evaluated })
+		context.Add(tag.Name, func () Value { return evaluated })
 	}
 	return evaluated
 }
 
 // This assign will only set a loca variable in the top most context.
-func AssignLocal (context EvalContext, atom Atom, value Value) Value {
+func AssignLocal (context EvalContext, tag Tag, value Value) Value {
 	evaluated := Eval(context, value)
-	context.Add(atom.Name, func () Value { return evaluated })
+	context.Add(tag.Name, func () Value { return evaluated })
 	return evaluated
 }
 
 func AddSetAndDeclareFunctions(table * SymbolTable) {
 
-	table.Add("get", func(context EvalContext, atom Atom) Value {
-		return context.Call(atom, []Value{})
+	table.Add("get", func(context EvalContext, tag Tag) Value {
+		return context.Call(tag, []Value{})
 	})
 	table.Add("set", Assign)  // TODO Assign or AssignLocal
 	table.Add("func", func(context EvalContext, values... Value) Value {
@@ -77,16 +77,16 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 			context.Log("ERROR", "No name or arguments provided to 'func'")
 			return tuple.EMPTY
 		} else {
-			atom := values[0]
+			tag := values[0]
 			args := values[1:lv-1]
 			code := values[lv-1]
 			for k,v := range values[:lv-2] {
-				if _, ok := v.(Atom); ! ok {
+				if _, ok := v.(Tag); ! ok {
 					context.Log("ERROR", "Expected identifier not '%s' for arg %d", v, k)
 					return tuple.EMPTY
 				}
 			}
-			functionName := atom.(Atom).Name
+			functionName := tag.(Tag).Name
 			context.Add(functionName, func (context1 EvalContext, values... Value) Value {
 				if len(values) != len(args) {
 					context.Log("ERROR", "For '%s' Expected %d arguments not %d", functionName, len(args), len(values))
@@ -96,7 +96,7 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 					newScope := NewSymbolTable(context1)
 					for k,v := range values {
 						evaluated := Eval(context1, v)
-						name := args[k].(Atom).Name
+						name := args[k].(Tag).Name
 						newScope.Add(name, func () Value {
 							return evaluated
 						})
@@ -104,7 +104,7 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 					return Eval(&newScope, code)
 				}
 			})
-			return atom
+			return tag
 		}
 	})
 }
@@ -123,10 +123,10 @@ func AddControlStatementFunctions(table * SymbolTable) {
 			return Eval(context, falseCode)
 		}
 	})
-	table.Add("for", func(context EvalContext, atom Atom, list Tuple, code Value) Tuple {
+	table.Add("for", func(context EvalContext, tag Tag, list Tuple, code Value) Tuple {
 		var iterator Value = nil
 		newScope := NewSymbolTable(context)
-		newScope.Add(atom.Name, func () Value {
+		newScope.Add(tag.Name, func () Value {
 			return iterator
 		})
 		result := tuple.NewTuple()

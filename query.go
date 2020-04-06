@@ -20,10 +20,10 @@ func (query Query) match(depth int, token Value, next Next) {
 			return
 		}
 		head := tuple.List[0]
-		atom, ok := head.(Atom)
+		tag, ok := head.(Tag)
 		var name string
 		if ok {
-			name = atom.Name
+			name = tag.Name
 		} else {
 			return // TODO
 		}

@@ -62,9 +62,9 @@ func ParseRegexp(context Context) Value {
 		}
 		s := string(v)
 		switch v {
-		case '[', '(', '{': grammar.OpenBracket(Atom{s})
-		case ']', ')', '}': grammar.CloseBracket(Atom{s})
-		case '-', '|', '*', '+', '?': grammar.PushOperator(Atom{s})
+		case '[', '(', '{': grammar.OpenBracket(Tag{s})
+		case ']', ')', '}': grammar.CloseBracket(Tag{s})
+		case '-', '|', '*', '+', '?': grammar.PushOperator(Tag{s})
 		default: grammar.PushValue(String(s))
 		}
 	}

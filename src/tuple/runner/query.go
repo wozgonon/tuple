@@ -20,7 +20,7 @@ import "strings"
 import "tuple"
 
 type Tuple = tuple.Tuple
-type Atom = tuple.Atom
+type Tag = tuple.Tag
 
 //  The Query type is used for filtering the AST produced by the parser.
 type Query struct {
@@ -60,8 +60,8 @@ func (query Query) filter(depth int, token Value, next Next) {
 			return
 		}
 		head := tuple.List[0]
-		if atom, ok := head.(Atom); ok {
-			name := atom.Name
+		if tag, ok := head.(Tag); ok {
+			name := tag.Name
 			if query.match(depth, name) {
 				next(token)
 			}
@@ -74,8 +74,8 @@ func (query Query) filter(depth int, token Value, next Next) {
 			query.filter(depth+1, token, next)
 		}
 
-	} else if atom, ok := token.(Atom); ok {
-		if query.match(depth, atom.Name) {
+	} else if tag, ok := token.(Tag); ok {
+		if query.match(depth, tag.Name) {
 			next(token)
 		}
 	}

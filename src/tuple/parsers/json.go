@@ -48,21 +48,21 @@ func NewJSONGrammar() Grammar {
 	return JSONGrammar{style}
 }
 
-func (printer JSONGrammar) PrintNullaryOperator(depth string, atom Atom, out StringFunction) {
-	PrintTuple(&printer, depth, NewTuple(atom), out)
+func (printer JSONGrammar) PrintNullaryOperator(depth string, tag Tag, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(tag), out)
 }
 
-func (printer JSONGrammar) PrintUnaryOperator(depth string, atom Atom, value Value, out StringFunction) {
-	PrintTuple(&printer, depth, NewTuple(atom, value), out)
+func (printer JSONGrammar) PrintUnaryOperator(depth string, tag Tag, value Value, out StringFunction) {
+	PrintTuple(&printer, depth, NewTuple(tag, value), out)
 }
 
 func (printer JSONGrammar) PrintSeparator(depth string, out StringFunction) {
 	out(printer.Style.Separator)
 }
 
-func (printer JSONGrammar) PrintBinaryOperator(depth string, atom Atom, value1 Value, value2 Value, out StringFunction) {
+func (printer JSONGrammar) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {
 
-	if atom == CONS_ATOM {
+	if tag == CONS_ATOM {
 		newDepth := depth + "  "
 		printer.PrintIndent(depth, out)
 		PrintExpression1(printer, newDepth, value1, out)
@@ -75,6 +75,6 @@ func (printer JSONGrammar) PrintBinaryOperator(depth string, atom Atom, value1 V
 		}
 		PrintExpression1(printer, newDepth, value2, out)
 	} else {
-		PrintTuple(&printer, depth, NewTuple(atom, value1, value2), out)
+		PrintTuple(&printer, depth, NewTuple(tag, value1, value2), out)
 	}
 }

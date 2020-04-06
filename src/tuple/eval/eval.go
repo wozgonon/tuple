@@ -22,7 +22,7 @@ import "fmt"
 import "strconv"
 import "tuple"
 
-type Atom = tuple.Atom
+type Tag = tuple.Tag
 type Value = tuple.Value
 type Tuple = tuple.Tuple
 type Int64 = tuple.Int64
@@ -45,7 +45,7 @@ type Logger = tuple.Logger
 //  
 
 type CallHandler interface {
-	Find(context EvalContext, name Atom, args [] Value) (*SymbolTable, reflect.Value)
+	Find(context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value)
 }
 
 type EvalContext interface {
@@ -54,7 +54,7 @@ type EvalContext interface {
 
 	Add(name string, function interface{})
 	//Eval(expression Value) Value
-	Call(head Atom, args []Value) Value  // Reduce
+	Call(head Tag, args []Value) Value  // Reduce
 }
 
 
@@ -64,7 +64,7 @@ type SymbolTable struct {
 	ifFunctionNotFound CallHandler
 }
 
-func (context * SymbolTable) Call(head Atom, args []Value) Value {
+func (context * SymbolTable) Call(head Tag, args []Value) Value {
 	return context.call3(context, head, args)
 }
 
@@ -149,7 +149,7 @@ func evalTuple(context EvalContext, value Tuple) Tuple {
 	return newTuple
 }
 
-func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) Value {  // Reduce
+func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Value {  // Reduce
 
 	//name := head.Name
 	nn := len(args)
@@ -174,12 +174,12 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 			result = v
 		} else {
 			_, isTuple := v.(Tuple)
-			_, isAtom := v.(Atom)
+			_, isTag := v.(Tag)
 			
 			expectedType := t.In(k)
 			context.Log("VERBOSE", "expected type='%s' got '%s'", expectedType, v)
 			switch  {
-			case expectedType == AtomType && isAtom: result = v
+			case expectedType == TagType && isTag: result = v
 			case expectedType == TupleType && isTuple: result = v.(Tuple) //newTuple := evalTuple(context, v.(Tuple))
 			case expectedType == ValueType: result = v //newTuple := evalTuple(context, v.(Tuple))
 			default:
@@ -191,12 +191,12 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 				case FloatType: result = toFloat64(context, evaluated)
 				case BoolType: result = toBool(evaluated)
 				case StringType: result = toString(context, evaluated)
-				case AtomType:
-					if _, isAtom := evaluated.(Atom); isAtom {
+				case TagType:
+					if _, isTag := evaluated.(Tag); isTag {
 						result = evaluated
 					} else {
-						context.Log("ERROR", "Expected atom but got: %s", evaluated)
-						result = Atom{""}
+						context.Log("ERROR", "Expected tag but got: %s", evaluated)
+						result = Tag{""}
 					}
 				case TupleType:
 					context.Log("TRACE", "** TUPLE isTuple=%s evaluated=%s", isTuple, evaluated)
@@ -235,7 +235,7 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	case BoolType: return tuple.Bool(v.Bool())
 	case StringType: return tuple.String(v.String())
 	case TupleType: return v.Interface().(Tuple)
-	case AtomType: return v.Interface().(Atom)
+	case TagType: return v.Interface().(Tag)
 	case ValueType: return v.Interface().(Value)
 	default:
 		context.Log("ERROR", "Cannot find type of '%s'", v)
@@ -243,7 +243,7 @@ func (table * SymbolTable) call3(context EvalContext, head Atom, args []Value) V
 	}
 }
 
-func (table * SymbolTable) Find(context EvalContext, head Atom, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
+func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
 
 	name := head.Name
 	nn := len(args)
@@ -273,13 +273,13 @@ func Eval(context EvalContext, expression Value) Value {
 		if ll == 1 {
 			return Eval(context, head)
 		}
-		atom, ok := head.(Atom)
+		tag, ok := head.(Tag)
 		if ! ok {
 			return evalTuple(context, val)
 			//return val // TODO Handle case of list: (1 2 3)
 		}
-		return context.Call(atom, val.List[1:])
-	case Atom:
+		return context.Call(tag, val.List[1:])
+	case Tag:
 		return context.Call(val, []Value{})
 	default:
 		return val
@@ -294,14 +294,14 @@ var StringType = reflect.TypeOf("")
 var TupleType = reflect.TypeOf(tuple.NewTuple())
 
 
-var AtomType = reflect.TypeOf(Atom{""})
+var TagType = reflect.TypeOf(Tag{""})
 var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
 var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
 
 
 func toString(context EvalContext, value Value) string {
 	switch val := value.(type) {
-	case Atom: return val.Name
+	case Tag: return val.Name
 	case String: return string(val)  // Quote ???
 	case Float64: return  fmt.Sprint(val)  // TODO Inf ???
 	case Int64: return strconv.FormatInt(int64(val), 10)
@@ -321,7 +321,7 @@ func toBool(value Value) bool {
 	switch val := value.(type) {
 	case Int64: return val != 0
 	case Float64: return val != 0
-	case Atom:
+	case Tag:
 		if val.Name == "true" {
 			return true
 		}
