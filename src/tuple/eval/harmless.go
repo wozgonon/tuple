@@ -22,6 +22,20 @@ import "tuple"
 import "reflect"
 import "fmt"
 
+/////////////////////////////////////////////////////////////////////////////
+
+// These functions are harmless
+// One can execute them from a script without any worry they will access something they ought not to or use up resources.
+func NewHarmlessSymbolTable(global Global) SymbolTable {
+	table := NewSymbolTable(global)
+	AddBooleanAndArithmeticFunctions(&table)
+	AddHarmlessStringFunctions(&table)
+	AddHarmlessTupleFunctions(&table)
+	
+	return table
+}
+/////////////////////////////////////////////////////////////////////////////
+
 // These functions are harmless in the sense that they just do basic functions and do not provide any access to resources
 // such as operating system or even allocating memory.
 func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
@@ -106,7 +120,7 @@ type ErrorIfFunctionNotFound struct {
 	logger LocationLogger
 }
 
-func NewErrorIfFunctionNotFound(logger LocationLogger) CallHandler {
+func NewErrorIfFunctionNotFound(logger LocationLogger) Global {
 	result := ErrorIfFunctionNotFound{logger}
 	return &result
 }
@@ -122,15 +136,3 @@ func (exec * ErrorIfFunctionNotFound) Logger() LocationLogger {
 	return exec.logger
 }
 
-/////////////////////////////////////////////////////////////////////////////
-
-// These functions are harmless
-// One can execute them from a script without any worry they will access something they ought not to or use up resources.
-func NewHarmlessSymbolTable(notFound CallHandler) SymbolTable {
-	table := NewSymbolTable(notFound)
-	AddBooleanAndArithmeticFunctions(&table)
-	AddHarmlessStringFunctions(&table)
-	AddHarmlessTupleFunctions(&table)
-	
-	return table
-}

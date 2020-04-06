@@ -68,7 +68,8 @@ func main() {
 	//  Set up the translator pipeline.
 	//
 	var symbols * SymbolTable = nil
-	table := eval.NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
+	global := eval.NewErrorIfFunctionNotFound(logger)
+	table := eval.NewSafeSymbolTable(global)
 	if *runEval {
 		symbols = &table
 		runner.AddSafeGrammarFunctions(symbols, &grammars)

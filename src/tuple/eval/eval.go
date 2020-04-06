@@ -48,13 +48,13 @@ var Trace = tuple.Trace
 //  * [Meta-circular_evaluator](https://en.wikipedia.org/wiki/Meta-circular_evaluator)
 //  
 
-type CallHandler interface {
+type Global interface {
 	Logger() LocationLogger
 	Find(context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value)
 }
 
 type EvalContext interface {
-	CallHandler
+	Global
 	Logger
 
 	Add(name string, function interface{})
@@ -62,33 +62,36 @@ type EvalContext interface {
 	Call(head Tag, args []Value) Value  // Reduce
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
 type SymbolTable struct {
 	symbols map[string]reflect.Value
-	ifFunctionNotFound CallHandler
+	global Global
+}
+
+func NewSymbolTable(notFound Global) SymbolTable {
+	if notFound.Logger() == nil {
+		panic("nil logger")
+	}
+	return SymbolTable{map[string]reflect.Value{},notFound}
 }
 
 func (context * SymbolTable) Logger() LocationLogger {
-	return context.ifFunctionNotFound.Logger()
+	return context.global.Logger()
 }
 
 // TODO use location from values from 
 func (context * SymbolTable) Log(level string, format string, args ...interface{}) {
 	location := tuple.NewLocation("<eval>", 0, 0, 0) // TODO
 	message := fmt.Sprintf(format, args...)
-	context.ifFunctionNotFound.Logger()(location, level, message)
+	context.global.Logger()(location, level, message)
 }
 
 func (context * SymbolTable) Error(location tuple.Location, format string, args ...interface{}) {
 	message := fmt.Sprintf(format, args...)
-	context.ifFunctionNotFound.Logger()(location, "ERROR", message)
+	context.global.Logger()(location, "ERROR", message)
 }
 
-func NewSymbolTable(notFound CallHandler) SymbolTable {
-	if notFound.Logger() == nil {
-		panic("nil logger")
-	}
-	return SymbolTable{map[string]reflect.Value{},notFound}
-}
 
 /*func ValuesToStrings(values []Value) []string {
 	result := make([]string, len(values))
@@ -273,7 +276,7 @@ func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*S
 	}
 	context.Log ("TRACE", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
 	// TODO look up variatic functions
-	return table.ifFunctionNotFound.Find(context, head, args)
+	return table.global.Find(context, head, args)
 }
 
 func Eval(context EvalContext, expression Value) Value {

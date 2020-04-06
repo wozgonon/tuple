@@ -38,7 +38,8 @@ func main () {
 	logger := runner.GetLogger(nil, *verbose)
 	outputGrammar := parsers.NewInfixExpressionGrammar()
 	var symbols * SymbolTable = nil
-	table := eval.NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
+	global := eval.NewErrorIfFunctionNotFound(logger)
+	table := eval.NewSafeSymbolTable(global)
 	if !*ast {
 		symbols = &table
 	}

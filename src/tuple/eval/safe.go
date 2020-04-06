@@ -19,8 +19,8 @@ package eval
 import "strings"
 import "tuple"
 
-func NewSafeSymbolTable(notFound CallHandler) SymbolTable {
-	table := NewHarmlessSymbolTable(notFound)
+func NewSafeSymbolTable(global Global) SymbolTable {
+	table := NewHarmlessSymbolTable(global)
 	AddAllocatingStringFunctions(&table)
 	AddAllocatingTupleFunctions(&table)
 	AddSetAndDeclareFunctions(&table)

@@ -47,8 +47,8 @@ func main () {
 	inputGrammar := parsers.NewShellGrammar()
 	outputGrammar := inputGrammar
 	logger := runner.GetLogger(nil, *verbose)
-	
-	table := eval.NewLessSafeSymbolTable(eval.NewExecIfNotFound(logger))
+	global := eval.NewExecIfNotFound(logger)
+	table := eval.NewLessSafeSymbolTable(global)
 	table.Add("|", eval.Pipe)
 	table.Add("=", eval.AssignLocal)
 

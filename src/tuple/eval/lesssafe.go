@@ -24,8 +24,8 @@ import "os"
 import "bytes"
 
 // These functions are potentially not harmless since they can access resources out of the sandbox
-func NewLessSafeSymbolTable(notFound CallHandler) SymbolTable {
-	table := NewSafeSymbolTable(notFound)
+func NewLessSafeSymbolTable(global Global) SymbolTable {
+	table := NewSafeSymbolTable(global)
 	AddOperatingSystemFunctions(&table)
 	return table
 }
@@ -145,7 +145,7 @@ type ExecIfNotFound struct {
 	logger LocationLogger
 }
 
-func NewExecIfNotFound(logger LocationLogger) CallHandler {
+func NewExecIfNotFound(logger LocationLogger) Global {
 	return &ExecIfNotFound{logger}
 }
 
