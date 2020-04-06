@@ -3,7 +3,6 @@ package lexer_test
 import (
 	"testing"
 	"tuple"
-	"tuple/runner"
 	"tuple/parsers"
 	"bufio"
 	"strings"
@@ -12,12 +11,12 @@ import (
 )
 
 const NO_RESULT = "..."
-var GetLogger = runner.GetLogger
+var GetLogger = tuple.GetLogger
 
-func testGetNext(t *testing.T, logger tuple.Logger, expression string, expected string) {
+func testGetNext(t *testing.T, logger tuple.LocationLogger, expression string, expected string) {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := parsers.NewParserContext("<eval>", reader, logger, false)
+	context := parsers.NewParserContext("<eval>", reader, logger)
 
 	result := NO_RESULT
 	style := parsers.LispWithInfixStyle()
@@ -54,11 +53,11 @@ func testGetNext(t *testing.T, logger tuple.Logger, expression string, expected 
 
 func TestLex1(t *testing.T) {
 
-	testLex1(t, GetLogger(nil))
-	testLex1(t, GetLogger(parsers.NewLispWithInfixGrammar()))
+	testLex1(t, GetLogger(nil, false))
+	testLex1(t, GetLogger(parsers.NewLispWithInfixGrammar(), false))
 }
 
-func testLex1(t *testing.T, logger tuple.Logger) {
+func testLex1(t *testing.T, logger tuple.LocationLogger) {
 
 	testGetNext(t, logger, "1", "1")
 	testGetNext(t, logger, "-", "-")
@@ -78,7 +77,7 @@ func testLex1(t *testing.T, logger tuple.Logger) {
 
 func TestCLanguageOperators(t *testing.T) {
 
-	logger := GetLogger(parsers.NewLispGrammar())
+	logger := GetLogger(parsers.NewLispGrammar(), false)
 	operators := parsers.NewOperators(parsers.LispWithInfixStyle())
 	parsers.AddStandardCOperators(&operators)
 	operators.Forall(func(operator string) {

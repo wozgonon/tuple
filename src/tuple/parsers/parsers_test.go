@@ -12,7 +12,6 @@ import (
 //	"fmt"
 )
 
-type Grammars = tuple.Grammars
 type Grammar = tuple.Grammar
 type Context = tuple.Context
 type Atom = tuple.Atom

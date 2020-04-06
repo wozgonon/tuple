@@ -20,61 +20,62 @@ import "tuple"
 import 	"io"
 import 	"fmt"
 
-type Logger = tuple.Logger
+type Location = tuple.Location
+type LocationLogger = tuple.LocationLogger
 
 /////////////////////////////////////////////////////////////////////////////
 // For running the language translations
 /////////////////////////////////////////////////////////////////////////////
 
+
 type ParserContext struct {
-	sourceName string
-	line int64
-	column int64
-	depth int
+	location Location
 	errors int64
 	scanner io.RuneScanner
-	logger Logger
-	verbose bool
+	logger LocationLogger
 	eol func(context Context)
 }
 
-func NewParserContext(sourceName string, scanner io.RuneScanner, logger Logger, verbose bool) ParserContext {
-	return NewParserContext2(sourceName, scanner, logger, verbose, func(context Context) {})
+func NewParserContext(sourceName string, scanner io.RuneScanner, logger LocationLogger) ParserContext {
+	return NewParserContext2(sourceName, scanner, logger, func(context Context) {})
 }
 
-func NewParserContext2(sourceName string, scanner io.RuneScanner, logger Logger, verbose bool, eol func(context Context)) ParserContext {
-	context :=  ParserContext{sourceName, 1, 0, 0, 0, scanner, logger, verbose, eol}
+func NewParserContext2(sourceName string, scanner io.RuneScanner, logger LocationLogger, eol func(context Context)) ParserContext {
+	initialLocation := tuple.NewLocation(sourceName, 1, 0, 0)
+	context :=  ParserContext{initialLocation, 0, scanner, logger, eol}
 	tuple.Verbose(&context,"Parsing file [%s] suffix [%s]", sourceName, tuple.Suffix(&context))
 	return context
 }
 
+func (context * ParserContext) Location() Location {
+	return context.location
+}
+
+/*func (context * ParserContext) SourceName() string {
+	return context.location.sourceName
+}
 func (context * ParserContext) Line() int64 {
-	return context.line
+	return context.location.line
 }
 func (context * ParserContext) Column() int64 {
-	return context.column
+	return context.location.column
 }
 func (context * ParserContext) Depth() int {
-	return context.depth
+	return context.location.depth
 }
+*/
 
 func (context * ParserContext) Errors() int64 {
 	return context.errors
 }
 
-func (context * ParserContext) SourceName() string {
-	return context.sourceName
-}
-
 func (context * ParserContext) Open() {
 	tuple.Verbose(context, "*OPEN")
-	context.depth += 1
+	context.location.IncrDepth()
 }
 
 func (context * ParserContext) Close() {
-	if context.depth > 0 {
-		context.depth -= 1
-	}
+	context.location.DecrDepth()
 	tuple.Verbose(context, "*CLOSE")
 }
 
@@ -87,11 +88,10 @@ func (context * ParserContext) ReadRune() (rune, error) {
 	switch {
 	case err != nil: return ch, err
 	case ch == '\n':
-		context.line ++
-		context.column = 0
+		context.location.IncrLine()
 		tuple.Verbose(context,"New line")
 	default:
-		context.column ++
+		context.location.IncrColumn()
 	}
 	return ch, nil
 }
@@ -111,13 +111,9 @@ func (context * ParserContext) LookAhead() rune {
 func (context * ParserContext) Log(level string, format string, args ...interface{}) {
 
 	switch level {
-	case "VERBOSE":
-		if ! context.verbose {
-			return
-		}
 	case "ERROR": context.errors += 1
 	default:
 	}
 	suffix := fmt.Sprintf(format, args...)
-	context.logger(context, level, suffix)
+	context.logger(context.location, level, suffix)
 }

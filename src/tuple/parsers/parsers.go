@@ -18,12 +18,9 @@ package parsers
 
 import "tuple"
 import "tuple/lexer"
-import "log"
-import "fmt"
 import "bufio"
 import "strings"
 
-type Grammars = tuple.Grammars
 type Grammar = tuple.Grammar
 type Context = tuple.Context
 type Atom = tuple.Atom
@@ -61,17 +58,6 @@ const DOUBLE_QUOTE = lexer.DOUBLE_QUOTE
 const CONS_OPERATOR = lexer.CONS_OPERATOR
 var SPACE_ATOM = lexer.SPACE_ATOM
 
-
-func AddAllKnownGrammars(grammars * Grammars) {
-	grammars.Add(NewLispWithInfixGrammar())
-	grammars.Add(NewLispGrammar())
-	grammars.Add(NewInfixExpressionGrammar())
-	grammars.Add(NewYamlGrammar())
-	grammars.Add(NewIniGrammar())
-	grammars.Add(NewPropertyGrammar())
-	grammars.Add(NewJSONGrammar())
-	grammars.Add(NewShellGrammar())
-}
 
 func UnexpectedCloseBracketError(context Context, token string) {
 	Error(context,"Unexpected close bracket '%s'", token)
@@ -133,28 +119,9 @@ func ParseString(grammar Grammar, expression string) Value {
 	}
 
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := NewParserContext("<parse>", reader, GetLogger(nil), false)
+	context := NewParserContext("<parse>", reader, tuple.GetLogger(nil, false))
 	grammar.Parse(&context, pipeline)
 	return result
 }
 
 
-func GetLogger(logGrammar Grammar) Logger {
-	if logGrammar == nil {
-		return func (context Context, level string, message string) {
-			prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': %s", level, context.Line(), context.Column(), context.Depth(), context.SourceName(), message)
-			log.Print(prefix)
-		}
-	} else {
-		return func(context Context, level string, message string) {
-			record := tuple.NewTuple()
-			record.Append(String(level))
-			record.Append(Int64(context.Line()))
-			record.Append(Int64(context.Column()))
-			record.Append(Int64(context.Depth()))
-			record.Append(String(context.SourceName()))
-			record.Append(String(message))
-			logGrammar.Print(record, func (value string) { fmt.Print(value) })
-		}
-	}
-}

@@ -47,7 +47,7 @@ func main () {
 
 	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := runner.NewParserContext("<cli>", reader, runner.GetLogger(nil), *verbose)
+	context := runner.NewParserContext("<cli>", reader, runner.GetLogger(nil, *verbose))
 	grammar := parsers.NewInfixExpressionGrammar()
 
 	//

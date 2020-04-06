@@ -24,7 +24,6 @@ import "math"
 import "unicode/utf8"
 import "tuple"
 
-type Grammars = tuple.Grammars
 type Grammar = tuple.Grammar
 type Context = tuple.Context
 type Atom = tuple.Atom

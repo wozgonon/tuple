@@ -22,21 +22,21 @@ import 	"fmt"
 import 	"bufio"
 import 	"os"
 import 	"strings"
+import "path"
 import "flag"
 import "tuple/eval"
 import "tuple/parsers"
 
-type Logger = tuple.Logger
 type Grammar = tuple.Grammar
-type Grammars = tuple.Grammars
 type Value = tuple.Value
 type Next = tuple.Next
 type Context = tuple.Context
 type String = tuple.String
 type Int64 = tuple.Int64
+type LocationLogger = tuple.LocationLogger
 
 var NewParserContext = parsers.NewParserContext
-var GetLogger = parsers.GetLogger
+var GetLogger = tuple.GetLogger
 const STDIN = "<stdin>"
 const PROMPT = "$ "
 
@@ -47,68 +47,74 @@ const PROMPT = "$ "
 func promptOnEOL(context Context) {
 	// TODO display grammar name: fmt.Printf("%s (%s) ", os.Args[0], tuple.Suffix(context))
 	fmt.Printf("%s", os.Args[0])
-	if context.Depth() > 0 {
-		fmt.Printf (" %d%s", context.Depth(), PROMPT)
+	depth := context.Location().Depth()
+	if depth > 0 {
+		fmt.Printf (" %d%s", depth, PROMPT)
 	} else {
 		fmt.Print (PROMPT)
 	}
 }
 
 type Runner struct {
-	grammars Grammars
-	
+	Grammars Grammars
+	symbols * eval.SymbolTable
+	logger LocationLogger
+	inputGrammar Grammar
 }
 
-func ParseAndEval(grammar Grammar, symbols eval.SymbolTable, expression string) Value {
+func NewRunner(grammars Grammars, symbols * eval.SymbolTable, logger LocationLogger, inputGrammar Grammar) Runner {
+	
+	return Runner{grammars, symbols, logger, inputGrammar}
+}
+
+func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) Value {
 
 	var result Value = tuple.NAN
 	pipeline := func(value Value) {
-		result = eval.Eval(&symbols, value)
+		result = eval.Eval(context, value)
 	}
-	reader := bufio.NewReader(strings.NewReader(expression))
-	context := NewParserContext("<eval>", reader, GetLogger(nil), false)
-	//fmt.Printf("*** Eval: '%s'\n", expression)
-	grammar.Parse(&context, pipeline)
+	RunParser(grammar, expression, GetLogger(nil, false), pipeline)  // TODO
 	return result
 }
 
-func RunFiles(args []string, logger Logger, verbose bool, inputGrammar Grammar, grammars *Grammars, next Next) int64 {
+func RunParser(grammar Grammar, expression string, logger LocationLogger, next Next) Context {
 
-	errors := int64(0)
-	// TODO this can be improved
-	parse := func (context Context) {
-		suffix := tuple.Suffix(context)
-		var grammar Grammar
-		if suffix == "" {
-			if inputGrammar == nil {
-				panic("Input grammar for '" + context.SourceName() + "' not given, use -in ...")
-			}
-			grammar = inputGrammar
-		} else {
-			grammar = grammars.FindBySuffixOrPanic(suffix)
-		}
-		tuple.Verbose(context,"source [%s] suffix [%s]", context.SourceName(), grammar.FileSuffix ())
-		grammar.Parse(context, next)
-	}
+	reader := bufio.NewReader(strings.NewReader(expression))
+	context := NewParserContext("<eval>", reader, logger)
+	grammar.Parse(&context, next)
+	return &context
+}
+
+func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) int64 {
+
+	reader := bufio.NewReader(os.Stdin)
+	context := parsers.NewParserContext2(STDIN, reader, logger, promptOnEOL)
+	context.EOL() // prompt
+	inputGrammar.Parse(&context, next)
+	return context.Errors()
+}
+
+func (runner * Runner) RunFiles(args []string, next Next) int64 {
 
 	if len(args) == 0 {
-		reader := bufio.NewReader(os.Stdin)
-		context := parsers.NewParserContext2(STDIN, reader, logger, verbose, promptOnEOL)
-		context.EOL() // prompt
-		parse(&context)
-		errors += context.Errors()
-		
-	} else {
-		for _, fileName := range args {
+		return RunStdin(runner.logger, runner.inputGrammar, next)
+	}
+	errors := int64(0)
+	for _, fileName := range args {
+		suffix := path.Ext(fileName)
+		grammar, ok := runner.Grammars.FindBySuffix(suffix)
+		if ok {
 			file, err := os.Open(fileName)
 			if err != nil {
 				log.Fatal(err)
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, logger, verbose)
-			parse(&context)
+			context := NewParserContext(fileName, reader, runner.logger)
+			grammar.Parse(&context, next)
 			errors += context.Errors()
 			file.Close()
+		} else {
+			panic("Unsupported file suffix: " + suffix)  // TODO should not be fatal
 		}
 	}
 	return errors
@@ -150,23 +156,3 @@ func GetRemainingNonFlagOsArgs() []string {
 }
 
 
-func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
-
-	table.Add("grammars", func (context eval.EvalContext, value Value) Value {
-		tuple := tuple.NewTuple()
-		for _,v := range grammars.All {
-			tuple.Append(String(v.FileSuffix()))
-		}
-		return tuple
-	})
-
-//	table.Add("expr", func (context eval.EvalContext, value Value) Value {
-//		grammar := parsers.NewShellGrammar()
-//		return ParseAndEval(grammar, context, value)
-//	})
-
-	//table.Add("grammars", func (context eval.EvalContext, value Value) Value {
-	//	return ParseAndEval(grammar, context, value)
-	//})
-
-}

@@ -16,13 +16,10 @@
 */
 package tuple
 
-import "strings"
 import "log"
 import "reflect"
 import "path"
 import "math"
-//import "fmt"
-//import "strconv"
 
 /////////////////////////////////////////////////////////////////////////////
 //  Callback signatures
@@ -30,7 +27,6 @@ import "math"
 
 type StringFunction func(value string)
 type Next func(value Value)
-type Logger func(context Context, level string, message string)
 
 var CONS_ATOM = Atom{"cons"}
 var NAN Float64 = Float64(math.NaN())
@@ -129,22 +125,10 @@ func NewTuple(values... Value) Tuple {
 
 // The Context interface represents the current state of parsing and translation.
 // It can provide: the name of the input and current depth and number of errors
-type LocationContext interface {
-	SourceName() string
-	Line() int64
-	Column() int64
-	Depth() int
-	Log(level string, format string, args ...interface{})
-}
-
-// The Context interface represents the current state of parsing and translation.
-// It can provide: the name of the input and current depth and number of errors
+// TODO  change name to ParseContext
 type Context interface {
-	// TODO LocationContext  and change name to ParseContext
-	SourceName() string
-	Line() int64
-	Column() int64
-	Depth() int
+	Location() Location
+	
 	Open()
 	Close()
 	EOL()
@@ -154,16 +138,8 @@ type Context interface {
 	Errors() int64
 }
 
-func Verbose(context Context, format string, args ...interface{}) {
-	context.Log("VERBOSE", format, args...)
-}
-
-func Error(context Context, format string, args ...interface{}) {
-	context.Log("ERROR", format, args...)
-}
-
 func Suffix(context Context) string {
-	return path.Ext(context.SourceName())
+	return path.Ext(context.Location().SourceName())
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -189,43 +165,6 @@ type Grammar interface {
 	// Pretty prints the objects in the given syntax.
 	// The output ought to be parsable by the 'parse' method.
 	Print(token Value, next func(value string))
-}
-
-// A set of Grammars
-type Grammars struct {
-	All map[string]Grammar
-}
-
-// Returns a new empty set of syntaxes
-func NewGrammars() Grammars{
-	return Grammars{make(map[string]Grammar)}
-}
-
-func (syntaxes * Grammars) Forall(next func(grammar Grammar)) {
-	for _, grammar := range syntaxes.All {
-		next (grammar)
-	}
-}
-
-func (syntaxes * Grammars) Add(syntax Grammar) {
-	suffix := syntax.FileSuffix()
-	syntaxes.All[suffix] = syntax
-}
-
-func (syntaxes * Grammars) FindBySuffix(suffix string) (Grammar, bool) {
-	if ! strings.HasPrefix(suffix, ".") {
-		suffix = "." + suffix
-	}
-	syntax, ok := syntaxes.All[suffix]
-	return syntax, ok
-}
-
-func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
-	syntax, ok := syntaxes.FindBySuffix(suffix)
-	if ! ok {
-		panic("Unsupported file suffix: '" + suffix + "'")
-	}
-	return syntax
 }
 
 /////////////////////////////////////////////////////////////////////////////

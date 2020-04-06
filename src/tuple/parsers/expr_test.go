@@ -51,7 +51,7 @@ func TestExpr(t *testing.T) {
 	testFloatExpressionFailParse(t, grammar, "-")
 
 	test := func(formula string, expected tuple.Value) {
-		val := ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(&symbols, grammar, formula)
 		if val != expected {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}
@@ -85,7 +85,7 @@ func TestArithmeticAndLogic(t *testing.T) {
 func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 	test := func (formula string) {
-		val := ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(&symbols, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -170,7 +170,7 @@ func TestNewLinesInBraces(t *testing.T) {
 	var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
-		val := ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(&symbols, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -203,7 +203,7 @@ func TestExprDeclareFunctions(t *testing.T) {
 	var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
-		val := ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(&symbols, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}

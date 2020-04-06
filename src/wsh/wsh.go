@@ -16,7 +16,6 @@
 */
 package main
 
-import "tuple"
 import "tuple/eval"
 import "tuple/runner"
 import "tuple/parsers"
@@ -51,15 +50,14 @@ func main () {
 	table := eval.NewLessSafeSymbolTable()
 	table.Add("|", eval.Pipe)
 	table.Add("=", eval.AssignLocal)
-	table.Add("ast", func (expression string) tuple.Value { return parsers.ParseString(inputGrammar, expression) })
-	table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(inputGrammar, table, expression) })
 
 	//func reduce f t { progn c=1 accumulator=first(t) (for v t { accumulator = f(accumulator v))  accumulator}
 		
-	runner.ParseAndEval(inputGrammar, table, "func count  t { progn (c=0) (for v t { c=c+1 }) c }")
-	runner.ParseAndEval(inputGrammar, table, "func first  t { nth 0 t }")
-	runner.ParseAndEval(inputGrammar, table, "func second t { nth 1 t }")
-	runner.ParseAndEval(inputGrammar, table, "func third  t { nth 2 t }")
+	runner.ParseAndEval(&table, inputGrammar, "func count  t { progn (c=0) (for v t { c=c+1 }) c }")
+	runner.ParseAndEval(&table, inputGrammar, "func first  t { nth 0 t }")
+	runner.ParseAndEval(&table, inputGrammar, "func second t { nth 1 t }")
+	runner.ParseAndEval(&table, inputGrammar, "func third  t { nth 2 t }")
+
 
 	var symbols * eval.SymbolTable = nil
 	if !*ast {
@@ -68,10 +66,14 @@ func main () {
 	
 	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
 
-	grammars := tuple.NewGrammars()
-	grammars.Add(inputGrammar)
+
+	grammars := runner.NewGrammars()
+	runner.AddAllKnownGrammars(&grammars)
+	runner1 := runner.NewRunner(grammars, &table, runner.GetLogger(nil, *verbose), inputGrammar)
+	runner.AddSafeGrammarFunctions(&table, &runner1.Grammars)
+
 	files := runner.GetRemainingNonFlagOsArgs()
-	errors := runner.RunFiles(files, runner.GetLogger(nil), *verbose, inputGrammar, &grammars, pipeline)
+	errors := runner1.RunFiles(files, pipeline)
 
 	if errors > 0 {
 		os.Exit(1)

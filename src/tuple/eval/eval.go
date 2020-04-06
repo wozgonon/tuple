@@ -29,6 +29,7 @@ type Int64 = tuple.Int64
 type Float64 = tuple.Float64
 type Bool = tuple.Bool
 type String = tuple.String
+type Logger = tuple.Logger
 
 
 //  A simple toy evaluator.
@@ -49,9 +50,8 @@ type CallHandler interface {
 
 type EvalContext interface {
 	CallHandler
-	//LocationContext
+	Logger
 
-	Log(level string, format string, args ...interface{})
 	Add(name string, function interface{})
 	//Eval(expression Value) Value
 	Call(head Atom, args []Value) Value  // Reduce

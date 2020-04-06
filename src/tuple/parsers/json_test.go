@@ -15,7 +15,7 @@ func TestEvalJson(t *testing.T) {
 	var grammar = NewJSONGrammar()
 
 	test := func(formula string, expected tuple.Value) {
-		val := ParseAndEval(grammar, symbols, formula)
+		val := ParseAndEval(&symbols, grammar, formula)
 		if ! reflect.DeepEqual(val, expected) {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}

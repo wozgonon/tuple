@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"flag"
 	"strings"
-	"bufio"
 )
 
 type SymbolTable = eval.SymbolTable
@@ -46,6 +45,7 @@ func main() {
 	var command = flag.Bool("command", false, "Execute command lines arguments rather than files.")
 	var listGrammars = flag.Bool("list-grammars", false, "List supported grammars.")
 
+
 	flag.Parse()
 
 	//
@@ -57,26 +57,8 @@ func main() {
 		return
 	}
 
-	//
-	// Set up and then look up the set of supported grammars.
-	//
-	grammars := tuple.NewGrammars()
-	parsers.AddAllKnownGrammars(&grammars)
-
-	if *listGrammars {
-		grammars.Forall(func (grammar tuple.Grammar) {
-			fmt.Printf("%s\t%s\n", grammar.FileSuffix(), grammar.Name())
-			})
-		return
-	}
-
-	outputGrammar := grammars.FindBySuffixOrPanic(*out)
-	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
-	logger := runner.GetLogger(loggerGrammar)
-	var inputGrammar tuple.Grammar = nil
-	if *in != "" {
-		inputGrammar = grammars.FindBySuffixOrPanic(*in)
-	}
+	grammars := runner.NewGrammars()
+	runner.AddAllKnownGrammars(&grammars)
 
 	//
 	//  Set up the translator pipeline.
@@ -85,28 +67,43 @@ func main() {
 	table := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
 	if *runEval {
 		symbols = &table
+		runner.AddSafeGrammarFunctions(symbols, &grammars)
+	}
+
+	outputGrammar := grammars.FindBySuffixOrPanic(*out)
+	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
+	logger := runner.GetLogger(loggerGrammar, *verbose)
+	var inputGrammar tuple.Grammar = parsers.NewLispGrammar()
+	if *in != "" {
+		inputGrammar = grammars.FindBySuffixOrPanic(*in)
+	}
+
+	runner1 := runner.NewRunner(grammars, symbols, logger, inputGrammar)
+
+	//
+	// Set up and then look up the set of supported grammars.
+	//
+
+	// To list all grammars: wozg -eval -command grammars
+	if *listGrammars {
+		grammars.Forall(func (grammar tuple.Grammar) {
+			fmt.Printf("%s\t%s\n", grammar.FileSuffix(), grammar.Name())
+		})
+		return
 	}
 
 	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
 
+	args := runner.GetRemainingNonFlagOsArgs()
 	if *command {
 		//
 		//  Get the input expression from the command line
 		//
-		argsLength := len(os.Args)
-		numberOfFiles := flag.NArg()
-		args := os.Args[argsLength-numberOfFiles:]
 		expression := strings.Join(args, " ")
-
 		//
 		//  Set up the translator pipeline.
 		//
-		reader := bufio.NewReader(strings.NewReader(expression))
-		context := runner.NewParserContext("<cli>", reader, logger, *verbose)
-		grammar := grammars.FindBySuffixOrPanic(*in)
-
-		grammar.Parse(&context, pipeline)
-
+		context := runner.RunParser(inputGrammar, expression, logger, pipeline)
 		if context.Errors() > 0 {
 			os.Exit(1)
 		}
@@ -115,8 +112,7 @@ func main() {
 		//
 		//  Run the translators over all the input files.
 		//
-		files := runner.GetRemainingNonFlagOsArgs()
-		errors := runner.RunFiles(files, logger, *verbose, inputGrammar, &grammars, pipeline)
+		errors := runner1.RunFiles(args, pipeline)
 
 		//
 		//  Exit with non-zero response code if any errors occurred.

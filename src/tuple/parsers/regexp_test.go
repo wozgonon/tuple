@@ -29,7 +29,7 @@ func TestRegexp(t *testing.T) {
 
 	test := func (expression string, expected Value) {
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := parsers.NewParserContext("<eval>", reader, runner.GetLogger(nil), false)
+		context := parsers.NewParserContext("<eval>", reader, runner.GetLogger(nil, false))
 		value := parsers.ParseRegexp(&context)
 		if ! reflect.DeepEqual(expected, value) {
 			t.Errorf("Expected '%s' got '%s'", expected, value)
