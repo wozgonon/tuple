@@ -31,6 +31,10 @@ func Verbose(logger Logger, format string, args ...interface{}) {
 	logger.Log("VERBOSE", format, args...)
 }
 
+func Trace(logger Logger, format string, args ...interface{}) {
+	logger.Log("TRACE", format, args...)
+}
+
 func Error(logger Logger, format string, args ...interface{}) {
 	logger.Log("ERROR", format, args...)
 }
@@ -109,7 +113,7 @@ func GetLogger(logGrammar Grammar, verbose bool) LocationLogger {
 		return logger
 	} else {
 		return func (context Location, level string, message string) {
-			if level != "VERBOSE" {
+			if level != "VERBOSE" && level != "TRACE" {
 				logger(context, level, message)
 			}
 		}

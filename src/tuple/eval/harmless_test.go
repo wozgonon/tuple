@@ -37,9 +37,12 @@ func randomFloat64() float64 {
 	return rand.Float64()  // TODO perhaps use a normal distribution to be more representative
 }
 
+var logger = tuple.GetLogger(nil, false)
+var notFound = eval.NewErrorIfFunctionNotFound(logger)
+var symbols = eval.NewHarmlessSymbolTable(notFound)
+
 func TestHarmless(t *testing.T) {
 
-	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
 	if symbols.Count() == 0  {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
@@ -65,7 +68,7 @@ func TestHarmless(t *testing.T) {
 
 func TestBinaryFloat64(t *testing.T) {
 
-	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	symbols := eval.NewHarmlessSymbolTable(notFound)
 	test := func (arg string, aa float64, bb float64, expected float64) {
 		op := Tag{arg}
 		a1 := Float64(aa)
@@ -90,7 +93,7 @@ func TestBinaryFloat64(t *testing.T) {
 
 func TestBinaryFloat64Bool(t *testing.T) {
 
-	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	symbols := eval.NewHarmlessSymbolTable(notFound)
 	test := func (arg string, aa float64, bb float64) {
 		op := Tag{arg}
 		a1 := Float64(aa)
@@ -116,7 +119,7 @@ func TestBinaryFloat64Bool(t *testing.T) {
 
 func TestUnaryFloat64(t *testing.T) {
 
-	symbols := eval.NewHarmlessSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	symbols := eval.NewHarmlessSymbolTable(notFound)
 	test := func (arg string, aa float64, expected float64) {
 		op := Tag{arg}
 		a1 := Float64(aa)

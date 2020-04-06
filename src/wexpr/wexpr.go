@@ -29,17 +29,16 @@ func main () {
 	//
 	//  Get the input expression from the command line
 	//
-	argsLength := len(os.Args)
-	numberOfFiles := flag.NArg()
-	args := os.Args[argsLength-numberOfFiles:] 
+	args := runner.GetRemainingNonFlagOsArgs()
 	expression := strings.Join(args, " ")
 
 	//
 	//  Set up the translator pipeline.
 	//
+	logger := runner.GetLogger(nil, *verbose)
 	outputGrammar := parsers.NewInfixExpressionGrammar()
 	var symbols * SymbolTable = nil
-	table := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	table := eval.NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
 	if !*ast {
 		symbols = &table
 	}
@@ -47,7 +46,7 @@ func main () {
 
 	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := runner.NewParserContext("<cli>", reader, runner.GetLogger(nil, *verbose))
+	context := runner.NewParserContext("<cli>", reader, logger)
 	grammar := parsers.NewInfixExpressionGrammar()
 
 	//

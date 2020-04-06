@@ -60,19 +60,20 @@ func main() {
 	grammars := runner.NewGrammars()
 	runner.AddAllKnownGrammars(&grammars)
 
+	outputGrammar := grammars.FindBySuffixOrPanic(*out)
+	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
+	logger := runner.GetLogger(loggerGrammar, *verbose)
+
 	//
 	//  Set up the translator pipeline.
 	//
 	var symbols * SymbolTable = nil
-	table := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	table := eval.NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
 	if *runEval {
 		symbols = &table
 		runner.AddSafeGrammarFunctions(symbols, &grammars)
 	}
 
-	outputGrammar := grammars.FindBySuffixOrPanic(*out)
-	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
-	logger := runner.GetLogger(loggerGrammar, *verbose)
 	var inputGrammar tuple.Grammar = parsers.NewLispGrammar()
 	if *in != "" {
 		inputGrammar = grammars.FindBySuffixOrPanic(*in)

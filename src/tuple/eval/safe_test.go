@@ -25,9 +25,13 @@ import (
 	"tuple/parsers"
 )
 
+//var logger = tuple.GetLogger(nil, false)
+//var notFound = eval.NewErrorIfFunctionNotFound(logger)
+//var symbols = eval.NewHarmlessSymbolTable(notFound)
+
 func TestSafe(t *testing.T) {
 
-	symbols := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	symbols := eval.NewSafeSymbolTable(notFound)
 	if symbols.Count() == 0  {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
@@ -41,7 +45,7 @@ func TestDeclareFunctions(t *testing.T) {
 
 	grammar := parsers.NewShellGrammar()
 
-	var symbols = eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+	var symbols = eval.NewSafeSymbolTable(notFound)  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
 		val := runner.ParseAndEval(&symbols, grammar, formula)

@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-var symbols = eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
+var logger = tuple.GetLogger(nil, false)
+var symbols = eval.NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
 
 func TestEval1(t *testing.T) {
 	var grammar = parsers.NewInfixExpressionGrammar()
@@ -53,7 +54,7 @@ func testFiles(t *testing.T) {
 	count := 0
 	files := []string{"../wozg/testdata/test.l"}
 	grammars := runner.NewGrammars()
-	runner1 := runner.NewRunner(grammars, &symbols, runner.GetLogger(nil, false), parsers.NewLispGrammar())
+	runner1 := runner.NewRunner(grammars, &symbols, logger, parsers.NewLispGrammar())
 	grammars.Add((parsers.NewLispGrammar()))
 	errors := runner1.RunFiles(files, func (next tuple.Value) { count += 1})
 
@@ -66,8 +67,8 @@ func testFiles(t *testing.T) {
 }
 
 func TestSimplePipeline(t *testing.T) {
-	table := eval.NewSafeSymbolTable(&eval.ErrorIfFunctionNotFound{})
-	runner.SimplePipeline(&table, "*", parsers.NewLispGrammar(), func (_ string) {})
+	
+	runner.SimplePipeline(&symbols, "*", parsers.NewLispGrammar(), func (_ string) {})
 	// TODO
 }
 

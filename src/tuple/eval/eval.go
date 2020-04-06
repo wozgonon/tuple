@@ -30,6 +30,10 @@ type Float64 = tuple.Float64
 type Bool = tuple.Bool
 type String = tuple.String
 type Logger = tuple.Logger
+type LocationLogger = tuple.LocationLogger
+var Error = tuple.Error
+var Verbose = tuple.Verbose
+var Trace = tuple.Trace
 
 
 //  A simple toy evaluator.
@@ -45,6 +49,7 @@ type Logger = tuple.Logger
 //  
 
 type CallHandler interface {
+	Logger() LocationLogger
 	Find(context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value)
 }
 
@@ -57,26 +62,31 @@ type EvalContext interface {
 	Call(head Tag, args []Value) Value  // Reduce
 }
 
-
-
 type SymbolTable struct {
 	symbols map[string]reflect.Value
 	ifFunctionNotFound CallHandler
 }
 
-func (context * SymbolTable) Call(head Tag, args []Value) Value {
-	return context.call3(context, head, args)
+func (context * SymbolTable) Logger() LocationLogger {
+	return context.ifFunctionNotFound.Logger()
 }
 
+// TODO use location from values from 
 func (context * SymbolTable) Log(level string, format string, args ...interface{}) {
-	if level == "VERBOSE" || level == "TRACE" {  // TODO
-		return
-	}
-	fmt.Printf(level + " " + format + "\n", args...)
+	location := tuple.NewLocation("<eval>", 0, 0, 0) // TODO
+	message := fmt.Sprintf(format, args...)
+	context.ifFunctionNotFound.Logger()(location, level, message)
 }
 
+func (context * SymbolTable) Error(location tuple.Location, format string, args ...interface{}) {
+	message := fmt.Sprintf(format, args...)
+	context.ifFunctionNotFound.Logger()(location, "ERROR", message)
+}
 
 func NewSymbolTable(notFound CallHandler) SymbolTable {
+	if notFound.Logger() == nil {
+		panic("nil logger")
+	}
 	return SymbolTable{map[string]reflect.Value{},notFound}
 }
 
@@ -145,12 +155,17 @@ func evalTuple(context EvalContext, value Tuple) Tuple {
 	for _,v:= range value.List {
 		newTuple.Append(Eval(context, v))
 	}
-	context.Log("TRACE", "Eval tuple return '%s'", newTuple)
+	Trace(context, "Eval tuple return '%s'", newTuple)
 	return newTuple
+}
+
+func (context * SymbolTable) Call(head Tag, args []Value) Value {
+	return context.call3(context, head, args)
 }
 
 func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Value {  // Reduce
 
+	location := tuple.NewLocation("<eval>", 0, 0, 0) // TODO pass the location in from somewhere, attach it to incoming values
 	//name := head.Name
 	nn := len(args)
 
@@ -170,21 +185,21 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Va
 		k := start + key
 		var result interface{}
 		if t.IsVariadic() {
-			context.Log("VERBOSE", "isvariadic='%s' ", t) 
+			Verbose(context, "isvariadic='%s' ", t) 
 			result = v
 		} else {
 			_, isTuple := v.(Tuple)
 			_, isTag := v.(Tag)
 			
 			expectedType := t.In(k)
-			context.Log("VERBOSE", "expected type='%s' got '%s'", expectedType, v)
+			Verbose(context, "expected type='%s' got '%s'", expectedType, v)
 			switch  {
 			case expectedType == TagType && isTag: result = v
 			case expectedType == TupleType && isTuple: result = v.(Tuple) //newTuple := evalTuple(context, v.(Tuple))
 			case expectedType == ValueType: result = v //newTuple := evalTuple(context, v.(Tuple))
 			default:
 				evaluated := Eval(context, v)
-				context.Log("TRACE", "** EVAL head=%s  v=%s-> evaluated=%s type=(%s) expectedType=%s", head, v, evaluated, reflect.TypeOf(evaluated), expectedType)
+				Trace(context, "** EVAL head=%s  v=%s-> evaluated=%s type=(%s) expectedType=%s", head, v, evaluated, reflect.TypeOf(evaluated), expectedType)
 				/// TODO should this take a Scalar or a Value?
 				switch expectedType {
 				case IntType: result = toInt64(context, evaluated)
@@ -195,34 +210,34 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Va
 					if _, isTag := evaluated.(Tag); isTag {
 						result = evaluated
 					} else {
-						context.Log("ERROR", "Expected tag but got: %s", evaluated)
+						table.Error(location, "Expected tag but got: %s", evaluated)
 						result = Tag{""}
 					}
 				case TupleType:
-					context.Log("TRACE", "** TUPLE isTuple=%s evaluated=%s", isTuple, evaluated)
+					Trace(context, "** TUPLE isTuple=%s evaluated=%s", isTuple, evaluated)
 					if _, isTuple := evaluated.(Tuple); isTuple {
 						result = evaluated
 					} else {
-						context.Log("ERROR", "Expected tuple but got: %s", evaluated)
+						table.Error(location, "Expected tuple but got: %s", evaluated)
 						result = tuple.NewTuple()
 					}
 				case ValueType:
 					result = evaluated
 				default:
-					context.Log("ERROR", "should not get here Expected type: '%s' v=%s", expectedType, evaluated) // TODO
+					table.Error(location, " should not get here Expected type: '%s' v=%s", expectedType, evaluated) // TODO
 					result = evaluated //float64(v.(Float64)) // TODO???
 				}
 			}
 		}
 		if result == nil {
-			context.Log("ERROR", "MUST not be nil v=%s head=%s", v, head)
+			table.Error(location, "MUST not be nil v=%s head=%s", v, head)
 		}
-		context.Log("TRACE", "Call '%s' arg=%d value=%s", head, k, result)
+		Trace(context, "Call '%s' arg=%d value=%s", head, k, result)
 		reflectedArgs[k] = reflect.ValueOf(result)
 	}
-	context.Log("TRACE", "Call '%s' (%s)", head, reflectedArgs)
+	Trace(context, "Call '%s' (%s)", head, reflectedArgs)
 	reflectValue := f.Call(reflectedArgs)
-	context.Log("TRACE", "  Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValue)
+	Trace(context, "  Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValue)
 
 	in := reflectValue
 	if len(in) == 0  {
@@ -238,7 +253,7 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Va
 	case TagType: return v.Interface().(Tag)
 	case ValueType: return v.Interface().(Value)
 	default:
-		context.Log("ERROR", "Cannot find type of '%s'", v)
+		table.Error(location, "Cannot find type of '%s'", v)
 		return tuple.NAN
 	}
 }

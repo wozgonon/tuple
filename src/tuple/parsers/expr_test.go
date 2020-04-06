@@ -3,12 +3,14 @@ package parsers_test
 import (
 	"testing"
 	"tuple"
+	"tuple/eval"
 	"math"
 )
 
 
 var grammar = NewInfixExpressionGrammar()
-var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+var logger = tuple.GetLogger(nil, false)
+var symbols = NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))  // TODO perhaps another default function would be better
 
 
 func TestExpr1(t *testing.T) {
@@ -167,7 +169,7 @@ func TestNewLinesInBraces(t *testing.T) {
 
 	grammar := NewShellGrammar()
 
-	var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+	//var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
 		val := ParseAndEval(&symbols, grammar, formula)
@@ -200,7 +202,7 @@ func TestExprDeclareFunctions(t *testing.T) {
 
 	grammar := NewShellGrammar()
 
-	var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
+	//var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
 		val := ParseAndEval(&symbols, grammar, formula)

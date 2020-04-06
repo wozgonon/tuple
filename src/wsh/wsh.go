@@ -46,8 +46,9 @@ func main () {
 	//
 	inputGrammar := parsers.NewShellGrammar()
 	outputGrammar := inputGrammar
-
-	table := eval.NewLessSafeSymbolTable()
+	logger := runner.GetLogger(nil, *verbose)
+	
+	table := eval.NewLessSafeSymbolTable(eval.NewExecIfNotFound(logger))
 	table.Add("|", eval.Pipe)
 	table.Add("=", eval.AssignLocal)
 
@@ -69,7 +70,7 @@ func main () {
 
 	grammars := runner.NewGrammars()
 	runner.AddAllKnownGrammars(&grammars)
-	runner1 := runner.NewRunner(grammars, &table, runner.GetLogger(nil, *verbose), inputGrammar)
+	runner1 := runner.NewRunner(grammars, &table, logger, inputGrammar)
 	runner.AddSafeGrammarFunctions(&table, &runner1.Grammars)
 
 	files := runner.GetRemainingNonFlagOsArgs()

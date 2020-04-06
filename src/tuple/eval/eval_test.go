@@ -2,12 +2,14 @@ package eval_test
 
 import (
 	"testing"
+	"tuple"
 	"tuple/eval"
 )
 
 func TestBuildSymbolTable(t *testing.T) {
 
-	symbols := eval.NewSymbolTable(&eval.ErrorIfFunctionNotFound{})
+	logger := tuple.GetLogger(nil, false)
+	symbols := eval.NewSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
 	if symbols.Count() != 0 {
 		t.Errorf("Expected empty table got %d", symbols.Count())
 

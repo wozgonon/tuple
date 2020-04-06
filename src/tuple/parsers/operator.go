@@ -226,7 +226,7 @@ func (stack * OperatorGrammar) PushOperator(operator Tag) {
 	// TODO postfix
 
 	if operatorIsPrefix {
-		stack.pushOperator(prefixOperator)
+		stack.pushOperator(prefixOperator.tag)
 	} else if operatorIsPostfix {  // TODO move this code to the postfix method, which will allow % as a postfix operator
 		values := &(stack.Values.List)
 		lv := len(*values)
@@ -277,18 +277,25 @@ func (stack * OperatorGrammar) PushOperator(operator Tag) {
 type Operators struct {
 	Style
 	precedence map[string]int
-	prefix map[string]Tag
-	infix map[string]Tag
-	postfix map[string]Tag
+	prefix map[string]Operator
+	infix map[string]Operator
+	postfix map[string]Operator
 	brackets map[string]string
 	closeBrackets map[string]string
 	evalName map[string]Tag
 }
 
+type Operator struct {
+	tag Tag
+	precedence int
+	reduceAllRepeats bool
+	evalName Tag
+}
+
 func NewOperators(style Style) Operators {
-	tags1 := make(map[string]Tag, 0)
-	tags2 := make(map[string]Tag, 0)
-	tags3 := make(map[string]Tag, 0)
+	tags1 := make(map[string]Operator, 0)
+	tags2 := make(map[string]Operator, 0)
+	tags3 := make(map[string]Operator, 0)
 	tags4 := make(map[string]Tag, 0)
 	strings1 := make(map[string]string, 0)
 	strings2 := make(map[string]string, 0)
@@ -344,13 +351,13 @@ func (operators *Operators) AddInfix(operator string, precedence int) {
 
 func (operators *Operators) AddInfix3(operator string, precedence int, name string) {
 	operators.precedence[operator] = precedence
-	operators.infix[operator] = Tag{name}
+	operators.infix[operator] = Operator{Tag{name}, precedence, false,Tag{operator}}
 	operators.evalName[name] = Tag{operator}
 }
 
 func (operators *Operators) AddPrefix(operator string, precedence int) {
 	name := PREFIX + operator
-	operators.prefix[operator] = Tag{name}
+	operators.prefix[operator] = Operator{Tag{name}, precedence, false,Tag{operator}}
 	operators.precedence[operator] = precedence
 	operators.precedence[name] = precedence
 	operators.evalName[name] = Tag{operator}
@@ -358,7 +365,7 @@ func (operators *Operators) AddPrefix(operator string, precedence int) {
 
 func (operators *Operators) AddPostfix(operator string, precedence int) {
 	name := "_postfix" + operator
-	operators.postfix[operator] = Tag{name}
+	operators.postfix[operator] = Operator{Tag{name}, precedence, false,Tag{operator}}
 	operators.precedence[operator] = precedence
 	operators.precedence[name] = precedence
 	operators.evalName[name] = Tag{operator}

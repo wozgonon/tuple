@@ -20,11 +20,13 @@ package eval_test
 import (
 	"testing"
 	"tuple/eval"
+	"tuple"
 )
 
 func TestLessSafe(t *testing.T) {
 
-	symbols := eval.NewLessSafeSymbolTable()
+	logger := tuple.GetLogger(nil, false)
+	symbols := eval.NewLessSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
 	if symbols.Count() == 0 {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
