@@ -9,7 +9,7 @@ import (
 
 func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, expected float64) {
 	//t.Logf("TRY: %s==%f", formula, expected)
-	val := ParseAndEval(&symbols, grammar, formula)
+	val,_ := ParseAndEval(&symbols, grammar, formula)
 	floatExpected := tuple.Float64(expected)
 	floatVal, ok := val.(tuple.Float64)
 	if ok {
@@ -22,7 +22,7 @@ func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, ex
 }
 
 func testFloatExpressionFailParse(t *testing.T, grammar tuple.Grammar, formula string) {
-       val := ParseAndEval(&symbols, grammar, formula)
+       val,_ := ParseAndEval(&symbols, grammar, formula)
        f,ok := val.(tuple.Float64);
        if !ok || (ok && ! math.IsNaN(float64(f))) {
                t.Errorf("%s != %s", grammar, val)
@@ -110,7 +110,7 @@ func TestEvalLispWithInfixGrammarToInt64(t *testing.T) {
 func TestLispInfixEquals(t *testing.T) {
 
 	test := func (formula string) {
-		val := ParseAndEval(&symbols, grammar, formula)
+		val,_ := ParseAndEval(&symbols, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}

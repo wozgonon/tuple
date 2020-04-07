@@ -15,7 +15,7 @@ var symbols = eval.NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
 
 func TestEval1(t *testing.T) {
 	var grammar = parsers.NewInfixExpressionGrammar()
-	val := runner.ParseAndEval(&symbols, grammar, "1+1")
+	val,_ := runner.ParseAndEval(&symbols, grammar, "1+1")
 	if val != tuple.Float64(2) {
 		t.Errorf("1+1=%s", val)
 	}
@@ -40,7 +40,7 @@ func TestEvalToInt64(t *testing.T) {
 		"acos(cos(PI))" : math.Pi,
 	}
 	for k, v := range tests {
-		val := runner.ParseAndEval(&symbols, grammar, k)
+		val,_ := runner.ParseAndEval(&symbols, grammar, k)
 		if val != tuple.Float64(v) {
 			t.Errorf("%s=%d   %s", k, int64(v), val)
 		}

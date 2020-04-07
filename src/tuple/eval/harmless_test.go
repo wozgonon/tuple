@@ -48,9 +48,9 @@ func TestHarmless(t *testing.T) {
 	}
 
 	test := func (expression tuple.Tuple) {
-		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+		value, _ := eval.Eval(&symbols, expression)
+		if ! bool(value.(Bool)) {
 			t.Errorf("Expected '%s' to be true", expression)
-
 		}
 	}
 
@@ -76,9 +76,9 @@ func TestBinaryFloat64(t *testing.T) {
 		lhs := Float64(expected)
 		rhs := NewTuple(op, a1, b1)
 		expression := NewTuple(Tag{"=="}, lhs, rhs)
-		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+		value, _ := eval.Eval(&symbols, expression)
+		if ! bool(value.(Bool)) {
 			t.Errorf("Expected '%s' to be true", expression)
-
 		}
 	}
 
@@ -99,9 +99,9 @@ func TestBinaryFloat64Bool(t *testing.T) {
 		a1 := Float64(aa)
 		b1 := Float64(bb)
 		expression := NewTuple(op, a1, b1)
-		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+		value, _ := eval.Eval(&symbols, expression)
+		if ! bool(value.(Bool)) {
 			t.Errorf("Expected '%s' to be true", expression)
-
 		}
 	}
 
@@ -126,7 +126,8 @@ func TestUnaryFloat64(t *testing.T) {
 		lhs := Float64(expected)
 		rhs := NewTuple(op, a1)
 		expression := NewTuple(Tag{"=="}, lhs, rhs)
-		if ! bool((eval.Eval(&symbols, expression)).(Bool)) {
+		value, _ := eval.Eval(&symbols, expression)
+		if ! bool(value.(Bool)) {
 			t.Errorf("Expected '%s' to be true", expression)
 
 		}

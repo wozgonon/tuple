@@ -98,13 +98,16 @@ func AddHarmlessTupleFunctions(table * SymbolTable)  {
 
 	table.Add("nth", func(index int64, value Tuple) Value {
 		if index < 0 || index >= int64(value.Length()) {
-			return tuple.EMPTY
+			return tuple.NAN
 		}
 		return value.List[index]
 	})
 
 	table.Add("istuple", func (context EvalContext, value Value) bool {
-		evaluated := Eval(context, value)
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			// TODO
+		}
 		_, ok := evaluated.(Tuple)
 		return ok
 	})

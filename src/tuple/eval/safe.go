@@ -49,7 +49,10 @@ func AddAllocatingTupleFunctions(table * SymbolTable)  {
 
 // This assign might set the value of a global variable if one exists
 func Assign (context EvalContext, tag Tag, value Value) Value {
-	evaluated := Eval(context, value)
+	evaluated, err := Eval(context, value)
+	if err != nil {
+		// TODO
+	}
 	if table, _ := context.Find(context, tag, []Value{}); table != nil {
 		table.Add(tag.Name, func () Value { return evaluated })
 	} else {
@@ -60,7 +63,10 @@ func Assign (context EvalContext, tag Tag, value Value) Value {
 
 // This assign will only set a loca variable in the top most context.
 func AssignLocal (context EvalContext, tag Tag, value Value) Value {
-	evaluated := Eval(context, value)
+	evaluated, err := Eval(context, value)
+	if err != nil {
+		// TODO
+	}
 	context.Add(tag.Name, func () Value { return evaluated })
 	return evaluated
 }
@@ -68,7 +74,11 @@ func AssignLocal (context EvalContext, tag Tag, value Value) Value {
 func AddSetAndDeclareFunctions(table * SymbolTable) {
 
 	table.Add("get", func(context EvalContext, tag Tag) Value {
-		return context.Call(tag, []Value{})
+		result, err := context.Call(tag, []Value{})
+		if err != nil {
+			// TODO
+		}
+		return result
 	})
 	table.Add("set", Assign)  // TODO Assign or AssignLocal
 	table.Add("func", func(context EvalContext, values... Value) Value {
@@ -95,13 +105,20 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 					context.Log("TRACE", "** FUNC %s argValue: %s", functionName, values)
 					newScope := NewSymbolTable(context1)
 					for k,v := range values {
-						evaluated := Eval(context1, v)
+						evaluated, err := Eval(context1, v)
+						if err != nil {
+							// TODO
+						}
 						name := args[k].(Tag).Name
 						newScope.Add(name, func () Value {
 							return evaluated
 						})
 					}
-					return Eval(&newScope, code)
+					evaluated, err := Eval(&newScope, code)
+					if err != nil {
+						// TODO
+					}
+					return evaluated
 				}
 			})
 			return tag
@@ -117,11 +134,17 @@ func AddControlStatementFunctions(table * SymbolTable) {
 
 	// Perhaps this could be moved to harmless.
 	table.Add("if", func(context EvalContext, condition bool, trueCode Value, falseCode Value) Value {
+		var code Value
 		if condition {
-			return Eval(context, trueCode)
+			code = trueCode
 		} else {
-			return Eval(context, falseCode)
+			code = falseCode
 		}
+		evaluated, err := Eval(context, code)
+		if err != nil {
+			// TODO
+		}
+		return evaluated
 	})
 	table.Add("for", func(context EvalContext, tag Tag, list Tuple, code Value) Tuple {
 		var iterator Value = nil
@@ -131,8 +154,15 @@ func AddControlStatementFunctions(table * SymbolTable) {
 		})
 		result := tuple.NewTuple()
 		for _, v := range list.List {
-			iterator = Eval(context, v)
-			value := Eval(&newScope, code)
+			evaluated, err := Eval(context, v)
+			iterator = evaluated
+			if err != nil {
+				// TODO
+			}
+			value, err := Eval(&newScope, code)
+			if err != nil {
+				// TODO
+			}
 			result.Append(value)
 		}
 		return result
@@ -140,12 +170,18 @@ func AddControlStatementFunctions(table * SymbolTable) {
 	table.Add("while", func(context EvalContext, condition Value, code Value) Value {
 		var result Value = tuple.EMPTY
 		for {
-			condition := Eval(context, condition)
+			condition, err := Eval(context, condition)
+			if err != nil {
+				// TODO
+			}
 			conditionResult, ok := condition.(Bool)
 			if ! ok || ! bool(conditionResult) {
 				return result
 			}
-			result = Eval(context, code)
+			result, err = Eval(context, code)
+			if err != nil {
+				// TODO
+			}
 		}
 	})
 
@@ -153,7 +189,11 @@ func AddControlStatementFunctions(table * SymbolTable) {
 	table.Add("progn", func(context EvalContext, values... Value) Value {
 		var result Value = tuple.EMPTY
 		for _, v := range values {
-			result = Eval(context, v)
+			evaluated, err := Eval(context, v)
+			if err != nil {
+				// TODO
+			}
+			result = evaluated
 		}
 		return result
 

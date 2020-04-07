@@ -16,10 +16,8 @@
 */
 package eval
 
-import "math"
 import "reflect"
 import "fmt"
-import "strconv"
 import "tuple"
 
 type Tag = tuple.Tag
@@ -31,6 +29,7 @@ type Bool = tuple.Bool
 type String = tuple.String
 type Logger = tuple.Logger
 type LocationLogger = tuple.LocationLogger
+type Location = tuple.Location
 var Error = tuple.Error
 var Verbose = tuple.Verbose
 var Trace = tuple.Trace
@@ -59,7 +58,7 @@ type EvalContext interface {
 
 	Add(name string, function interface{})
 	//Eval(expression Value) Value
-	Call(head Tag, args []Value) Value  // Reduce
+	Call(head Tag, args []Value) (Value, error)  // Reduce
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -80,6 +79,11 @@ func (context * SymbolTable) Logger() LocationLogger {
 	return context.global.Logger()
 }
 
+func LocationForValue(value Value) Location {
+	// TODO get the location associate with a Value
+	return tuple.NewLocation("<eval>", 0, 0, 0) // TODO
+}
+
 // TODO use location from values from 
 func (context * SymbolTable) Log(level string, format string, args ...interface{}) {
 	location := tuple.NewLocation("<eval>", 0, 0, 0) // TODO
@@ -87,7 +91,8 @@ func (context * SymbolTable) Log(level string, format string, args ...interface{
 	context.global.Logger()(location, level, message)
 }
 
-func (context * SymbolTable) Error(location tuple.Location, format string, args ...interface{}) {
+func (context * SymbolTable) Error(value Value, format string, args ...interface{}) {
+	location := LocationForValue(value)
 	message := fmt.Sprintf(format, args...)
 	context.global.Logger()(location, "ERROR", message)
 }
@@ -105,7 +110,7 @@ func EvalToStrings(context EvalContext, values []Value) []string {
 
 	result := make([]string, len(values))
 	for k,_:= range values {
-		value := Eval(context, values[k])
+		value, _ := Eval(context, values[k])
 		result[k] = toString(context, value)
 	}
 	return result
@@ -153,22 +158,25 @@ func (table * SymbolTable) Add(name string, function interface{}) {
 	table.symbols[key] = reflectValue
 }
 
-func evalTuple(context EvalContext, value Tuple) Tuple {
+func evalTuple(context EvalContext, value Tuple) (Tuple, error) {
 	newTuple := tuple.NewTuple()
 	for _,v:= range value.List {
-		newTuple.Append(Eval(context, v))
+		evaluated, err := Eval(context, v)
+		if err != nil {
+			return tuple.EMPTY, err
+		}
+		newTuple.Append(evaluated)
 	}
 	Trace(context, "Eval tuple return '%s'", newTuple)
-	return newTuple
+	return newTuple, nil
 }
 
-func (context * SymbolTable) Call(head Tag, args []Value) Value {
+func (context * SymbolTable) Call(head Tag, args []Value) (Value, error) {
 	return context.call3(context, head, args)
 }
 
-func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Value {  // Reduce
+func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (Value, error) {  // Reduce
 
-	location := tuple.NewLocation("<eval>", 0, 0, 0) // TODO pass the location in from somewhere, attach it to incoming values
 	//name := head.Name
 	nn := len(args)
 
@@ -196,44 +204,27 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Va
 			
 			expectedType := t.In(k)
 			Verbose(context, "expected type='%s' got '%s'", expectedType, v)
+
 			switch  {
 			case expectedType == TagType && isTag: result = v
-			case expectedType == TupleType && isTuple: result = v.(Tuple) //newTuple := evalTuple(context, v.(Tuple))
-			case expectedType == ValueType: result = v //newTuple := evalTuple(context, v.(Tuple))
+			case expectedType == TupleType && isTuple: result = v.(Tuple)
+			case expectedType == ValueType: result = v
 			default:
-				evaluated := Eval(context, v)
-				Trace(context, "** EVAL head=%s  v=%s-> evaluated=%s type=(%s) expectedType=%s", head, v, evaluated, reflect.TypeOf(evaluated), expectedType)
-				/// TODO should this take a Scalar or a Value?
-				switch expectedType {
-				case IntType: result = toInt64(context, evaluated)
-				case FloatType: result = toFloat64(context, evaluated)
-				case BoolType: result = toBool(evaluated)
-				case StringType: result = toString(context, evaluated)
-				case TagType:
-					if _, isTag := evaluated.(Tag); isTag {
-						result = evaluated
-					} else {
-						table.Error(location, "Expected tag but got: %s", evaluated)
-						result = Tag{""}
-					}
-				case TupleType:
-					Trace(context, "** TUPLE isTuple=%s evaluated=%s", isTuple, evaluated)
-					if _, isTuple := evaluated.(Tuple); isTuple {
-						result = evaluated
-					} else {
-						table.Error(location, "Expected tuple but got: %s", evaluated)
-						result = tuple.NewTuple()
-					}
-				case ValueType:
-					result = evaluated
-				default:
-					table.Error(location, " should not get here Expected type: '%s' v=%s", expectedType, evaluated) // TODO
-					result = evaluated //float64(v.(Float64)) // TODO???
+				evaluated, err := Eval(context, v)
+				if err != nil {
+					return tuple.EMPTY, err
 				}
+				Trace(context, "** EVAL head=%s  v=%s-> evaluated=%s type=(%s) expectedType=%s", head, v, evaluated, reflect.TypeOf(evaluated), expectedType)
+				converted, err := Convert(context, evaluated, expectedType)
+				if err != nil {
+					table.Error(v, "Cannot convert '%s' to '%s'", evaluated, expectedType)
+					return tuple.EMPTY, err
+				}
+				result = converted
 			}
 		}
 		if result == nil {
-			table.Error(location, "MUST not be nil v=%s head=%s", v, head)
+			table.Error(v, "MUST not be nil v=%s head=%s", v, head)
 		}
 		Trace(context, "Call '%s' arg=%d value=%s", head, k, result)
 		reflectedArgs[k] = reflect.ValueOf(result)
@@ -241,24 +232,7 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) Va
 	Trace(context, "Call '%s' (%s)", head, reflectedArgs)
 	reflectValue := f.Call(reflectedArgs)
 	Trace(context, "  Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValue)
-
-	in := reflectValue
-	if len(in) == 0  {
-		return tuple.EMPTY  // TODO VOID
-	}
-	v:= in[0]
-	switch v.Type() {
-	case IntType: return tuple.Int64(v.Int())
-	case FloatType: return tuple.Float64(v.Float())
-	case BoolType: return tuple.Bool(v.Bool())
-	case StringType: return tuple.String(v.String())
-	case TupleType: return v.Interface().(Tuple)
-	case TagType: return v.Interface().(Tag)
-	case ValueType: return v.Interface().(Value)
-	default:
-		table.Error(location, "Cannot find type of '%s'", v)
-		return tuple.NAN
-	}
+	return convertCallResult(table, reflectValue), nil
 }
 
 func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
@@ -279,13 +253,13 @@ func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*S
 	return table.global.Find(context, head, args)
 }
 
-func Eval(context EvalContext, expression Value) Value {
+func Eval(context EvalContext, expression Value) (Value, error) {
 
 	switch val := expression.(type) {
 	case Tuple:
 		ll := len(val.List)
 		if ll == 0 {
-			return val
+			return val, nil
 		}
 		head := val.List[0]
 		if ll == 1 {
@@ -300,84 +274,6 @@ func Eval(context EvalContext, expression Value) Value {
 	case Tag:
 		return context.Call(val, []Value{})
 	default:
-		return val
+		return val, nil
 	}
 }
-
-// TODO type constants
-var IntType = reflect.TypeOf(int64(1))
-var FloatType = reflect.TypeOf(float64(1.0))
-var BoolType = reflect.TypeOf(true)
-var StringType = reflect.TypeOf("")
-var TupleType = reflect.TypeOf(tuple.NewTuple())
-
-
-var TagType = reflect.TypeOf(Tag{""})
-var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
-var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
-
-
-func toString(context EvalContext, value Value) string {
-	switch val := value.(type) {
-	case Tag: return val.Name
-	case String: return string(val)  // Quote ???
-	case Float64: return  fmt.Sprint(val)  // TODO Inf ???
-	case Int64: return strconv.FormatInt(int64(val), 10)
-	case Bool:
-		if val {
-			return "true"
-		} else {
-			return "false"
-		}
-	default: 
-		context.Log("ERROR", "cannot convert '%s' to string", value)
-		return "..." // TODO
-	}
-}
-
-func toBool(value Value) bool {
-	switch val := value.(type) {
-	case Int64: return val != 0
-	case Float64: return val != 0
-	case Tag:
-		if val.Name == "true" {
-			return true
-		}
-		return false // TODO Nullary(val)
-	case Bool: return bool(val)
-	default: return false
-	}
-}
-
-func toFloat64(context EvalContext, value Value) float64 {
-	switch val := value.(type) {
-	case Int64: return float64(val)
-	case Float64: return float64(val)
-	case Bool:
-		if val {
-			return 1
-		} else {
-			return 0
-		}
-	default:
-		context.Log("ERROR", "cannot convert '%s' to float", value)
-		return math.NaN()
-	}
-}
-
-func toInt64(context EvalContext, value Value) int64 {
-	switch val := value.(type) {
-	case Int64: return int64(val)
-	case Float64: return int64(val)
-	case Bool:
-		if val {
-			return 1
-		} else {
-			return 0
-		}
-	default:
-		context.Log("ERROR", "cannot convert '%s' to int", value)
-		return -1 //TODO
-	}
-}
-

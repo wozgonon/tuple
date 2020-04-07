@@ -48,7 +48,7 @@ func TestDeclareFunctions(t *testing.T) {
 	var symbols = eval.NewSafeSymbolTable(notFound)  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
-		val := runner.ParseAndEval(&symbols, grammar, formula)
+		val,_ := runner.ParseAndEval(&symbols, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}

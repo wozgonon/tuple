@@ -67,14 +67,18 @@ func NewRunner(grammars Grammars, symbols * eval.SymbolTable, logger LocationLog
 	return Runner{grammars, symbols, logger, inputGrammar}
 }
 
-func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) Value {
+func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) (Value, error) {
 
 	var result Value = tuple.NAN
 	pipeline := func(value Value) {
-		result = eval.Eval(context, value)
+		evaluated, err := eval.Eval(context, value)
+		if err != nil {
+			// TODO
+		}
+		result = evaluated
 	}
 	RunParser(grammar, expression, GetLogger(nil, false), pipeline)  // TODO
-	return result
+	return result, nil
 }
 
 func RunParser(grammar Grammar, expression string, logger LocationLogger, next Next) Context {
@@ -136,7 +140,11 @@ func SimplePipeline (symbols * eval.SymbolTable, queryPattern string, outputGram
 	if symbols != nil {
 		next := pipeline
 		pipeline = func(value Value) {
-			next(eval.Eval(symbols, value))
+			evaluated, err := eval.Eval(symbols, value)
+			if err != nil {
+				// TODO
+			}
+			next(evaluated)
 		}
 	}
 	if queryPattern != "" {

@@ -129,13 +129,20 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 
 	table.Add("echo", func (context EvalContext, values... Value) bool {
 		for k,_:= range values {
-			evaluated := Eval(context, values[k])  // TODO This should use table from context so that it uses scope
+			evaluated, err := Eval(context, values[k])  // TODO This should use table from context so that it uses scope
+			if err != nil {
+				// TODO
+			}
 			fmt.Print(toString(context, evaluated))
 		}
 		return true
 	})
 	table.Add("eval", func (context EvalContext, value Value) Value {
-		return Eval(context, value)
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			// TODO
+		}
+		return evaluated
 	})
 }
 
