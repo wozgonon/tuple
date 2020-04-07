@@ -186,7 +186,7 @@ func signatureOfCall(name string, args []Value) string {
 	for _,v := range args {
 		key = key + " " + reflect.TypeOf(v).Name()
 	}
-	return strings.ToLower(key)
+	return key
 }
 
 func signatureOfFunction(name string, function reflect.Value) string {
@@ -204,7 +204,7 @@ func signatureOfFunction(name string, function reflect.Value) string {
 			}
 		}
 	}
-	return strings.ToLower(key)
+	return key
 }
 
 

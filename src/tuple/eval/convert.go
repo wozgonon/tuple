@@ -75,7 +75,7 @@ func boolToInt(value Bool) int64 {
 	}
 	return 0
 }
-func Int64ToString(value int64) string {
+func Int64ToString(value Int64) string {
 	return strconv.FormatInt(int64(value), 10)
 }
 
