@@ -133,20 +133,16 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 func AddControlStatementFunctions(table * SymbolTable) {
 
 	// Perhaps this could be moved to harmless.
-	table.Add("if", func(context EvalContext, condition bool, trueCode Value, falseCode Value) Value {
+	table.Add("if", func(context EvalContext, condition bool, trueCode Value, falseCode Value) (Value, error) {
 		var code Value
 		if condition {
 			code = trueCode
 		} else {
 			code = falseCode
 		}
-		evaluated, err := Eval(context, code)
-		if err != nil {
-			// TODO
-		}
-		return evaluated
+		return Eval(context, code)
 	})
-	table.Add("for", func(context EvalContext, tag Tag, list Tuple, code Value) Tuple {
+	table.Add("for", func(context EvalContext, tag Tag, list Tuple, code Value) (Tuple, error) {
 		var iterator Value = nil
 		newScope := NewSymbolTable(context)
 		newScope.Add(tag.Name, func () Value {
@@ -157,30 +153,30 @@ func AddControlStatementFunctions(table * SymbolTable) {
 			evaluated, err := Eval(context, v)
 			iterator = evaluated
 			if err != nil {
-				// TODO
+				return tuple.EMPTY, err
 			}
 			value, err := Eval(&newScope, code)
 			if err != nil {
-				// TODO
+				return tuple.EMPTY, err
 			}
 			result.Append(value)
 		}
-		return result
+		return result, nil
 	})
-	table.Add("while", func(context EvalContext, condition Value, code Value) Value {
+	table.Add("while", func(context EvalContext, condition Value, code Value) (Value, error) {
 		var result Value = tuple.EMPTY
 		for {
 			condition, err := Eval(context, condition)
 			if err != nil {
-				// TODO
+				return nil, err
 			}
 			conditionResult, ok := condition.(Bool)
 			if ! ok || ! bool(conditionResult) {
-				return result
+				return result, nil
 			}
 			result, err = Eval(context, code)
 			if err != nil {
-				// TODO
+				return nil, err
 			}
 		}
 	})

@@ -79,11 +79,7 @@ func Int64ToString(value int64) string {
 	return strconv.FormatInt(int64(value), 10)
 }
 
-func convertCallResult(table * SymbolTable, in []reflect.Value) Value {
-	if len(in) == 0  {
-		return tuple.EMPTY  // TODO VOID
-	}
-	result:= in[0]
+func convertCallResult(table * SymbolTable, result reflect.Value) Value {
 	switch result.Type() {
 	case IntType: return tuple.Int64(result.Int())
 	case FloatType: return tuple.Float64(result.Float())

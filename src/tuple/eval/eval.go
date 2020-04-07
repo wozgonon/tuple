@@ -231,9 +231,18 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (V
 		reflectedArgs[k] = reflect.ValueOf(result)
 	}
 	Trace(context, "Call '%s' (%s)", head, reflectedArgs)
-	reflectValue := f.Call(reflectedArgs)
-	Trace(context, "  Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValue)
-	return convertCallResult(table, reflectValue), nil
+	reflectValues := f.Call(reflectedArgs)
+	Trace(context, "  Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValues)
+	if len(reflectValues) == 0  {
+		return tuple.EMPTY, nil  // TODO VOID
+	}
+	if len(reflectValues) == 2 {
+		err := reflectValues[1].Interface()
+		if err != nil {
+			return nil, err.(error)
+		}
+	}
+	return convertCallResult(table, reflectValues[0]), nil
 }
 
 func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
