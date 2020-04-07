@@ -78,6 +78,8 @@ func Pipe(writer string, reader string) bool {
 }
 
 func executeProcess(arg string, args... string) bool {
+
+
 	cmd := exec.Command(arg, args...)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -159,6 +161,18 @@ func NewExecIfNotFound(logger LocationLogger) Global {
 func (exec * ExecIfNotFound) Find (context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value) {
 
 	return nil, reflect.ValueOf(func(context EvalContext, args... Value) bool {
+
+		// TODO just convert to strings without evaluation
+		/*func EvalToStrings(context EvalContext, values []Value) []string {
+
+			result := make([]string, len(values))
+			for k,_:= range values {
+				value, _ := Eval(context, values[k])
+				result[k] = toString(context, value)
+			}
+			return result
+		}*/
+
 		return executeProcess(name.Name, EvalToStrings(context, args)...)
 	})
 }

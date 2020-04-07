@@ -32,6 +32,16 @@ func NewSafeSymbolTable(global Global) SymbolTable {
 // Allocating functions
 /////////////////////////////////////////////////////////////////////////////
 
+func EvalToStrings(context EvalContext, values []Value) []string {
+
+	result := make([]string, len(values))
+	for k,_:= range values {
+		value, _ := Eval(context, values[k])
+		result[k] = toString(context, value)
+	}
+	return result
+}
+
 func AddAllocatingStringFunctions(table * SymbolTable) {
 	table.Add("join", func (context EvalContext, separator string, tuple Tuple) string { return strings.Join(EvalToStrings(context, tuple.List), separator) })
 	table.Add("concat", func (context EvalContext, values... Value) string  { return strings.Join(EvalToStrings(context, values), "") })

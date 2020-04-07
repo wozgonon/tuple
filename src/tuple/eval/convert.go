@@ -18,7 +18,6 @@ package eval
 
 import "reflect"
 import "fmt"
-import "tuple"
 import "strconv"
 import "errors"
 
@@ -78,34 +77,6 @@ func boolToInt(value Bool) int64 {
 func Int64ToString(value Int64) string {
 	return strconv.FormatInt(int64(value), 10)
 }
-
-func convertCallResult(table * SymbolTable, result reflect.Value) Value {
-	switch result.Type() {
-	case IntType: return tuple.Int64(result.Int())
-	case FloatType: return tuple.Float64(result.Float())
-	case BoolType: return tuple.Bool(result.Bool())
-	case StringType: return tuple.String(result.String())
-	case TupleType: return result.Interface().(Tuple)
-	case TagType: return result.Interface().(Tag)
-	case ValueType: return result.Interface().(Value)
-	default:
-		table.Error(tuple.EMPTY, "Cannot find type of '%s'", result) // TODO EMPTY
-		return tuple.NAN
-	}
-}
-
-// TODO type constants
-var IntType = reflect.TypeOf(int64(1))
-var FloatType = reflect.TypeOf(float64(1.0))
-var BoolType = reflect.TypeOf(true)
-var StringType = reflect.TypeOf("")
-var TupleType = reflect.TypeOf(tuple.NewTuple())
-
-
-var TagType = reflect.TypeOf(Tag{""})
-var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
-var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
-
 
 func toString(context EvalContext, value Value) string {
 	switch val := value.(type) {

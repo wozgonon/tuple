@@ -57,11 +57,8 @@ type Global interface {
 type EvalContext interface {
 	Global
 	Logger
-
 	Add(name string, function interface{})
-	//Eval(expression Value) Value
-	Call(head Tag, args []Value) (Value, error)  // Reduce
-
+	Call(head Tag, args []Value) (Value, error)
 	AllSymbols() Tuple
 }
 
@@ -74,7 +71,7 @@ type SymbolTable struct {
 
 func NewSymbolTable(notFound Global) SymbolTable {
 	if notFound.Logger() == nil {
-		panic("nil logger")
+		panic("nil logger")  // TODO not a good idea to have fatals in the code
 	}
 	return SymbolTable{map[string]reflect.Value{},notFound}
 }
@@ -109,35 +106,6 @@ func (context * SymbolTable) Error(value Value, format string, args ...interface
 	message := fmt.Sprintf(format, args...)
 	context.global.Logger()(location, "ERROR", message)
 }
-
-
-/*func ValuesToStrings(values []Value) []string {
-	result := make([]string, len(values))
-	for k,_:= range values {
-		result[k] = toString(values[k])
-	}
-	return result
-}*/
-
-func EvalToStrings(context EvalContext, values []Value) []string {
-
-	result := make([]string, len(values))
-	for k,_:= range values {
-		value, _ := Eval(context, values[k])
-		result[k] = toString(context, value)
-	}
-	return result
-}
-
-/*
-var b bytes.Buffer
-	for _,value := range values {
-		evaluated := Eval(context, value)
-		str := toString(context, evaluated)
-		b.WriteString(str)
-	}
-	return b.String()
-}*/
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -219,11 +187,6 @@ func (table * SymbolTable) Count() int {
 	return len(table.symbols)
 }
 
-func TakesContext(typ reflect.Type) bool {
-	nn := typ.NumIn()
-	return nn > 0 && typ.In(0) == EvalContextType
-}
-
 func (table * SymbolTable) Add(name string, function interface{}) {
 	reflectValue := reflect.ValueOf(function)
 	typ := reflectValue.Type()
@@ -279,44 +242,21 @@ func (context * SymbolTable) Call(head Tag, args []Value) (Value, error) {
 
 func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (Value, error) {  // Reduce
 
-	//name := head.Name
-	nn := len(args)
-
 	_, f := table.Find(context, head, args)
-	t := f.Type()
-
-	start := 0
-	if TakesContext(t) {
-		start = 1
-	}
-	reflectedArgs := make([]reflect.Value, nn + start)
-	if start == 1 {
-		reflectedArgs[0] = reflect.ValueOf(context)
-	}
-	
+	call := NewReflectCall(context, f, len(args))
 	for key,v:= range args {
-		k := start + key
-		var result interface{}
-		if t.IsVariadic() {
-			Verbose(context, "isvariadic='%s' ", t) 
-			result = v
-		} else {
-			_, isTuple := v.(Tuple)
+		var result interface{} = v
+		if ! f.Type().IsVariadic() {
 			_, isTag := v.(Tag)
-			
-			expectedType := t.In(k)
-			Verbose(context, "expected type='%s' got '%s'", expectedType, v)
-
+			expectedType := call.expectedTypeOfArg(key)
 			switch  {
-			case expectedType == TagType && isTag: result = v
-			case expectedType == TupleType && isTuple: result = v.(Tuple)
-			case expectedType == ValueType: result = v
+			case expectedType == TagType && isTag:
+			case expectedType == ValueType:
 			default:
 				evaluated, err := Eval(context, v)
 				if err != nil {
 					return tuple.EMPTY, err
 				}
-				Trace(context, "** EVAL head=%s  v=%s-> evaluated=%s type=(%s) expectedType=%s", head, v, evaluated, reflect.TypeOf(evaluated), expectedType)
 				converted, err := Convert(context, evaluated, expectedType)
 				if err != nil {
 					table.Error(v, "Cannot convert '%s' to '%s'", evaluated, expectedType)
@@ -326,24 +266,9 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (V
 			}
 		}
 		if result == nil {
-			table.Error(v, "MUST not be nil v=%s head=%s", v, head)
-			return nil, errors.New("unexpected nil")
+			return tuple.EMPTY, errors.New("Unexpected nil head=" + head.Name)
 		}
-		Trace(context, "Call '%s' arg=%d value=%s", head, k, result)
-		reflectedArgs[k] = reflect.ValueOf(result)
+		call.setArg(key, result)
 	}
-	Trace(context, "Call '%s' (%s)", head, reflectedArgs)
-	reflectValues := f.Call(reflectedArgs)
-	Trace(context, "  Call '%s' (%s)   f=%s -> %s", head, reflectedArgs, f, reflectValues)
-	if len(reflectValues) == 0  {
-		return tuple.EMPTY, nil  // TODO VOID
-	}
-	if len(reflectValues) == 2 {
-		err := reflectValues[1].Interface()
-		if err != nil {
-			return nil, err.(error)
-		}
-	}
-	return convertCallResult(table, reflectValues[0]), nil
+	return call.Call(context, head.Name)
 }
-
