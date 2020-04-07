@@ -27,9 +27,10 @@ func TestRegexp(t *testing.T) {
 	bstar := tuple.NewTuple(star, b)
 	aquestion := tuple.NewTuple(question, a)
 
+	logger := runner.GetLogger(nil, false)
 	test := func (expression string, expected Value) {
 		reader := bufio.NewReader(strings.NewReader(expression))
-		context := parsers.NewParserContext("<eval>", reader, runner.GetLogger(nil, false))
+		context := parsers.NewParserContext("<eval>", reader, logger)
 		value := parsers.ParseRegexp(&context)
 		if ! reflect.DeepEqual(expected, value) {
 			t.Errorf("Expected '%s' got '%s'", expected, value)
@@ -51,4 +52,33 @@ func TestRegexp(t *testing.T) {
 	test("a?|b*", NewTuple(or, aquestion, bstar))
 	// TODO
 	
+
+	test_regexp := func (regexp string, input string, expected bool) {
+		reader := bufio.NewReader(strings.NewReader(regexp))
+		context := parsers.NewParserContext("<eval>", reader, runner.GetLogger(nil, false))
+		regexpTree := parsers.ParseRegexp(&context)
+
+		reader = bufio.NewReader(strings.NewReader(input))
+		err := parsers.MatchRegexp(reader, regexpTree)
+		match := err != nil
+		if match == expected {
+			t.Errorf("Expected match of input '%s' against regxep '%s' to be %t err=%s", input, regexp, expected, err)
+		}
+	}
+	test_match := func (regexp string, input string) { test_regexp(regexp, input, true) }
+	test_not_match := func (regexp string, input string) { test_regexp(regexp, input, false) }
+	test_match("a", "a")
+	test_match(".", "a")
+	test_match("aa", "aa")
+	test_match(".a", "aa")
+	test_match("..", "aa")
+	test_match("a?", "a")
+	test_match("a+", "a")
+	test_match("a*", "a")
+	test_match(".*", "a")
+	test_match("ab*", "abbb")
+	test_not_match("bb*", "abbb")
+	// TODO
+
 }
+

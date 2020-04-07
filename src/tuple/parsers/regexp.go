@@ -18,6 +18,7 @@ package parsers
 
 import "tuple"
 import "io"
+import "errors"
 
 // To provide an example of how the OperatorGrammar can be used for a variety of purposes,
 // in this case to parse regular expressions.
@@ -75,5 +76,91 @@ func ParseRegexp(context Context) Value {
 	return result
 }
 
+// A Toy regular expression matcher.
+//
+// This implementation serves as an example using a dynamic implementation that is easy to implement but not
+// as fast as generating a state transition table.
+//
+// TODO Allow a callback function for matching  regexp to provide a 'lex' functionality and use this to replace clex.go.
+// 
+func MatchRegexp (scanner io.RuneScanner, value Value) error {
 
-
+	tuple, ok := value.(Tuple)
+	if ok {
+		head, ok := tuple.Get(0).(Tag)
+		if ! ok {
+			for _, v := range tuple.List {
+				err := MatchRegexp(scanner, v)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		} else {
+			switch head.Name {
+			case "|":
+				err := MatchRegexp(scanner, tuple.Get(1))
+				if err == nil {
+					return nil
+				}
+				err = MatchRegexp(scanner, tuple.Get(2))
+				return err
+			case "*":
+				for {
+					err := MatchRegexp(scanner, tuple.Get(1))
+					if err != nil {
+						scanner.UnreadRune()
+						return nil
+					}
+				}
+			case "+":
+				err := MatchRegexp(scanner, tuple.Get(1))
+				if err != nil {
+					return nil
+				}
+				for {
+					err := MatchRegexp(scanner, tuple.Get(1))
+					if err != nil {
+						return nil
+					}
+				}
+			case "?":
+				err := MatchRegexp(scanner, tuple.Get(1))
+				return err
+			case "-":
+				next, _, err := scanner.ReadRune()
+				if err == io.EOF {
+					return err
+				}
+				if err != nil {
+					return err
+				}
+				lower := rune(tuple.Get(1).(String)[0]) // TODO check
+				upper := rune(tuple.Get(2).(String)[0])
+				if lower <= next && next <= upper {
+					return nil
+				}
+				return errors.New("mismatch")
+			default:
+				return errors.New("Unexpected: " + head.Name)
+			}
+		}
+	} else {
+		next, _, err := scanner.ReadRune()
+		if err == io.EOF {
+			return err
+		}
+		if err != nil {
+			return err
+		}
+		tag := value.(String)
+		expected := rune(tag[0])
+		if expected == '.' {
+			return nil
+		}
+		if next == expected {
+			return nil
+		}
+		return errors.New("mismatch")
+	}
+}

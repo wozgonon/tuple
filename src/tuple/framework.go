@@ -94,6 +94,10 @@ func (tuple *Tuple) Length() int {
 	return len(tuple.List)
 }
 
+func (tuple *Tuple) Get(index int) Value {
+	return tuple.List[index]
+}
+
 func (tuple *Tuple) IsCons() bool {
 	if tuple.Length() > 0 {
 		head := tuple.List[0]
