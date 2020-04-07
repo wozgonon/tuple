@@ -7,6 +7,20 @@ import (
 	"math"
 )
 
+func testIntExpression(t *testing.T, grammar tuple.Grammar, formula string, expected int64) {
+	//t.Logf("TRY: %s==%f", formula, expected)
+	val,_ := ParseAndEval(&symbols, grammar, formula)
+	intExpected := tuple.Int64(expected)
+	intVal, ok := val.(tuple.Int64)
+	if ok {
+		if intVal != intExpected {
+			t.Errorf("ERROR: %s=%d  val=%d %d", formula, expected, intVal, intExpected)
+		}
+	} else {
+		t.Errorf("ERROR: Expected int %s=%d  expected=%d got %s", formula, expected, intExpected, val)
+	}
+}
+
 func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, expected float64) {
 	//t.Logf("TRY: %s==%f", formula, expected)
 	val,_ := ParseAndEval(&symbols, grammar, formula)

@@ -19,6 +19,8 @@ package eval
 import "reflect"
 import "fmt"
 import "tuple"
+import "errors"
+import "strings"
 
 type Tag = tuple.Tag
 type Value = tuple.Value
@@ -59,6 +61,8 @@ type EvalContext interface {
 	Add(name string, function interface{})
 	//Eval(expression Value) Value
 	Call(head Tag, args []Value) (Value, error)  // Reduce
+
+	AllSymbols() Tuple
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -73,6 +77,15 @@ func NewSymbolTable(notFound Global) SymbolTable {
 		panic("nil logger")
 	}
 	return SymbolTable{map[string]reflect.Value{},notFound}
+}
+
+func (context * SymbolTable) AllSymbols() Tuple {
+	tuple := tuple.NewTuple()
+	for k,v := range context.symbols {
+		key := signatureOfFunction(k, v)
+		tuple.Append(String(key))
+	}
+	return tuple
 }
 
 func (context * SymbolTable) Logger() LocationLogger {
@@ -126,14 +139,81 @@ var b bytes.Buffer
 	return b.String()
 }*/
 
+/////////////////////////////////////////////////////////////////////////////
+
+func Eval(context EvalContext, expression Value) (Value, error) {
+
+	switch val := expression.(type) {
+	case Tuple:
+		ll := len(val.List)
+		if ll == 0 {
+			return val, nil
+		}
+		head := val.List[0]
+		if ll == 1 {
+			return Eval(context, head)
+		}
+		tag, ok := head.(Tag)
+		if ! ok {
+			return evalTuple(context, val)
+		}
+		return context.Call(tag, val.List[1:])
+	case Tag:
+		return context.Call(val, []Value{})
+	default:
+		return val, nil
+	}
+}
+
+func evalTuple(context EvalContext, value Tuple) (Tuple, error) {
+	newTuple := tuple.NewTuple()
+	for _,v:= range value.List {
+		evaluated, err := Eval(context, v)
+		if err != nil {
+			return tuple.EMPTY, err
+		}
+		newTuple.Append(evaluated)
+	}
+	Trace(context, "Eval tuple return '%s'", newTuple)
+	return newTuple, nil
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+func signatureOfCall(name string, args []Value) string {
+
+	key := name
+	for _,v := range args {
+		key = key + " " + reflect.TypeOf(v).Name()
+	}
+	return strings.ToLower(key)
+}
+
+func signatureOfFunction(name string, function reflect.Value) string {
+	tt := function.Type()
+	key := name
+	numIn := tt.NumIn()
+	if tt.IsVariadic() {
+		return strings.ToLower(fmt.Sprintf("*_%s", name))
+	} else {
+		for nn := 0;  nn < numIn; nn += 1 {
+			//Verbose(context, "name=%s nn=%d numin=%d", name, nn, numIn)
+			argName := tt.In(nn).Name()
+			if argName != "EvalContext" {
+				key = key + " " + argName
+			}
+		}
+	}
+	return strings.ToLower(key)
+}
+
+
 func makeKey(name string, arity int, variadic bool) string {
-	//return name  // TODO do exact match then do a general match
 	if variadic {
 		return fmt.Sprintf("*_%s", name)
 	}
 	return fmt.Sprintf("%d_%s", arity, name)
 }
-
 
 func (table * SymbolTable) Count() int {
 	return len(table.symbols)
@@ -154,22 +234,44 @@ func (table * SymbolTable) Add(name string, function interface{}) {
 			nn -= 1
 		}
 	}
-	key := makeKey(name, nn, typ.IsVariadic())
+	key := signatureOfFunction(name, reflect.ValueOf(function))
+	table.symbols[key] = reflectValue
+	
+	key = makeKey(name, nn, typ.IsVariadic())
 	table.symbols[key] = reflectValue
 }
 
-func evalTuple(context EvalContext, value Tuple) (Tuple, error) {
-	newTuple := tuple.NewTuple()
-	for _,v:= range value.List {
-		evaluated, err := Eval(context, v)
-		if err != nil {
-			return tuple.EMPTY, err
-		}
-		newTuple.Append(evaluated)
+func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
+
+	/*key := signatureOfCall(head.Name, args)
+	f, ok := table.symbols[key]
+	if ok {
+		return table, f
 	}
-	Trace(context, "Eval tuple return '%s'", newTuple)
-	return newTuple, nil
+
+	key = strings.Replace(key, "int64", "float64", 99999)
+	f, ok = table.symbols[key]
+	if ok {
+		return table, f
+	}*/
+	
+	name := head.Name
+	nn := len(args)
+
+	for _, variadic := range []bool{ false, true } {
+		key := makeKey(name, nn, variadic)
+		f, ok := table.symbols[key]
+		if ok {
+			context.Log ("TRACE", "FIND Found '%s' variadic=%s in this symbol table (%d entries), forwarding",  head, variadic, len(table.symbols))
+			return table, f
+		}
+	}
+	//context.Log ("TRACE1", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
+	// TODO look up variatic functions
+	return table.global.Find(context, head, args)
 }
+
+
 
 func (context * SymbolTable) Call(head Tag, args []Value) (Value, error) {
 	return context.call3(context, head, args)
@@ -225,7 +327,7 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (V
 		}
 		if result == nil {
 			table.Error(v, "MUST not be nil v=%s head=%s", v, head)
-			// TODO return nil, errors.New
+			return nil, errors.New("unexpected nil")
 		}
 		Trace(context, "Call '%s' arg=%d value=%s", head, k, result)
 		reflectedArgs[k] = reflect.ValueOf(result)
@@ -245,45 +347,3 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (V
 	return convertCallResult(table, reflectValues[0]), nil
 }
 
-func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
-
-	name := head.Name
-	nn := len(args)
-
-	for _, variadic := range []bool{ false, true } {
-		key := makeKey(name, nn, variadic)
-		f, ok := table.symbols[key]
-		if ok {
-			context.Log ("TRACE", "FIND Found '%s' variadic=%s in this symbol table (%d entries), forwarding",  head, variadic, len(table.symbols))
-			return table, f
-		}
-	}
-	context.Log ("TRACE", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
-	// TODO look up variatic functions
-	return table.global.Find(context, head, args)
-}
-
-func Eval(context EvalContext, expression Value) (Value, error) {
-
-	switch val := expression.(type) {
-	case Tuple:
-		ll := len(val.List)
-		if ll == 0 {
-			return val, nil
-		}
-		head := val.List[0]
-		if ll == 1 {
-			return Eval(context, head)
-		}
-		tag, ok := head.(Tag)
-		if ! ok {
-			return evalTuple(context, val)
-			//return val // TODO Handle case of list: (1 2 3)
-		}
-		return context.Call(tag, val.List[1:])
-	case Tag:
-		return context.Call(val, []Value{})
-	default:
-		return val, nil
-	}
-}

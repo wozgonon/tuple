@@ -48,6 +48,26 @@ func TestExprToInt64(t *testing.T) {
 	}
 
 }
+func TestExprToFloat64(t *testing.T) {
+	tests := map[string]float64{
+		"1." : 1,
+		"-1." : -1,
+		"--1." : 1,
+		"-- 1." : 1,
+		"--- 1." : -1,
+		"+1." : 1,
+		"(((-1.)))" : -1,
+		"cos(PI)" : -1,
+		"acos(cos(PI))" : math.Pi,
+		"asin(sin(0))" : 0,
+		"atan(tan(0))" : 0,
+		"exp(log(1))" : 1,
+	}
+	for k, v := range tests {
+		testFloatExpression(t, grammar, k, v)
+	}
+
+}
 
 func TestExpr(t *testing.T) {
 	testFloatExpressionFailParse(t, grammar, "-")

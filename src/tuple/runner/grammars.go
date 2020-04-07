@@ -20,6 +20,7 @@ import "tuple"
 import 	"strings"
 import "tuple/eval"
 import "tuple/parsers"
+import "errors"
 
 
 
@@ -74,11 +75,7 @@ func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
 func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 
 	table.Add("help", func (context eval.EvalContext) Value {
-		tuple := tuple.NewTuple()
-		for _,v := range grammars.All {
-			tuple.Append(String(v.FileSuffix()))
-		}
-		return tuple
+		return table.AllSymbols()
 	})
 
 	table.Add("grammars", func (context eval.EvalContext) Value {
@@ -97,13 +94,13 @@ func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 		return ParseAndEval(context, grammar, expression)
 	})
 
-	table.Add("ast2", func (context eval.EvalContext, grammarFileSuffix string, expression string) Value {
+	table.Add("ast2", func (context eval.EvalContext, grammarFileSuffix string, expression string) (Value, error) {
 		grammar, ok := grammars.FindBySuffix(grammarFileSuffix)
 		if ok {
-			return parsers.ParseString(context.Logger(), grammar, expression)
+			return parsers.ParseString(context.Logger(), grammar, expression), nil
 		} else {
 			context.Log("ERROR", "No such grammar '%s'", grammarFileSuffix)
-			return tuple.EMPTY // TODO eror
+			return nil, errors.New("No such grammar")  //tuple.EMPTY // TODO eror
 		}
 	})
 

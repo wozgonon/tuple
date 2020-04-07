@@ -212,7 +212,7 @@ func PrintScalar(printer Printer, depth string, token Value, out StringFunction)
 	case Float64:
 		printer.PrintFloat64(depth, float64(token.(Float64)), out)
 	default:
-		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);
+		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);  // TODO pass error logger
 	}
 }
 

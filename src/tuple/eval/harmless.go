@@ -21,6 +21,7 @@ import "strings"
 import "tuple"
 import "reflect"
 import "fmt"
+import "errors"
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -61,12 +62,24 @@ func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
 	table.Add("-", func (aa float64, bb float64) float64 { return aa-bb })
 	table.Add("*", func (aa float64, bb float64) float64 { return aa*bb })
 	table.Add("/", func (aa float64, bb float64) float64 { return aa/bb })
-	table.Add("%", func (context EvalContext, aa int64, bb int64) int64 {
+/*	table.Add("++", func (aa int64) int64 { return aa+1 })
+	table.Add("+", func (aa int64) int64 { return aa })
+	table.Add("-", func (aa int64) int64 { return -aa })
+	table.Add("+", func (aa int64, bb int64) int64 { return aa+bb })
+	table.Add("-", func (aa int64, bb int64) int64 { return aa-bb })
+	table.Add("*", func (aa int64, bb int64) int64 { return aa*bb })
+	table.Add("/", func (aa int64, bb int64) (int64, error) {
 		if bb == 0 {
-			context.Log("ERROR", "divide by zero in: %d %% %d", aa, bb)
-			return 0  // TODO
+			return 0, errors.New("Divide by zero")
 		}
-		return aa%bb
+		return aa/bb, nil
+	})*/
+	table.Add("%", func (context EvalContext, aa int64, bb int64) (int64, error) {
+		if bb == 0 {
+			return 0, errors.New("Divide by zero")
+			//context.Log("ERROR", "divide by zero in: %d %% %d", aa, bb)
+		}
+		return aa%bb, nil
 	})
 	table.Add("eq", func (aa string, bb string) bool { return aa==bb })  // Should take Value as argument
 	table.Add("==", func (aa float64, bb float64) bool { return aa==bb })  // Should take Value as argument

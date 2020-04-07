@@ -76,8 +76,10 @@ func TestBinaryFloat64(t *testing.T) {
 		lhs := Float64(expected)
 		rhs := NewTuple(op, a1, b1)
 		expression := NewTuple(Tag{"=="}, lhs, rhs)
-		value, _ := eval.Eval(&symbols, expression)
-		if ! bool(value.(Bool)) {
+		value, err := eval.Eval(&symbols, expression)
+		if err != nil {
+			t.Errorf("Expected '%s' to be true, got error: %s", expression, err)
+		} else if ! bool(value.(Bool)) {
 			t.Errorf("Expected '%s' to be true", expression)
 		}
 	}
