@@ -63,9 +63,20 @@ func ParseRegexp(context Context) Value {
 		}
 		s := string(v)
 		switch v {
+		case '\\': 
+			v, err = context.ReadRune()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				Error(context, "on reading: %s", err)
+				break
+			}
+			s := string(v)
+			grammar.PushValue(String(s))
 		case '[', '(', '{': grammar.OpenBracket(Tag{s})
 		case ']', ')', '}': grammar.CloseBracket(Tag{s})
-		case '-', '|', '*', '+', '?': grammar.PushOperator(Tag{s})
+		case '-', '|', '*', '+', '?', '^', '$': grammar.PushOperator(Tag{s})
 		default: grammar.PushValue(String(s))
 		}
 	}
@@ -84,6 +95,11 @@ func ParseRegexp(context Context) Value {
 // TODO Allow a callback function for matching  regexp to provide a 'lex' functionality and use this to replace clex.go.
 // 
 func MatchRegexp (scanner io.RuneScanner, value Value) error {
+	return MatchRegexpAndCallback(scanner, value, func(_ string) {})
+}
+
+// Executes the given callback when matching certain patterns, to provide 'lex' like functionality
+func MatchRegexpAndCallback (scanner io.RuneScanner, value Value, callback func (token string)) error {
 
 	tuple, ok := value.(Tuple)
 	if ok {
@@ -98,6 +114,13 @@ func MatchRegexp (scanner io.RuneScanner, value Value) error {
 			return nil
 		} else {
 			switch head.Name {
+			case "_callback_":
+				err := MatchRegexp(scanner, tuple.Get(1))
+				if err == nil {
+					// TODO matching group
+					// TODO callback(token)
+				}
+				return err
 			case "|":
 				err := MatchRegexp(scanner, tuple.Get(1))
 				if err == nil {
@@ -141,6 +164,8 @@ func MatchRegexp (scanner io.RuneScanner, value Value) error {
 					return nil
 				}
 				return errors.New("mismatch")
+			// TODO case "^":
+			// TODO case "$":
 			default:
 				return errors.New("Unexpected: " + head.Name)
 			}

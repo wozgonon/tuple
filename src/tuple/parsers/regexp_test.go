@@ -68,7 +68,11 @@ func TestRegexp(t *testing.T) {
 	test_match := func (regexp string, input string) { test_regexp(regexp, input, true) }
 	test_not_match := func (regexp string, input string) { test_regexp(regexp, input, false) }
 	test_match("a", "a")
+	test_not_match("b", "a")
 	test_match(".", "a")
+	test_match("\\a", "a")
+	test_match("\\\\", "\\")
+	test_match(".\\\\.", "a\\b")
 	test_match("aa", "aa")
 	test_match(".a", "aa")
 	test_match("..", "aa")
@@ -77,6 +81,11 @@ func TestRegexp(t *testing.T) {
 	test_match("a*", "a")
 	test_match(".*", "a")
 	test_match("ab*", "abbb")
+	test_match("a-e", "a")
+	test_match("a-e", "c")
+	test_match("a-e", "e")
+	test_not_match("a-e", "A")
+	test_not_match("a-e", "f")
 	test_not_match("bb*", "abbb")
 	// TODO
 
