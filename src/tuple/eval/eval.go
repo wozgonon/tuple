@@ -225,6 +225,7 @@ func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (V
 		}
 		if result == nil {
 			table.Error(v, "MUST not be nil v=%s head=%s", v, head)
+			// TODO return nil, errors.New
 		}
 		Trace(context, "Call '%s' arg=%d value=%s", head, k, result)
 		reflectedArgs[k] = reflect.ValueOf(result)
