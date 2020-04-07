@@ -41,7 +41,7 @@ func TestEvalParseJson(t *testing.T) {
 	var grammar = NewJSONGrammar()
 
 	test := func(formula string, expected tuple.Tuple) {
-		val := parsers.ParseString(grammar, formula)
+		val := parsers.ParseString(logger, grammar, formula)
 
 		tup := val.(tuple.Tuple)
 

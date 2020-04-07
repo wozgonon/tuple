@@ -112,14 +112,14 @@ func quote(value string, out func(value string)) {
 }
 
 
-func ParseString(grammar Grammar, expression string) Value {
+func ParseString(logger LocationLogger, grammar Grammar, expression string) Value {
 	var result Value = tuple.NAN
 	pipeline := func(value Value) {
 		result = value
 	}
 
 	reader := bufio.NewReader(strings.NewReader(expression))
-	context := NewParserContext("<parse>", reader, tuple.GetLogger(nil, false))
+	context := NewParserContext("<parse>", reader, logger)
 	grammar.Parse(&context, pipeline)
 	return result
 }

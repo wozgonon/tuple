@@ -92,37 +92,29 @@ func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 	//table.Add("ast", func (expression string) tuple.Value { return parsers.ParseString(inputGrammar, expression) })
 	//table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(&table, inputGrammar, expression) })
 
-	table.Add("expr", func (context eval.EvalContext, expression string) Value {
+	table.Add("expr", func (context eval.EvalContext, expression string) (Value, error) {
 		grammar := parsers.NewInfixExpressionGrammar()
-		evaluated, err := ParseAndEval(context, grammar, expression)
-		if err != nil {
-			// TODO
-		}
-		return evaluated
+		return ParseAndEval(context, grammar, expression)
 	})
 
-	table.Add("ast2", func (context eval.EvalContext, grammarFileSuffix string, expression string) tuple.Value {
+	table.Add("ast2", func (context eval.EvalContext, grammarFileSuffix string, expression string) Value {
 		grammar, ok := grammars.FindBySuffix(grammarFileSuffix)
 		if ok {
-			return parsers.ParseString(grammar, expression)
+			return parsers.ParseString(context.Logger(), grammar, expression)
 		} else {
 			context.Log("ERROR", "No such grammar '%s'", grammarFileSuffix)
-			return tuple.EMPTY
+			return tuple.EMPTY // TODO eror
 		}
 	})
 
-	table.Add("expr2", func (context eval.EvalContext, grammarFileSuffix string, expression string) Value {
+	table.Add("expr2", func (context eval.EvalContext, grammarFileSuffix string, expression string) (Value, error) {
 
 		grammar, ok := grammars.FindBySuffix(grammarFileSuffix)
 		if ok {
-			evaluated, err := ParseAndEval(context, grammar, expression)
-			if err != nil {
-				// TODO
-			}
-			return evaluated
+			return ParseAndEval(context, grammar, expression)
 		} else {
 			context.Log("ERROR", "No such grammar '%s'", grammarFileSuffix)
-			return tuple.EMPTY
+			return tuple.EMPTY, nil // TODO error
 		}
 	})
 
