@@ -18,8 +18,8 @@ package eval
 
 import "reflect"
 import "fmt"
-import "strconv"
 import "errors"
+import "tuple"
 
 // TODO could populate this just from the function
 var conversions = map[string]reflect.Value{
@@ -34,7 +34,7 @@ var conversions = map[string]reflect.Value{
 	"Int64 float64": reflect.ValueOf(func(value Int64) float64 { return float64(int64(value)) }),
 	"Float64 int64": reflect.ValueOf(func(value Float64) int64 { return int64(float64(value)) }),
 	"Float64 string": reflect.ValueOf(fmt.Sprint),  // TODO Inf rather than +Inf
-	"Int64 string": reflect.ValueOf(Int64ToString),
+	"Int64 string": reflect.ValueOf(tuple.Int64ToString),
 }
 
 func Convert (context EvalContext, evaluated Value, expectedType reflect.Type) (interface{}, error) {
@@ -74,16 +74,13 @@ func boolToInt(value Bool) int64 {
 	}
 	return 0
 }
-func Int64ToString(value Int64) string {
-	return strconv.FormatInt(int64(value), 10)
-}
 
 func toString(context EvalContext, value Value) string {
 	switch val := value.(type) {
 	case Tag: return val.Name
 	case String: return string(val)  // Quote ???
 	case Float64: return  fmt.Sprint(val)  // TODO Inf ???
-	case Int64: return strconv.FormatInt(int64(val), 10)
+	case Int64: return tuple.Int64ToString(val)
 	case Bool:
 		if val {
 			return "true"

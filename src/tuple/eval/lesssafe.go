@@ -186,24 +186,29 @@ type Os struct {
 }
 
 func (_ * Os) Arity() int { return 5 }
-func (_ * Os) Get(index int) Value {
+func (oss * Os) Get(index int) Value {
+	_, value := oss.GetKeyValue(index)
+	return value
+}
+
+func (_ * Os) GetKeyValue(index int) (Tag,Value) {
 	switch index {
-	case 0: return Int64(os.Getpid())
-	case 1: return ArraySliceValue{os.Args}
-	case 2: return ArraySliceValue{os.Environ()}
+	case 0: return Tag{"pid"}, Int64(os.Getpid())
+	case 1: return Tag{"args"}, ArraySliceValue{os.Args}
+	case 2: return Tag{"env"}, ArraySliceValue{os.Environ()}
 	case 3:
-		wd, err := os.Getwd()
+		pwd, err := os.Getwd()
 		if err != nil {
-			return String("")
+			return Tag{""}, String("")   // TODO Report error
 		}
-		return String(wd)
+		return Tag{"pwd"}, String(pwd)
 	case 4:
 		host, err := os.Hostname();
 		if err != nil {
-			return String("")
+			return Tag{""}, String("")  // TODO Report error
 		}
-		return String(host)
-	default: return tuple.EMPTY
+		return Tag{"host"}, String(host)
+	default: return Tag{""}, tuple.EMPTY
 	}
 }	
 
@@ -214,3 +219,6 @@ type ArraySliceValue struct {
 func (array ArraySliceValue) Arity() int { return len(array.slice) }
 func (array ArraySliceValue) Get(index int) Value { return String(array.slice[index]) }
 
+func (array ArraySliceValue) GetKeyValue(index int) (Tag,Value) {
+	return tuple.IntToTag(index), array.Get(index)
+}

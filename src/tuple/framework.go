@@ -20,6 +20,7 @@ import "log"
 import "reflect"
 import "path"
 import "math"
+import "strconv"
 
 /////////////////////////////////////////////////////////////////////////////
 //  Callback signatures
@@ -31,6 +32,18 @@ type Next func(value Value)
 var CONS_ATOM = Tag{"cons"}
 var NAN Float64 = Float64(math.NaN())
 var EMPTY Tuple = NewTuple()
+
+func IntToString(value int64) string {
+	return strconv.FormatInt(value, 10)
+}
+
+func Int64ToString(value Int64) string {
+	return IntToString(int64(value))
+}
+
+func IntToTag(value int) Tag {
+	return Tag{IntToString(int64(value))}
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer and Values
@@ -46,7 +59,7 @@ type Value interface {
 	// See: https://en.wikipedia.org/wiki/Arity
 	Arity() int
 	Get(index int) Value
-//	GetKeyValue(index int) (Value, Value)  // Key should probably be restricted to Scalars/Atoms
+	GetKeyValue(index int) (Tag, Value)  // Key should probably be restricted to Scalars/Atoms
 }
 
 type Scalar interface {
@@ -122,12 +135,20 @@ func (comment Comment) Arity() int { return 0 }
 func (value Float64) Arity() int { return 0 }
 func (value Int64) Arity() int { return 0 }
 func (value Bool) Arity() int { return 0 }
+
 func (tag Tag) Get(_ int) Value { return EMPTY }
 func (value String) Get(_ int) Value { return EMPTY }
 func (comment Comment) Get(_ int) Value { return EMPTY }
 func (value Float64) Get(_ int) Value { return EMPTY }
 func (value Int64) Get(_ int) Value { return EMPTY }
 func (value Bool) Get(_ int) Value { return EMPTY }
+
+func (tag Tag) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
+func (value String) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
+func (comment Comment) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
+func (value Float64) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
+func (value Int64) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
+func (value Bool) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
 
 // A textual comment
 type Comment struct {
@@ -154,7 +175,9 @@ func NewTuple(values... Value) Tuple {
 
 func (tuple Tuple) Arity() int { return len(tuple.List) }
 func (tuple Tuple) Get(index int) Value { return tuple.List[index] }
-
+func (tuple Tuple) GetKeyValue(index int) (Tag,Value) {
+	return IntToTag(index), tuple.Get(index)
+}
 
 func (tuple *Tuple) Append(token Value) {
 	tuple.List = append(tuple.List, token)
@@ -251,8 +274,9 @@ func PrintScalar(printer Printer, depth string, token Value, out StringFunction)
 	case Tuple:
 		if token.Arity() == 0 {
 			printer.PrintEmptyTuple(depth, out)
+		} else {
+			log.Printf("ERROR unexpected tuple '%s", token);  // TODO return error or prevent from ever happening
 		}
-		log.Printf("ERROR unexpected tuple '%s", token);  // TODO return error or prevent from ever happening
 	default:
 		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);  // TODO return error or prevent from ever happening
 	}
