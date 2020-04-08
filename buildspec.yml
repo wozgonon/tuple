@@ -4,7 +4,7 @@ run-as: root
 
 env:
   variables:
-    key: "value"
+    key: "a"
   #parameter-store:
   #  key: "value"
   #  key: "value"
@@ -21,12 +21,10 @@ phases:
     runtime-versions:
       golang: 1.13
     commands:
+      - echo PWD -`pwd` 
       - echo CODEBUILD_SRC_DIR - $CODEBUILD_SRC_DIR
       - echo GOPATH - $GOPATH
       - echo GOROOT - $GOROOT
-    finally:
-      - command
-      - command
   pre_build:
     run-as: root
     commands:
@@ -34,6 +32,7 @@ phases:
   build:
     run-as: root
     commands:
+      - export GOPATH=`pwd`
       - make
     finally:
       - make test
