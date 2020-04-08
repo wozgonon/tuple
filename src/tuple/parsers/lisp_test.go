@@ -47,12 +47,11 @@ func TestLispCons(t *testing.T) {
 
 	test := func(formula string) {
 		c := parsers.ParseString(logger, NewLispGrammar(), formula)
-		tuple1 := c.(tuple.Tuple)
-		if ! tuple1.IsConsInTuple() {
+		if ! tuple.IsConsInTuple(c) {
 			t.Errorf("Expected a cons cell got %s", c)
 		}
-		tuple2 := tuple1.List[0].(tuple.Tuple)
-		if ! tuple2.IsCons() {
+		tuple2 := c.Get(0)
+		if ! tuple.IsCons(tuple2) {
 			t.Errorf("Expected a cons cell got %s", c)
 		}
 	}

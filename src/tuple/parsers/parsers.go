@@ -36,6 +36,7 @@ type Int64 = tuple.Int64
 type Style = lexer.Style
 
 var CONS_ATOM = tuple.CONS_ATOM
+var IsAtom = tuple.IsAtom
 var PrintTuple = tuple.PrintTuple
 var PrintExpression = tuple.PrintExpression
 var PrintExpression1 = tuple.PrintExpression1

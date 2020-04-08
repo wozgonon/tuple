@@ -51,20 +51,6 @@ func (context * ParserContext) Location() Location {
 	return context.location
 }
 
-/*func (context * ParserContext) SourceName() string {
-	return context.location.sourceName
-}
-func (context * ParserContext) Line() int64 {
-	return context.location.line
-}
-func (context * ParserContext) Column() int64 {
-	return context.location.column
-}
-func (context * ParserContext) Depth() int {
-	return context.location.depth
-}
-*/
-
 func (context * ParserContext) Errors() int64 {
 	return context.errors
 }

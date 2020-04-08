@@ -52,6 +52,11 @@ var Trace = tuple.Trace
 type Global interface {
 	Logger() LocationLogger
 	Find(context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value)
+
+	// The root is analageous to the root of a data hierarchy such as a directory, file system or registry.
+	// Rather than provide individual functions to return contextual information it is much more flexible
+	// to provide a searchable directory structure.
+	Root() Value
 }
 
 type EvalContext interface {
@@ -76,6 +81,7 @@ func NewSymbolTable(notFound Global) SymbolTable {
 	return SymbolTable{map[string]reflect.Value{},notFound}
 }
 
+// TODO change to a Value
 func (context * SymbolTable) AllSymbols() Tuple {
 	tuple := tuple.NewTuple()
 	for k,v := range context.symbols {
@@ -87,6 +93,10 @@ func (context * SymbolTable) AllSymbols() Tuple {
 
 func (context * SymbolTable) Logger() LocationLogger {
 	return context.global.Logger()
+}
+
+func (context * SymbolTable) Root() Value {
+	return context.global.Root()
 }
 
 func LocationForValue(value Value) Location {
@@ -113,7 +123,7 @@ func Eval(context EvalContext, expression Value) (Value, error) {
 
 	switch val := expression.(type) {
 	case Tuple:
-		ll := len(val.List)
+		ll := val.Arity()
 		if ll == 0 {
 			return val, nil
 		}

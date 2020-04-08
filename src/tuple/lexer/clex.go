@@ -403,8 +403,8 @@ func (printer Style) PrintBinaryOperator(depth string, tag Tag, value1 Value, va
 	PrintTuple(&printer, depth, NewTuple(tag, value1, value2), out)
 }
 
-func (printer Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
-	if tuple.IsConsInTuple() {
+func (printer Style) PrintOpenTuple(depth string, value Value, out StringFunction) string {
+	if tuple.IsConsInTuple(value) {
 		out(printer.Open2)
 	} else {
 		out(printer.Open)
@@ -412,9 +412,9 @@ func (printer Style) PrintOpenTuple(depth string, tuple Tuple, out StringFunctio
 	return depth + "  "
 }
 
-func (printer Style) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {
+func (printer Style) PrintCloseTuple(depth string, value Value, out StringFunction) {
 	printer.PrintIndent(depth, out)
-	if tuple.IsConsInTuple() {
+	if tuple.IsConsInTuple(value) {
 		out(printer.Close2)
 	} else {
 		out(printer.Close)

@@ -152,26 +152,28 @@ func AddControlStatementFunctions(table * SymbolTable) {
 		}
 		return Eval(context, code)
 	})
-	table.Add("for", func(context EvalContext, tag Tag, list Tuple, code Value) (Tuple, error) {
+	table.Add("for", func(context EvalContext, tag Tag, list Value, code Value) (Tuple, error) {
 		var iterator Value = nil
 		newScope := NewSymbolTable(context)
 		newScope.Add(tag.Name, func () Value {
 			return iterator
 		})
+		// TODO Ideally for efficiency allow the method to return a callback iterator rather than collect values into a tuple
 		result := tuple.NewTuple()
-		for _, v := range list.List {
+		err := tuple.Forall(list, func (v Value) error {
 			evaluated, err := Eval(context, v)
 			iterator = evaluated
 			if err != nil {
-				return tuple.EMPTY, err
+				return err
 			}
 			value, err := Eval(&newScope, code)
 			if err != nil {
-				return tuple.EMPTY, err
+				return err
 			}
 			result.Append(value)
-		}
-		return result, nil
+			return nil
+		})
+		return result, err
 	})
 	table.Add("while", func(context EvalContext, condition Value, code Value) (Value, error) {
 		var result Value = tuple.EMPTY

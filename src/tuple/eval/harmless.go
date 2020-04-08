@@ -109,11 +109,12 @@ func AddHarmlessStringFunctions(table * SymbolTable) {
 // Tuple functions that do not allocate any memory
 func AddHarmlessTupleFunctions(table * SymbolTable)  {
 
-	table.Add("nth", func(index int64, value Tuple) Value {
-		if index < 0 || index >= int64(value.Length()) {
+	table.Add("nth", func(index64 int64, value Value) Value {
+		index := int(index64) // TODO use int64 everywhere
+		if index < 0 || index >= value.Arity() {
 			return tuple.NAN
 		}
-		return value.List[index]
+		return value.Get(index)
 	})
 
 	table.Add("istuple", func (context EvalContext, value Value) bool {
@@ -150,5 +151,9 @@ func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Tag, ar
 
 func (exec * ErrorIfFunctionNotFound) Logger() LocationLogger {
 	return exec.logger
+}
+
+func (exec * ErrorIfFunctionNotFound) Root() Value {
+	return tuple.EMPTY  // TODO AllSymbols()
 }
 

@@ -41,15 +41,22 @@ func (grammar Yaml) Parse(context Context, _ Next) {
 func (grammar Yaml) printObject(depth string, token Value, out func(value string)) {
 
 	style := grammar.Style
-	if tuple, ok := token.(Tuple); ok {
 
+	if IsAtom(token) {
+		out(depth)
+		switch token.(type) {
+		case Tag:
+			out(style.ScalarPrefix)
+			quote(token.(Tag).Name, out)
+		default:
+			PrintScalar(grammar, "", token, out)
+		}
+
+	} else {
+		tuple := token.(Tuple)
 		out(depth)
 		out(style.ScalarPrefix)
-		len := len(tuple.List)
-		if len == 0 {
-			out("[]")
-			return
-		}
+		len := tuple.Arity()
 		out(style.LineBreak)
 		depth = depth + style.Indent
 		head := tuple.List[0]
@@ -69,17 +76,6 @@ func (grammar Yaml) printObject(depth string, token Value, out func(value string
 					out(style.LineBreak)
 				}
 			}
-		}
-
-	} else {
-		out(depth)
-		out(style.ScalarPrefix)
-
-		switch token.(type) {
-		case Tag:
-			quote(token.(Tag).Name, out)
-		default:
-			PrintScalar(style, "", token, out)
 		}
 	}
 }
@@ -111,7 +107,7 @@ func (parser Yaml) PrintSeparator(depth string, out StringFunction) {}
 func (parser Yaml) PrintEmptyTuple(depth string, out StringFunction) {
 	out("[]")
 }
-func (parser Yaml) PrintOpenTuple(depth string, tuple Tuple, out StringFunction) string {
+func (parser Yaml) PrintOpenTuple(depth string, tuple Value, out StringFunction) string {
 	out("- ")
 	return depth + "  "
 }
@@ -121,7 +117,7 @@ func (parser Yaml) PrintHeadTag(tag Tag, out StringFunction) {
 	out(": ")
 }
 
-func (parser Yaml) PrintCloseTuple(depth string, tuple Tuple, out StringFunction) {}
+func (parser Yaml) PrintCloseTuple(depth string, tuple Value, out StringFunction) {}
 
 func (parser Yaml) PrintTag(depth string, tag Tag, out StringFunction) {
 	quote(tag.Name, out)
@@ -168,10 +164,14 @@ func (grammar Ini) Parse(context Context, _ Next) {
 func (grammar Ini ) printObject(depth string, key string, token Value, out func(value string)) {
 
 	style := grammar.style
-	
-	if tuple, ok := token.(Tuple); ok {
 
-		len := len(tuple.List)
+	if IsAtom(token) {
+		out(key) // TODO just key
+		out(style.ScalarPrefix)
+		PrintScalar(grammar.style, "", token, out)
+	} else {
+		tuple := token.(Tuple)
+		len := tuple.Arity()
 		if len == 0 {
 			out(depth)
 			out(style.ScalarPrefix)
@@ -179,7 +179,7 @@ func (grammar Ini ) printObject(depth string, key string, token Value, out func(
 		}
 
 		var newDepth string
-		head := tuple.List[0]
+		head := tuple.Get(0)
 		tag, ok := head.(Tag)
 		first := false
 
@@ -211,11 +211,6 @@ func (grammar Ini ) printObject(depth string, key string, token Value, out func(
 				}
 			}
 		}
-
-	} else {
-		out(key) // TODO just key
-		out(style.ScalarPrefix)
-		PrintScalar(grammar.style, "", token, out)
 	}
 }
 
@@ -255,8 +250,13 @@ func (grammar PropertyGrammar) Parse(context Context, _ Next) {
 func (grammar PropertyGrammar) printObject(depth string, token Value, out func(value string)) {
 	style := grammar.style
 	
-	if tuple, ok := token.(Tuple); ok {
-		len := len(tuple.List)
+	if IsAtom(token) {
+		out(depth)
+		out(style.ScalarPrefix)
+		PrintScalar(grammar.style, "", token, out)
+	} else {
+		tuple := token.(Tuple)
+		len := tuple.Arity()
 		if len == 0 {
 			out(depth)
 			out(style.ScalarPrefix)
@@ -286,11 +286,6 @@ func (grammar PropertyGrammar) printObject(depth string, token Value, out func(v
 				}
 			}
 		}
-
-	} else {
-		out(depth)
-		out(style.ScalarPrefix)
-		PrintScalar(grammar.style, "", token, out)
 	}
 }
 

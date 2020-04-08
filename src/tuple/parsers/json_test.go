@@ -43,9 +43,7 @@ func TestEvalParseJson(t *testing.T) {
 	test := func(formula string, expected tuple.Tuple) {
 		val := parsers.ParseString(logger, grammar, formula)
 
-		tup := val.(tuple.Tuple)
-
-		t.Logf("Tuple %d %d", tup.Length(), expected.Length())
+		t.Logf("Tuple %d %d", val.Arity(), expected.Arity())
 		if ! reflect.DeepEqual(val, expected) {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}

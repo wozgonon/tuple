@@ -78,6 +78,17 @@ func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 		return table.AllSymbols()
 	})
 
+	table.Add("ctx", func (context eval.EvalContext) Value {
+		return context.Root()
+	})
+	table.Add("query", func (context eval.EvalContext, path string) Value {
+		result := tuple.NewTuple()
+		query := NewQuery(path)
+		query.Match(context.Root(), func (value Value) { result.Append(value) })
+		return result
+	})
+
+	// TODO Add to root
 	table.Add("grammars", func (context eval.EvalContext) Value {
 		tuple := tuple.NewTuple()
 		for _,v := range grammars.All {

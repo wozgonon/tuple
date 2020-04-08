@@ -49,11 +49,11 @@ func NewSExpressionParser(style Style) SExpressionParser {
 // Deal with a binary operator  a : b or cons cell a.b
 // TODO- should be done best by operator grammar
 func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *Tuple) {
-	if tuple.Length() == 0 {
+	if tuple.Arity() == 0 {
 		Error(context,"Unexpected operator '%s'", parser.keyValueSeparator)
 		return // errors.New("Unexpected")
 	}
-	left := tuple.List[tuple.Length()-1]
+	left := tuple.List[tuple.Arity()-1]
 	Verbose(context,"CONS %s : ... ", left)
 	var right Value = nil
 	for {
@@ -84,7 +84,7 @@ func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *T
 		if right == nil {
 			Verbose(context,"RIGHT is NIL")
 		} else {
-			tuple.List[tuple.Length() -1] = NewTuple(CONS_ATOM, left, right)
+			tuple.List[tuple.Arity() -1] = NewTuple(CONS_ATOM, left, right)
 			return
 		}
 	}

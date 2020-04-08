@@ -22,6 +22,7 @@ import "log"
 import "os/exec"
 import "os"
 import "bytes"
+import "tuple"
 
 // These functions are potentially not harmless since they can access resources out of the sandbox
 func NewLessSafeSymbolTable(global Global) SymbolTable {
@@ -162,21 +163,54 @@ func (exec * ExecIfNotFound) Find (context EvalContext, name Tag, args [] Value)
 
 	return nil, reflect.ValueOf(func(context EvalContext, args... Value) bool {
 
-		// TODO just convert to strings without evaluation
-		/*func EvalToStrings(context EvalContext, values []Value) []string {
-
-			result := make([]string, len(values))
-			for k,_:= range values {
-				value, _ := Eval(context, values[k])
-				result[k] = toString(context, value)
-			}
-			return result
-		}*/
-
-		return executeProcess(name.Name, EvalToStrings(context, args)...)
+		result := make([]string, len(args))
+		for k,_:= range args {
+			result[k] = toString(context, args[k])
+		}
+		return executeProcess(name.Name, result...)
 	})
 }
 
 func (exec * ExecIfNotFound) Logger() LocationLogger {
 	return exec.logger
 }
+
+func (exec * ExecIfNotFound) Root() Value {
+	os := Os{}
+	return &os
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+type Os struct {
+}
+
+func (_ * Os) Arity() int { return 5 }
+func (_ * Os) Get(index int) Value {
+	switch index {
+	case 0: return Int64(os.Getpid())
+	case 1: return ArraySliceValue{os.Args}
+	case 2: return ArraySliceValue{os.Environ()}
+	case 3:
+		wd, err := os.Getwd()
+		if err != nil {
+			return String("")
+		}
+		return String(wd)
+	case 4:
+		host, err := os.Hostname();
+		if err != nil {
+			return String("")
+		}
+		return String(host)
+	default: return tuple.EMPTY
+	}
+}	
+
+type ArraySliceValue struct {
+	slice []string
+}
+
+func (array ArraySliceValue) Arity() int { return len(array.slice) }
+func (array ArraySliceValue) Get(index int) Value { return String(array.slice[index]) }
+

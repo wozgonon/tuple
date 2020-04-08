@@ -58,7 +58,7 @@ func (stack * OperatorGrammar) popOperator() {
 func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
 
 	values := &(stack.Values.List)
-	lv := stack.Values.Length()
+	lv := stack.Values.Arity()
 	name := stack.operators.Map(top)
 	stack.popOperator()
 	popped := 0
@@ -92,7 +92,7 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
 			for _,v := range args {
 				tuple.Append(v)
 			}
-			Verbose(stack.context," REDUCE:\t'SPACE'\t'%s'\t'%s'\t...%d...   \n", tuple.List[0], tuple.List[1], tuple.Length()) //, tuple.List==(*values))
+			Verbose(stack.context," REDUCE:\t'SPACE'\t'%s'\t'%s'\t...%d...   \n", tuple.List[0], tuple.List[1], tuple.Arity()) //, tuple.List==(*values))
 		} else {
 			val1 := (*values) [lv - 2]
 			val2 := (*values) [lv - 1]
@@ -143,7 +143,7 @@ func (stack * OperatorGrammar) CloseBracket(token Tag) {
 		if lo > 0 && stack.operators.IsOpenBracket(stack.operatorStack[lo-1]) {  // '()'  Empty list, is this always okay
 			stack.wasOperator = false
 			stack.popOperator()
-			//lv := stack.Values.Length()
+			//lv := stack.Values.Arity()
 			values := stack.Values.List
 			stack.Values.List = append(values, NewTuple())
 			Verbose(stack.context," REDUCE:\t'()'\n")
@@ -185,7 +185,7 @@ func (stack * OperatorGrammar) EndOfInput(next Next) {
 	Verbose(stack.context,"EOF")
 
 	lo := len(stack.operatorStack)
-	empty := stack.Values.Length() == 0 && lo == 0
+	empty := stack.Values.Arity() == 0 && lo == 0
 	if empty {
 		return
 	}
