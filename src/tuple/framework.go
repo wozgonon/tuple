@@ -137,10 +137,20 @@ func (value Float64) Arity() int { return 0 }
 func (value Int64) Arity() int { return 0 }
 func (value Bool) Arity() int { return 0 }
 
-func (value Tag) Get(index int) Value { return String(value.Name[index]) }  // TODO
-func (value String) Get(index int) Value { return String(value[index]) } // TODO add out of bound?
+func (value Tag) Get(index int) Value {
+	if index == 0 {
+		return String(value.Name)
+	}
+	return EMPTY
+}
+func (value String) Get(index int) Value {
+	if index >=0 && index < len(string(value)) {
+		return String(value[index])
+	}
+	return EMPTY
+}
 func (value Comment) Get(_ int) Value { return EMPTY }
-func (value Float64) Get(index int) Value { return Bool(NthBitOfInt(int64(value), index)) }
+func (value Float64) Get(index int) Value { return Int64(int64(value)) }
 func (value Int64) Get(index int) Value { return Bool(NthBitOfInt(int64(value), index)) }
 func (value Bool) Get(_ int) Value { return value }  // TODO should this return EMPTY or just itself??
 
@@ -180,7 +190,12 @@ func NewTuple(values... Value) Tuple {
 }
 
 func (tuple Tuple) Arity() int { return len(tuple.List) }
-func (tuple Tuple) Get(index int) Value { return tuple.List[index] }
+func (tuple Tuple) Get(index int) Value {
+	if index >= 0 && index < len(tuple.List) {
+		return tuple.List[index]
+	}
+	return NAN  // TODO perhaps this should be an error or EMPTY
+}
 func (tuple Tuple) GetKeyValue(index int) (Tag,Value) {
 	return IntToTag(index), tuple.Get(index)
 }

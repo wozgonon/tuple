@@ -235,6 +235,17 @@ func TestExprDeclareFunctions(t *testing.T) {
 	test("if(false,1,2) == 2")
 	test("if(false,1, cos(PI)) == -1")
 
+	test("eq(nth(0  \"abc\")  \"a\")")
+	test("eq(nth(1  \"abc\")  \"b\")")
+	test("eq(nth(2  \"abc\")  \"c\")")
+
+	// nth Also works for integers, returning the 'nth' bit
+	test("! nth(0  0)")
+	test("nth(0  1)")
+	test("nth(1  2)")
+	test("nth(2  4)")
+	test("nth(3  8)")
+	test("nth(4  16)")
 
 	test("nth(0  ( 1 2 3 )) == 1")
 	test("nth(1  ( 1 2 3 )) == 2")

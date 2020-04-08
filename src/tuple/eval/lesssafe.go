@@ -217,7 +217,12 @@ type ArraySliceValue struct {
 }
 
 func (array ArraySliceValue) Arity() int { return len(array.slice) }
-func (array ArraySliceValue) Get(index int) Value { return String(array.slice[index]) }
+func (array ArraySliceValue) Get(index int) Value {
+	if index >= 0 && index < len(array.slice) {
+		return String(array.slice[index])
+	}
+	return tuple.EMPTY
+}
 
 func (array ArraySliceValue) GetKeyValue(index int) (Tag,Value) {
 	return tuple.IntToTag(index), array.Get(index)

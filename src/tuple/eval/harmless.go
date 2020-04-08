@@ -101,7 +101,7 @@ func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
 
 // String functions that do not allocate any memory
 func AddHarmlessStringFunctions(table * SymbolTable) {
-	table.Add("len", func(value string) int64 { return int64(len(value)) })
+	table.Add("len", func(value string) int64 { return int64(len(value)) })  // TODO arity
 	table.Add("lower", strings.ToLower)
 	table.Add("upper", strings.ToUpper)
 }
@@ -109,12 +109,21 @@ func AddHarmlessStringFunctions(table * SymbolTable) {
 // Tuple functions that do not allocate any memory
 func AddHarmlessTupleFunctions(table * SymbolTable)  {
 
-	table.Add("nth", func(index64 int64, value Value) Value {
-		index := int(index64) // TODO use int64 everywhere
-		if index < 0 || index >= value.Arity() {
-			return tuple.NAN
+	table.Add("arity", func(context EvalContext, value Value) (int64, error) {
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			return 0, err
 		}
-		return value.Get(index)
+		return int64(evaluated.Arity()), nil
+	})
+
+	table.Add("nth", func(context EvalContext, index64 int64, value Value) (Value, error) {
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			return nil, err
+		}
+		index := int(index64) // TODO use int64 everywhere
+		return evaluated.Get(index), err
 	})
 
 	table.Add("istuple", func (context EvalContext, value Value) bool {

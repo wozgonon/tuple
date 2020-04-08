@@ -2,7 +2,7 @@
 
 func unavailable percent { 24*360*(1-percent) }
 
-func availabilityTable arg {
+func availabilityTable {
     concat "Number of hours in a year: " 24*360
     for period (("Days" 1/24) ("Hours" 1) ("Minutes" 60)) {
 	     progn
@@ -13,7 +13,7 @@ func availabilityTable arg {
 	     }}}}
 
 
-av=availabilityTable(1)
+av=availabilityTable()
 
 #n=nth(1 av)
 #o=nth(1 n)
