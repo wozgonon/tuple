@@ -46,10 +46,6 @@ artifacts:
       - pkg/**/*.a
       - bin/*
       - bin/**
-      - bin/wexpr
-      - bin/wozg
-      - bin/wsh
-      - bin/whd
   name: parsers
   discard-paths: yes
   base-directory: bin
