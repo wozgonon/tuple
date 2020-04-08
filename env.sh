@@ -6,6 +6,7 @@
 #############################################################################
 
 export GOPATH=`pwd`
+#export PATH=/usr/local/go/bin:$PATH
 
 alias h=history
 
