@@ -19,7 +19,7 @@ phases:
   install:
     run-as: root
     runtime-versions:
-      golang: 1.13
+      golang: 1.10
     commands:
       - echo GOVERSION - `go version` 
       - echo PWD -`pwd` 
