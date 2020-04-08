@@ -21,6 +21,7 @@ phases:
     runtime-versions:
       golang: 1.13
     commands:
+      - echo GOVERSION - `go version` 
       - echo PWD -`pwd` 
       - echo CODEBUILD_SRC_DIR - $CODEBUILD_SRC_DIR
       - echo GOPATH - $GOPATH
