@@ -20,7 +20,7 @@ phases:
   install:
     run-as: root
     runtime-versions:
-      runtime: golang: 1.13
+      golang: 1.13
     commands:
       - echo CODEBUILD_SRC_DIR - $CODEBUILD_SRC_DIR
       - echo GOPATH - $GOPATH

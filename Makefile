@@ -18,17 +18,19 @@ bin/wexpr: wexpr
 bin/wozg: wozg
 pkg/linux_amd64/tuple.a: tuple
 
+##FLAGS=-ldflags "-X main.Version=$(VERSION)"
+
 wexpr: tuple src/wexpr/wexpr.go ${VERSION_FILE}
-	go install $@
+	go install $@  ${FLAGS}
 
 wozg: tuple src/wozg/wozg.go ${VERSION_FILE}
-	go install $@
+	go install $@ ${FLAGS}
 
 wsh: tuple src/wsh/wsh.go ${VERSION_FILE}
-	go install $@
+	go install $@ ${FLAGS}
 
 whd: tuple src/whd/whd.go ${VERSION_FILE}
-	go install $@
+	go install $@ ${FLAGS}
 
 tuple: src/tuple/*.go
 	go install $@
@@ -36,6 +38,8 @@ tuple: src/tuple/*.go
 #############################################################################
 # Automatically create a file with version, date and commit infomration
 #############################################################################
+
+version_file: ${VERSION_FILE}
 
 ${VERSION_FILE}:
 	@echo "// Auto generated"  > $@
