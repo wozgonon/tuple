@@ -81,6 +81,24 @@ func NewSymbolTable(notFound Global) SymbolTable {
 	return SymbolTable{map[string]reflect.Value{},notFound}
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+
+/*
+func (context * SymbolTable) Arity() int { return len(array.slice) }
+func (context * SymbolTable) Get(index int) Value {
+	if index >= 0 && index < len(array.slice) {
+		return String(array.slice[index])
+	}
+	return tuple.EMPTY
+}
+
+func (context * SymbolTable) GetKeyValue(index int) (Tag,Value) {
+	return tuple.IntToTag(index), array.Get(index)
+}*/
+
+/////////////////////////////////////////////////////////////////////////////
+
 // TODO change to a Value
 func (context * SymbolTable) AllSymbols() Tuple {
 	tuple := tuple.NewTuple()

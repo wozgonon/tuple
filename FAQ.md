@@ -78,3 +78,12 @@ Not currently and as a modular system, adding static types component ought to be
 ## Is it compiled or interpretted
 
 Currently interpretted, I would like to add a resolved to the evaluator and then add one or more code generators, possibly to llvm.
+
+
+
+## What's the story
+
+I had taken some time out between contracts to study for some Certifications,
+I cycled two hours to a test centre only to find it has just closed due to the Coronavirus shutdown.
+So as a loss two what to do next, I decided to learn some 'Go' by knocking up an operator grammar.
+From there this grew.

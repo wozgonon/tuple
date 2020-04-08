@@ -1,0 +1,53 @@
+version: 0.2
+
+run-as: root
+
+env:
+  variables:
+    key: "value"
+    key: "value"
+  #parameter-store:
+  #  key: "value"
+  #  key: "value"
+  exported-variables:
+    - variable
+    - variable
+  #secrets-manager:
+  #  key: secret-id:json-key:version-stage:version-id
+  git-credential-helper: yes
+
+phases:
+  install:
+    run-as: root
+    runtime-versions:
+      runtime: golang: 1.13
+    commands:
+      - echo CODEBUILD_SRC_DIR - $CODEBUILD_SRC_DIR
+      - echo GOPATH - $GOPATH
+      - echo GOROOT - $GOROOT
+    finally:
+      - command
+      - command
+  pre_build:
+    run-as: root
+    commands:
+      - echo pre build
+  build:
+    run-as: root
+    commands:
+      - make
+    finally:
+      - make test
+  post_build:
+    run-as: root
+    commands:
+      - echo build complete: `date`
+artifacts:
+  files:
+      - bin/wexpr
+      - bin/wozg
+      - bin/wsh
+      - bin/whd
+  name: parsers
+  discard-paths: yes
+  base-directory: bin
