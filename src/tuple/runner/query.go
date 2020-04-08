@@ -53,13 +53,13 @@ func (query Query) match(depth int, name string) bool {
 func (query Query) filter(depth int, token Value, next Next) {
 	if tuple, ok := token.(Tuple); ok {
 
-		if len(tuple.List) == 0 {
+		if tuple.Arity() == 0 {
 			if query.match(depth, "") {
 				next(token)
 			}
 			return
 		}
-		head := tuple.List[0]
+		head := tuple.Get(0)
 		if tag, ok := head.(Tag); ok {
 			name := tag.Name
 			if query.match(depth, name) {
