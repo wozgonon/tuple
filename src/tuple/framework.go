@@ -67,6 +67,7 @@ type Scalar interface {
 	ToString() String
 }
 
+// TODO an atom is pretty subjective, should be grammar specific
 func IsAtom(value Value) bool {
 	return value.Arity() == 0
 }
@@ -136,19 +137,19 @@ func (value Float64) Arity() int { return 0 }
 func (value Int64) Arity() int { return 0 }
 func (value Bool) Arity() int { return 0 }
 
-func (tag Tag) Get(_ int) Value { return EMPTY }
-func (value String) Get(_ int) Value { return EMPTY }
-func (comment Comment) Get(_ int) Value { return EMPTY }
-func (value Float64) Get(_ int) Value { return EMPTY }
-func (value Int64) Get(_ int) Value { return EMPTY }
-func (value Bool) Get(_ int) Value { return EMPTY }
+func (value Tag) Get(index int) Value { return String(value.Name[index]) }  // TODO
+func (value String) Get(index int) Value { return String(value[index]) } // TODO add out of bound?
+func (value Comment) Get(_ int) Value { return EMPTY }
+func (value Float64) Get(index int) Value { return Bool(NthBitOfInt(int64(value), index)) }
+func (value Int64) Get(index int) Value { return Bool(NthBitOfInt(int64(value), index)) }
+func (value Bool) Get(_ int) Value { return value }  // TODO should this return EMPTY or just itself??
 
-func (tag Tag) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
-func (value String) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
-func (comment Comment) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
-func (value Float64) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
-func (value Int64) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
-func (value Bool) GetKeyValue(_ int) (Tag, Value) { return Tag{""}, EMPTY }
+func (value Tag) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value String) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value Comment) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value Float64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value Int64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value Bool) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
 
 // A textual comment
 type Comment struct {
@@ -158,6 +159,11 @@ type Comment struct {
 
 func NewComment(_ Context, token string) Comment {
 	return Comment{token}
+}
+
+func NthBitOfInt(value int64, index int) bool {
+	bit := uint64(value) & (1<<uint(index))
+	return bit != 0
 }
 
 /////////////////////////////////////////////////////////////////////////////
