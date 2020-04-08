@@ -43,6 +43,9 @@ phases:
       - echo build complete at `date`
 artifacts:
   files:
+      - pkg/**/*.a
+      - bin/*
+      - bin/**
       - bin/wexpr
       - bin/wozg
       - bin/wsh
