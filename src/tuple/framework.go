@@ -91,6 +91,15 @@ func  IsCons(value Value) bool {
 	return false
 }
 
+func  Head(value Value) (Tag, bool) {
+	if value.Arity() > 0 {
+		first := value.Get(0)
+		head, ok := first.(Tag)
+		return head, ok
+	}
+	return Tag{""}, false
+}
+
 // TODO this may not make sense cons is embedded in another tuple
 func IsConsInTuple(value Value) bool {
 	return value.Arity() > 0 && IsCons(value.Get(0))

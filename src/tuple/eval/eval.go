@@ -125,9 +125,9 @@ func Eval(context EvalContext, expression Value) (Value, error) {
 	case Tuple:
 		ll := val.Arity()
 		if ll == 0 {
-			return val, nil
+			return val, nil  // If IsAtom then return val, nul
 		}
-		head := val.List[0]
+		head := val.Get(0)
 		if ll == 1 {
 			return Eval(context, head)
 		}

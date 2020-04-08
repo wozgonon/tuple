@@ -59,8 +59,7 @@ func (grammar Yaml) printObject(depth string, token Value, out func(value string
 		len := tuple.Arity()
 		out(style.LineBreak)
 		depth = depth + style.Indent
-		head := tuple.List[0]
-		tag, first := head.(Tag)
+		tag, first := Head(tuple)
 		newDepth := depth
 		if first {
 			out(depth)
@@ -263,9 +262,7 @@ func (grammar PropertyGrammar) printObject(depth string, token Value, out func(v
 			return
 		}
 		var newDepth string
-		head := tuple.List[0]
-		tag, first := head.(Tag)
-
+		tag, first := Head(tuple)
 		var prefix string
 		if depth == "" {
 			prefix = ""
