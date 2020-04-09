@@ -17,6 +17,7 @@
 package parsers
 
 import "io"
+import "errors"
 
 // A [S-Expression](https://en.wikipedia.org/wiki/S-expression) or symbolic expression is a very old and general notation.
 //
@@ -48,10 +49,10 @@ func NewSExpressionParser(style Style) SExpressionParser {
 
 // Deal with a binary operator  a : b or cons cell a.b
 // TODO- should be done best by operator grammar
-func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *Tuple) {
+func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *Tuple) error {
 	if tuple.Arity() == 0 {
 		Error(context,"Unexpected operator '%s'", parser.keyValueSeparator)
-		return // errors.New("Unexpected")
+		return errors.New("Unexpected")
 	}
 	left := tuple.List[tuple.Arity()-1]
 	Verbose(context,"CONS %s : ... ", left)
@@ -79,19 +80,20 @@ func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *T
 			})
 		if err != nil {
 			Verbose(context,"** ERR")
-			return // err
+			return err
 		}
 		if right == nil {
 			Verbose(context,"RIGHT is NIL")
 		} else {
 			tuple.List[tuple.Arity() -1] = NewTuple(CONS_ATOM, left, right)
-			return
+			return nil
 		}
 	}
 }
 
 func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tuple) error {
 
+	Verbose(context, "parseSExpressionTuple")
 	closeBracketFound := false
 	for {
 		err := parser.lexer.GetNext(context,
@@ -104,6 +106,7 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 					return
 				}
 				if err != nil {
+					Error(context, "%s", err)
 					return
 				}
 				tuple.Append(subTuple)
@@ -112,8 +115,12 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 				closeBracketFound = true
 			},
 			func (tag Tag) {
-				if tag.Name == parser.keyValueSeparator {
-					parser.parserKeyValueOperator(context, tuple)
+				Verbose(context, "TAG tag=%s kv=%s", tag, parser.keyValueSeparator)
+				if tag == CONS_ATOM {
+					err := parser.parserKeyValueOperator(context, tuple)
+					if err != nil {
+						Error(context, "%s", err)
+					}
 				} else {
 					tuple.Append(tag)
 				}

@@ -137,13 +137,39 @@ func (context * SymbolTable) Error(value Value, format string, args ...interface
 
 /////////////////////////////////////////////////////////////////////////////
 
+// TODO Move all the cons stuff together
+func addConsToMap(context EvalContext, mapp TagValueMap, value Value) error {
+	if tuple.IsCons(value) {
+		array := value.(tuple.Array)
+		head := array.Get(1)
+		key, ok := head.(tuple.Tag)
+		if ! ok {
+			message := fmt.Sprintf("Got '%s' expected tag", head)
+			return errors.New(message)
+		}
+		context.Log("VERBOSE", "Add '%s:%s'", key, array.Get(2))
+		mapp.Add(key, array.Get(2))
+		return nil
+	} else {
+		message := fmt.Sprintf("Got '%s' expect CONS cell / Key-Value pair", value)
+		return errors.New(message)
+	}
+}
+
 func Eval(context EvalContext, expression Value) (Value, error) {
 
 	if tuple.IsCons(expression) {
-		return nil, errors.New("CONS cells not handled")
+		mapp := NewTagValueMap()
+		err := addConsToMap(context, mapp, expression)
+		return mapp, err
 	}
 	if tuple.IsConsInTuple(expression) {
-
+		mapp := NewTagValueMap()
+		err := tuple.ForallInArray(expression.(tuple.Array), func (value Value) error {
+			return addConsToMap(context, mapp, value)
+ 		})
+		context.Log("VERBOSE", "Len of map '%d'", mapp.Arity())
+		return mapp, err
 
 	}
 	switch val := expression.(type) {

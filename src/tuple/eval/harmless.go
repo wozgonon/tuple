@@ -125,13 +125,30 @@ func AddHarmlessArrayFunctions(table * SymbolTable)  {
 		return value.Get(index), nil
 	})
 
-	table.Add("istuple", func (context EvalContext, value Value) bool {
+	table.Add("istuple", func (context EvalContext, value Value) (bool, error) {
 		evaluated, err := Eval(context, value)
 		if err != nil {
-			// TODO
+			return false, err
 		}
 		_, ok := evaluated.(Tuple)
-		return ok
+		return ok, nil
+	})
+
+	table.Add("ismap", func (context EvalContext, value Value) (bool, error) {
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			return false, err
+		}
+		_, ok := evaluated.(tuple.Map)
+		return ok, nil
+	})
+
+	table.Add("typeof", func (context EvalContext, value Value) (string, error) {
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			return "", err
+		}
+		return reflect.TypeOf(evaluated).Name(), nil
 	})
 
 	table.Add("eqt", func (context EvalContext, aa Tuple, bb Tuple) bool {

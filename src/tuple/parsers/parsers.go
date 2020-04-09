@@ -56,7 +56,6 @@ const OPEN_BRACE = lexer.OPEN_BRACE
 const CLOSE_BRACE = lexer.CLOSE_BRACE
 const NEWLINE = lexer.NEWLINE
 const DOUBLE_QUOTE = lexer.DOUBLE_QUOTE
-const CONS_OPERATOR = lexer.CONS_OPERATOR
 var SPACE_ATOM = lexer.SPACE_ATOM
 
 
@@ -99,9 +98,6 @@ func AddStandardCOperators(operators *Operators) {
 	//operators.AddInfix(",", 30)
 	operators.AddInfix(";", 10)
 	operators.AddInfix(SPACE_ATOM.Name, 20)  // TODO space???
-
-	//operators.AddInfix3(":", 30, CONS_OPERATOR)
-
 }
 
 func ParseString(logger LocationLogger, grammar Grammar, expression string) Value {

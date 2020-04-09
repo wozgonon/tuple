@@ -18,6 +18,8 @@ package parsers
 
 import "io"
 
+var LISP_CONS_OPERATOR = "."
+
 /////////////////////////////////////////////////////////////////////////////
 // Lisp with conventional Prefix Grammar
 /////////////////////////////////////////////////////////////////////////////
@@ -44,7 +46,7 @@ func (grammar LispGrammar) Print(object Value, out func(value string)) {
 
 func NewLispGrammar() Grammar {
 	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", CONS_OPERATOR,
+		OPEN_BRACKET, CLOSE_BRACKET, "", "", LISP_CONS_OPERATOR,
 		"", "\n", "true", "false", ';', "")
 	style.RecognizeNegative = true
 	return LispGrammar{NewSExpressionParser(style)}
@@ -75,7 +77,10 @@ func (grammar LispWithInfixGrammar) Parse(context Context, next Next) error {
 		err := grammar.style.GetNext(context,
 			func() {
 				if context.Location().Depth() == 0 {
-					operatorGrammar.EndOfInput(next)
+					err := operatorGrammar.EndOfInput(next)
+					if err != nil {
+						Error(context, "%s", err)
+					}
 				}
 			},
 			func (open string) {
@@ -96,8 +101,7 @@ func (grammar LispWithInfixGrammar) Parse(context Context, next Next) error {
 			})
 		
 		if err == io.EOF {
-			operatorGrammar.EndOfInput(next)
-			return nil
+			return operatorGrammar.EndOfInput(next)
 		}
 		if err != nil {
 			return err
@@ -111,7 +115,7 @@ func (grammar LispWithInfixGrammar) Print(token Value, next func(value string)) 
 
 func LispWithInfixStyle () Style {
 	style := NewStyle("", "", "  ",
-	OPEN_BRACKET, CLOSE_BRACKET, "", "", CONS_OPERATOR, 
+	OPEN_BRACKET, CLOSE_BRACKET, "", "", LISP_CONS_OPERATOR, 
 		"", "\n", "true", "false", ';', "")
 
 	// TODO infix should not have this
@@ -124,6 +128,6 @@ func NewLispWithInfixGrammar() Grammar {
 	
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
+	operators.AddInfix(LISP_CONS_OPERATOR, 105) // CONS Operator
 	return LispWithInfixGrammar{style, operators}
 }

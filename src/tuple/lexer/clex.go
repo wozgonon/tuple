@@ -59,8 +59,6 @@ const CLOSE_SQUARE_BRACKET = "]"
 const OPEN_BRACE = "{"
 const CLOSE_BRACE = "}"
 
-// LISP cons operator (https://en.wikipedia.org/wiki/Cons)
-const CONS_OPERATOR = "."
 var SPACE_ATOM = Tag{" "}
 
 /////////////////////////////////////////////////////////////////////////////
@@ -169,6 +167,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 			return err
 		}
 		nextLiteral(value)
+	case ch == '.' && context.LookAhead() == '.': nextTag(Tag{".."})
 	case ((ch == '.' || (ch== '-' && style.RecognizeNegative)) && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch): // TODO || ch == '+' 
 		value, err := ReadNumber(context, string(ch))    // TODO minus
 		if err != nil {
@@ -179,10 +178,10 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		} else {
 			nextLiteral(value)
 		}
+	case ch == style.KeyValueSeparatorRune:		nextTag(tuple.CONS_ATOM)
 	case ch == ',':
 	case ch == ';':  nextTag(Tag{";"})
 	case ReadAndLookAhead(ch, '.', '.'):
-	case ch == style.KeyValueSeparatorRune:		nextTag(Tag{style.KeyValueSeparator})
 	case ReadAndLookAhead(ch, '>', '='):
 	case ReadAndLookAhead(ch, '<', '='):
 	case ReadAndLookAhead(ch, '!', '='):

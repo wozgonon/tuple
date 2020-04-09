@@ -21,7 +21,6 @@ import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
-import "io"
 import "errors"
 import 	"strings"
 import "path"
@@ -103,7 +102,10 @@ func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) int64 {
 	reader := bufio.NewReader(os.Stdin)
 	context := parsers.NewParserContext2(STDIN, reader, logger, promptOnEOL)
 	context.EOL() // prompt
-	inputGrammar.Parse(&context, next)
+	err := inputGrammar.Parse(&context, next)
+	if err != nil {
+		context.Log("ERROR", "%s", err)
+	}
 	return context.Errors()
 }
 
@@ -124,7 +126,7 @@ func (runner * Runner) RunFiles(args []string, next Next) int64 {
 			reader := bufio.NewReader(file)
 			context := NewParserContext(fileName, reader, runner.logger)
 			err = grammar.Parse(&context, next)
-			if err != io.EOF && err != nil {
+			if err != nil {
 				context.Log("ERROR", "%s", err)
 			}
 			errors += context.Errors()

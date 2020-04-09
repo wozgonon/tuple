@@ -41,9 +41,11 @@ func (grammar JSONGrammar) Print(object Value, out func(value string)) {
 	PrintExpression(grammar, "", object, out)  // TODO Use Printer
 }
 
+var JSON_CONS_OPERATOR = ":"
+
 func NewJSONGrammar() Grammar {
 	style := NewStyle("", "", "  ",
-		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
+		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_BRACE, CLOSE_BRACE, JSON_CONS_OPERATOR,
 		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
 	return JSONGrammar{style}
 }
@@ -62,7 +64,7 @@ func (printer JSONGrammar) PrintSeparator(depth string, out StringFunction) {
 
 func (printer JSONGrammar) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {
 
-	if tag == CONS_ATOM {
+	if tag == CONS_ATOM {  // TODO This can go
 		newDepth := depth + "  "
 		printer.PrintIndent(depth, out)
 		PrintExpression1(printer, newDepth, value1, out)

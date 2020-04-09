@@ -291,7 +291,6 @@ bb(2)==4`)
 func aa a { a*2 }
 func bb b { aa(b*3) }
 bb(2)==12`)
-
 	test(`
 func aa a { a*2 }
 func bb b { aa(b*3) }
@@ -302,4 +301,24 @@ func aa a { a*2 }
 func bb b { aa(b*3)*aa(1-b) }
 bb(3)==18*-4`)
 
+}
+
+
+func TestMap(t *testing.T) {
+	test := func (formula string) {
+		val, _ := ParseAndEval(&symbols, grammar, formula)
+		if val != tuple.Bool(true) {
+			t.Errorf("Expected '%s' to be TRUE", formula)
+		}
+	}
+
+	test("ismap (a:1)")
+	test("arity(a:1) == 1")
+	test("arity({a:1}) == 1")
+	test("ismap (a:1 b:2)")
+	test("ismap (a:1 b:2 c:3 b:33)")
+	test("arity({a:1 b:2 a:3 b:33}) == 2")
+	test("arity({a:1 b:2 c:3 b:33}) == 3")
+	test("arity({a:1 b:2 c:3 d:33}) == 4")
+	// TODO
 }

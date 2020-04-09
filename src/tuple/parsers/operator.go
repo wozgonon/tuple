@@ -181,13 +181,13 @@ func (stack * OperatorGrammar) postfix() {
 }
 
 // Signal end of input
-func (stack * OperatorGrammar) EndOfInput(next Next) {
+func (stack * OperatorGrammar) EndOfInput(next Next) error {
 	Verbose(stack.context,"EOF")
 
 	lo := len(stack.operatorStack)
 	empty := stack.Values.Arity() == 0 && lo == 0
 	if empty {
-		return
+		return nil
 	}
 
 	stack.postfix()
@@ -206,14 +206,21 @@ func (stack * OperatorGrammar) EndOfInput(next Next) {
 		}
 		// TODO this is a hack to handle space separated expressions: 1+2 3*4 5
 		if len(stack.Values.List) == 1 {
-			next (stack.Values.List[0])
+			err := next(stack.Values.List[0])
+			if err != nil {
+				return err
+			}
 		} else {
-			next (stack.Values)
+			err := next(stack.Values)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	stack.Values = NewTuple()
 	stack.operatorStack = make([]Tag, 0)
 	stack.wasOperator = true
+	return nil
 }
 
 func (stack * OperatorGrammar) PushOperator(operator Tag) {

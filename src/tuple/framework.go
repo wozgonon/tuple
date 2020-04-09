@@ -46,9 +46,9 @@ type Map interface {
 	ForallKeyValue(next KeyValueFunction)
 }
 
-type KeyValueFunction func(key Tag, value Value)
-type StringFunction func(value string)
-type Next func(value Value) error
+type KeyValueFunction = func(key Tag, value Value)
+type StringFunction = func(value string)
+type Next = func(value Value) error
 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer
@@ -123,7 +123,8 @@ func Suffix(context Context) string {
 //  
 /////////////////////////////////////////////////////////////////////////////
 
-var CONS_ATOM = Tag{"cons"}
+// LISP cons operator (https://en.wikipedia.org/wiki/Cons)
+var CONS_ATOM = Tag{"_cons"}
 var NAN Float64 = Float64(math.NaN())
 var EMPTY Tuple = NewTuple()
 const DOUBLE_QUOTE = "\""

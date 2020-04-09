@@ -257,11 +257,11 @@ func NewTagValueMap() TagValueMap {
 	return TagValueMap{make(map[Tag]Value)}
 }
 
-func (mapp * TagValueMap) Add(key Tag, value Value) { mapp.elements[key]= value }
+func (mapp * TagValueMap) Add(key Tag, value Value) { mapp.elements[key] = value }
 
 func (mapp TagValueMap) Arity() int { return len(mapp.elements) }
 
-func (mapp TagValueMap) ForallKeyValue(next func(key Tag, value Value)) {
+func (mapp TagValueMap) ForallKeyValue(next tuple.KeyValueFunction) {
 	for k, v := range mapp.elements {
 		next(k, v)
 	}

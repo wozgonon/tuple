@@ -44,7 +44,7 @@ func testGetNext(t *testing.T, logger tuple.LocationLogger, expression string, e
 	if err != nil {
 		t.Errorf("Error: %s", err)
 	} else if expected != result {
-		t.Errorf("%s==%s   exp=%s", expected, result, expression)
+		t.Errorf("expected '%s' got '%s' given expression='%s'", expected, result, expression)
 	}
 	if context.Errors() > 0 {
 		t.Errorf("Expected no errors: %d", context.Errors())

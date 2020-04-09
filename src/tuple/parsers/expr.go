@@ -17,6 +17,9 @@
 package parsers
 
 import "io"
+//import "fmt"
+
+var EXPR_CONS_OPERATOR = ":"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -48,7 +51,9 @@ func (grammar InfixExpressionGrammar) FileSuffix() string {
 
 func handleTag(tag Tag, style Style, context Context, operatorGrammar * OperatorGrammar) error {
 	open := style.Open
-	operators := (*operatorGrammar).operators
+	operators := operatorGrammar.operators
+
+	//fmt.Printf("tag=%s precedence %d\n", tag, operators.Precedence(tag))
 	if operators.Precedence(tag) != -1 {
 		operatorGrammar.PushOperator(tag)
 	} else {
@@ -78,7 +83,10 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) error {
 		err := grammar.style.GetNext(context,
 			func() {
 				if context.Location().Depth() == 0 {
-					operatorGrammar.EndOfInput(next)
+					err := operatorGrammar.EndOfInput(next)
+					if err != nil {
+						Error(context, "%s", err)
+					}
 				}
 			},
 			func (open string) {
@@ -98,8 +106,7 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) error {
 			})
 	
 		if err == io.EOF {
-			operatorGrammar.EndOfInput(next)
-			return nil
+			return operatorGrammar.EndOfInput(next)
 		}
 		if err != nil {
 			return err
@@ -113,12 +120,12 @@ func (grammar InfixExpressionGrammar) Print(token Value, next func(value string)
 
 func NewInfixExpressionGrammar() Grammar {
 	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
+		OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, EXPR_CONS_OPERATOR,
 		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
 
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
+	operators.AddInfix(CONS_ATOM.Name, 30)
 
 	return InfixExpressionGrammar{style, operators}
 }
@@ -163,7 +170,10 @@ func (grammar ShellGrammar) Parse(context Context, next Next) error {
 		err := grammar.style.GetNext(context,
 			func() {
 				if context.Location().Depth() == 0 {
-					operatorGrammar.EndOfInput(next)
+					err := operatorGrammar.EndOfInput(next)
+					if err != nil {
+						Error(context, "%s", err)
+					}
 				} else if ! operatorGrammar.wasOperator {
 					operatorGrammar.PushOperator(Tag{";"})
 				}
@@ -182,8 +192,7 @@ func (grammar ShellGrammar) Parse(context Context, next Next) error {
 			})
 	
 		if err == io.EOF {
-			operatorGrammar.EndOfInput(next)
-			return nil
+			return operatorGrammar.EndOfInput(next)
 		}
 		if err != nil {
 			return err
@@ -197,7 +206,7 @@ func (grammar ShellGrammar) Print(token Value, next func(value string)) {
 
 func NewShellGrammar() Grammar {
 	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, ":",
+		OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, EXPR_CONS_OPERATOR,
 		",", "\n", "true", "false", '#', "")
 
 	// **
@@ -212,7 +221,7 @@ func NewShellGrammar() Grammar {
 	
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
-	//operators.AddInfix(CONS_OPERATOR, 105) // CONS Operator
+	operators.AddInfix(CONS_ATOM.Name, 30)
 	operators.AddPrefix("$", 150)
 	operators.AddPostfix("&", 20)
 
