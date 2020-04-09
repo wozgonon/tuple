@@ -83,7 +83,10 @@ func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 	table.Add("query", func (context eval.EvalContext, path string) Value {
 		result := tuple.NewTuple()
 		query := NewQuery(path)
-		query.Match(context.Root(), func (value Value) { result.Append(value) })
+		query.Match(context.Root(), func (value Value) error {
+			result.Append(value)
+			return nil
+		})
 		return result
 	})
 

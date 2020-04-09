@@ -12,8 +12,9 @@ func TestQuery(t *testing.T) {
 	test := func(input tuple.Value, expectedCount int, queryString string) {
 		count := 0
 		query := runner.NewQuery(queryString)
-		query.Match(input, func (value tuple.Value) {
+		query.Match(input, func (value tuple.Value) error {
 			count += 1
+			return nil
 		})
 
 		if count != expectedCount {

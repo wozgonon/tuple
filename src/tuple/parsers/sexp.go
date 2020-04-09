@@ -161,14 +161,18 @@ func (parser SExpressionParser) parse(context Context, next Next) (error) {
 
 // Reads a given text and produces an Asbstract Syntax Tree (AST)
 // See the Grammar interface
-func (parser SExpressionParser) Parse(context Context, next Next) {
+func (parser SExpressionParser) Parse(context Context, next Next) error {
 
 	for {
-		err := parser.parse(context, func (value Value) {
+		err := parser.parse(context, func (value Value) error {
 			next(value)
+			return nil
 		})
+		if err == io.EOF {
+			return nil
+		}
 		if err != nil {
-			return
+			return err
 		}
 	}
 }

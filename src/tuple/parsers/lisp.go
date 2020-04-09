@@ -34,8 +34,8 @@ func (grammar LispGrammar) FileSuffix() string {
 	return ".l"
 }
 
-func (grammar LispGrammar) Parse(context Context, next Next) {
-	grammar.parser.Parse(context, next)
+func (grammar LispGrammar) Parse(context Context, next Next) error {
+	return grammar.parser.Parse(context, next)
 }
 
 func (grammar LispGrammar) Print(object Value, out func(value string)) {
@@ -67,7 +67,7 @@ func (grammar LispWithInfixGrammar) FileSuffix() string {
 	return ".infix"
 }
 
-func (grammar LispWithInfixGrammar) Parse(context Context, next Next) {
+func (grammar LispWithInfixGrammar) Parse(context Context, next Next) error {
 
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
@@ -97,8 +97,11 @@ func (grammar LispWithInfixGrammar) Parse(context Context, next Next) {
 		
 		if err == io.EOF {
 			operatorGrammar.EndOfInput(next)
-			break
+			return nil
 		}
+		if err != nil {
+			return err
+		}			
 	}
 }
 

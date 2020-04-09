@@ -130,22 +130,22 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 	table.Add("spawn", spawnProcess)
 	table.Add("pipe", Pipe)
 
-	table.Add("echo", func (context EvalContext, values... Value) bool {
+	table.Add("echo", func (context EvalContext, values... Value) (bool, error) {
 		for k,_:= range values {
 			evaluated, err := Eval(context, values[k])  // TODO This should use table from context so that it uses scope
 			if err != nil {
-				// TODO
+				return false, nil
 			}
 			fmt.Print(toString(context, evaluated))
 		}
-		return true
+		return true, nil
 	})
-	table.Add("eval", func (context EvalContext, value Value) Value {
+	table.Add("eval", func (context EvalContext, value Value) (Value, error) {
 		evaluated, err := Eval(context, value)
 		if err != nil {
-			// TODO
+			return nil, err
 		}
-		return evaluated
+		return evaluated, nil
 	})
 }
 

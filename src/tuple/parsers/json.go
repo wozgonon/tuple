@@ -32,9 +32,9 @@ func (grammar JSONGrammar) FileSuffix() string {
 	return ".json"
 }
 
-func (grammar JSONGrammar) Parse(context Context, next Next) {
+func (grammar JSONGrammar) Parse(context Context, next Next) error {
 	parser := NewSExpressionParser(grammar.Style)
-	parser.Parse(context, next)
+	return parser.Parse(context, next)
 }
 
 func (grammar JSONGrammar) Print(object Value, out func(value string)) {

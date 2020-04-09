@@ -69,8 +69,28 @@ func TestExprToFloat64(t *testing.T) {
 
 }
 
+func TestFailToParse(t *testing.T) {
+
+	test := func (t *testing.T, grammar tuple.Grammar, formula string) {
+		val,err := ParseAndEval(&symbols, grammar, formula)
+		if err == nil {
+			t.Errorf("expected fail to parse: grammar='%s' formula='%s' val='%s' err=%s", grammar.FileSuffix(), formula, val, err)
+		}
+	}
+	test(t, grammar, "-")
+	test(t, grammar, "*")
+	test(t, grammar, ")(")
+	test(t, grammar, ")")
+	test(t, grammar, ")")
+	test(t, grammar, ")-")
+	test(t, grammar, "())")
+	// TODO add more such tests
+}
+
+
 func TestExpr(t *testing.T) {
-	testFloatExpressionFailParse(t, grammar, "-")
+
+	
 
 	test := func(formula string, expected tuple.Value) {
 		val, _ := ParseAndEval(&symbols, grammar, formula)

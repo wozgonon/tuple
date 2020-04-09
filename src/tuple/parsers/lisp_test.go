@@ -35,14 +35,6 @@ func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, ex
 	}
 }
 
-func testFloatExpressionFailParse(t *testing.T, grammar tuple.Grammar, formula string) {
-       val,_ := ParseAndEval(&symbols, grammar, formula)
-       f,ok := val.(tuple.Float64);
-       if !ok || (ok && ! math.IsNaN(float64(f))) {
-               t.Errorf("%s != %s", grammar, val)
-       }
-}
-
 func TestLispCons(t *testing.T) {
 
 	test := func(formula string) {

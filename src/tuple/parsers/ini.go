@@ -33,8 +33,9 @@ func (grammar Yaml) FileSuffix() string {
 	return ".yaml"
 }
 
-func (grammar Yaml) Parse(context Context, _ Next) {
+func (grammar Yaml) Parse(context Context, _ Next) error {
 	Error(context, "Not implemented file suffix: '%s'", grammar.FileSuffix())
+	return nil
 }
 
 // TODO Replace with Printer
@@ -155,8 +156,9 @@ func (grammar Ini) FileSuffix() string {
 	return ".ini"
 }
 
-func (grammar Ini) Parse(context Context, _ Next) {
+func (grammar Ini) Parse(context Context, _ Next) error {
 	Error(context, "Not implemented file suffix: '%s'", grammar.FileSuffix())
+	return nil
 }
 
 // TODO 
@@ -242,8 +244,9 @@ func (grammar PropertyGrammar) FileSuffix() string {
 	return ".properties"
 }
 
-func (grammar PropertyGrammar) Parse(context Context, _ Next) {
+func (grammar PropertyGrammar) Parse(context Context, _ Next) error {
 	Error(context, "Not implemented file suffix: '%s'", grammar.FileSuffix())
+	return nil
 }
 
 func (grammar PropertyGrammar) printObject(depth string, token Value, out func(value string)) {

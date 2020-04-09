@@ -48,7 +48,7 @@ type Map interface {
 
 type KeyValueFunction func(key Tag, value Value)
 type StringFunction func(value string)
-type Next func(value Value)
+type Next func(value Value) error
 
 /////////////////////////////////////////////////////////////////////////////
 //  Lexer
@@ -90,7 +90,7 @@ type Grammar interface {
 	
 	// Parses an input stream of characters into an internal representation (AST)
 	// The output ought to be printable by the 'print' method.
-	Parse(context Context, next Next) // , next func(tuple Tuple)) (Value, error)
+	Parse(context Context, next Next) error // , next func(tuple Tuple)) (Value, error)
 	
 	// Pretty prints the objects in the given syntax.
 	// The output ought to be parsable by the 'parse' method.
@@ -155,6 +155,17 @@ func ForallKeyValuesInArray(value Array, next func(index int, value Value) error
 	return nil
 }
 
+func  Head(value Value) (Tag, bool) {
+	if value.Arity() > 0 {
+		if array, ok := value.(Array); ok {
+			first := array.Get(0)
+			head, ok := first.(Tag)
+			return head, ok
+		}
+	}
+	return Tag{""}, false
+}
+
 func  IsCons(value Value) bool {
 	if value.Arity() > 0 {
 		array, ok := value.(Array)
@@ -167,17 +178,6 @@ func  IsCons(value Value) bool {
 		}
 	}
 	return false
-}
-
-func  Head(value Value) (Tag, bool) {
-	if value.Arity() > 0 {
-		if array, ok := value.(Array); ok {
-			first := array.Get(0)
-			head, ok := first.(Tag)
-			return head, ok
-		}
-	}
-	return Tag{""}, false
 }
 
 // TODO this may not make sense cons is embedded in another tuple

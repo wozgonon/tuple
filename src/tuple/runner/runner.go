@@ -21,6 +21,8 @@ import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
+import "io"
+import "errors"
 import 	"strings"
 import "path"
 import "flag"
@@ -70,23 +72,30 @@ func NewRunner(grammars Grammars, symbols * eval.SymbolTable, logger LocationLog
 func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) (Value, error) {
 
 	var result Value = tuple.NAN  // TODO ought to be EMPTY
-	pipeline := func(value Value) {
+	pipeline := func(value Value) error {
 		evaluated, err := eval.Eval(context, value)
 		if err != nil {
-			// TODO
+			return err
 		}
 		result = evaluated
+		return nil
 	}
-	RunParser(grammar, expression, GetLogger(nil, false), pipeline)  // TODO
+	ctx, err := RunParser(grammar, expression, GetLogger(nil, false), pipeline)  // TODO
+	if ctx.Errors() > 0 {
+		return nil, errors.New("Errors during parse")
+	}
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
-func RunParser(grammar Grammar, expression string, logger LocationLogger, next Next) Context {
+func RunParser(grammar Grammar, expression string, logger LocationLogger, next Next) (Context, error) {
 
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := NewParserContext("<eval>", reader, logger)
-	grammar.Parse(&context, next)
-	return &context
+	err := grammar.Parse(&context, next)
+	return &context, err
 }
 
 func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) int64 {
@@ -110,11 +119,14 @@ func (runner * Runner) RunFiles(args []string, next Next) int64 {
 		if ok {
 			file, err := os.Open(fileName)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal(err) // TODO Should not be fatal
 			}
 			reader := bufio.NewReader(file)
 			context := NewParserContext(fileName, reader, runner.logger)
-			grammar.Parse(&context, next)
+			err = grammar.Parse(&context, next)
+			if err != io.EOF && err != nil {
+				context.Log("ERROR", "%s", err)
+			}
 			errors += context.Errors()
 			file.Close()
 		} else {
@@ -133,25 +145,28 @@ func PrintString(value string) {
 //
 func SimplePipeline (symbols * eval.SymbolTable, queryPattern string, outputGrammar Grammar, out func(value string)) Next {
 
-	prettyPrint := func(tuple Value) {
+	prettyPrint := func(tuple Value) error {
 		outputGrammar.Print(tuple, out)
+		return nil
 	}
 	pipeline := prettyPrint
 	if symbols != nil {
 		next := pipeline
-		pipeline = func(value Value) {
+		pipeline = func(value Value) error {
 			evaluated, err := eval.Eval(symbols, value)
 			if err != nil {
-				// TODO
+				return err
 			}
 			next(evaluated)
+			return nil
 		}
 	}
 	if queryPattern != "" {
 		next := pipeline
 		query := NewQuery(queryPattern)
-		pipeline = func(value Value) {
+		pipeline = func(value Value) error {
 			query.Match(value, next)
+			return nil
 		}
 	}
 	return pipeline

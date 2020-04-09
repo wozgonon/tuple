@@ -46,7 +46,7 @@ func (grammar InfixExpressionGrammar) FileSuffix() string {
 	return ".expr"
 }
 
-func handleTag(tag Tag, style Style, context Context, operatorGrammar * OperatorGrammar) {
+func handleTag(tag Tag, style Style, context Context, operatorGrammar * OperatorGrammar) error {
 	open := style.Open
 	operators := (*operatorGrammar).operators
 	if operators.Precedence(tag) != -1 {
@@ -57,20 +57,20 @@ func handleTag(tag Tag, style Style, context Context, operatorGrammar * Operator
 			_, err := context.ReadRune()
 			if err == io.EOF {
 				operatorGrammar.PushValue(tag)
-				return
+				return nil
 			}
 			if err != nil {
-				// TODO
-				return
+				return err
 			}
 			context.Open()
 			operatorGrammar.OpenBracket(Tag{open})
 		}
 		operatorGrammar.PushValue(tag)
 	}
+	return nil
 }
 
-func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
+func (grammar InfixExpressionGrammar) Parse(context Context, next Next) error {
 
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
@@ -88,7 +88,10 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 				operatorGrammar.CloseBracket(Tag{close})
 			},
 			func(tag Tag) {
-				handleTag(tag, grammar.style, context, &operatorGrammar)
+				err := handleTag(tag, grammar.style, context, &operatorGrammar)
+				if err != nil {
+					// TODO handle error
+				}
 			},
 			func (literal Value) {
 				operatorGrammar.PushValue(literal)  // TODO WithoutInsertingMissingSepator
@@ -96,11 +99,10 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) {
 	
 		if err == io.EOF {
 			operatorGrammar.EndOfInput(next)
-			break
+			return nil
 		}
 		if err != nil {
-			// TODO 
-			break
+			return err
 		}
 	}
 }
@@ -153,7 +155,7 @@ func (grammar ShellGrammar) FileSuffix() string {
 	return ".wsh"
 }
 
-func (grammar ShellGrammar) Parse(context Context, next Next) {
+func (grammar ShellGrammar) Parse(context Context, next Next) error {
 
 	operators := grammar.operators
 	operatorGrammar := NewOperatorGrammar(context, &operators)
@@ -181,11 +183,10 @@ func (grammar ShellGrammar) Parse(context Context, next Next) {
 	
 		if err == io.EOF {
 			operatorGrammar.EndOfInput(next)
-			break
+			return nil
 		}
 		if err != nil {
-			// TODO 
-			break
+			return err
 		}
 	}
 }

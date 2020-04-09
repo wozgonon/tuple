@@ -56,7 +56,10 @@ func testFiles(t *testing.T) {
 	grammars := runner.NewGrammars()
 	runner1 := runner.NewRunner(grammars, &symbols, logger, parsers.NewLispGrammar())
 	grammars.Add((parsers.NewLispGrammar()))
-	errors := runner1.RunFiles(files, func (next tuple.Value) { count += 1})
+	errors := runner1.RunFiles(files, func (next tuple.Value) error {
+		count += 1
+		return nil
+	})
 
 	if errors > 0 {
 		t.Errorf("Found unexpected errors: %d", errors)

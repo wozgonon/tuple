@@ -80,8 +80,9 @@ func ParseRegexp(context Context) Value {
 		default: grammar.PushValue(String(s))
 		}
 	}
-	grammar.EndOfInput(func (value Value) {
+	grammar.EndOfInput(func (value Value) error {
 		result = value
+		return nil
 	})
 
 	return result

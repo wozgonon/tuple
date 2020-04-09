@@ -106,8 +106,9 @@ func AddStandardCOperators(operators *Operators) {
 
 func ParseString(logger LocationLogger, grammar Grammar, expression string) Value {
 	var result Value = tuple.EMPTY // TODO Void?
-	pipeline := func(value Value) {
+	pipeline := func(value Value) error {
 		result = value
+		return nil
 	}
 
 	reader := bufio.NewReader(strings.NewReader(expression))

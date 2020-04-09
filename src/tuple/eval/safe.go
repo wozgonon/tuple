@@ -18,6 +18,8 @@ package eval
 
 import "strings"
 import "tuple"
+import "fmt"
+import "errors"
 
 func NewSafeSymbolTable(global Global) SymbolTable {
 	table := NewHarmlessSymbolTable(global)
@@ -104,37 +106,37 @@ func AddAllocatingTupleFunctions(table * SymbolTable)  {
 /////////////////////////////////////////////////////////////////////////////
 
 // This assign might set the value of a global variable if one exists
-func Assign (context EvalContext, tag Tag, value Value) Value {
+func Assign (context EvalContext, tag Tag, value Value) (Value, error) {
 	evaluated, err := Eval(context, value)
 	if err != nil {
-		// TODO
+		return nil, err
 	}
 	if table, _ := context.Find(context, tag, []Value{}); table != nil {
 		table.Add(tag.Name, func () Value { return evaluated })
 	} else {
 		context.Add(tag.Name, func () Value { return evaluated })
 	}
-	return evaluated
+	return evaluated, nil
 }
 
 // This assign will only set a loca variable in the top most context.
-func AssignLocal (context EvalContext, tag Tag, value Value) Value {
+func AssignLocal (context EvalContext, tag Tag, value Value) (Value, error) {
 	evaluated, err := Eval(context, value)
 	if err != nil {
-		// TODO
+		return nil, err
 	}
 	context.Add(tag.Name, func () Value { return evaluated })
-	return evaluated
+	return evaluated, nil
 }
 
 func AddSetAndDeclareFunctions(table * SymbolTable) {
 
-	table.Add("get", func(context EvalContext, tag Tag) Value {
+	table.Add("get", func(context EvalContext, tag Tag) (Value, error) {
 		result, err := context.Call(tag, []Value{})
 		if err != nil {
-			// TODO
+			return nil, err
 		}
-		return result
+		return result, nil
 	})
 	table.Add("set", Assign)  // TODO Assign or AssignLocal
 	table.Add("func", func(context EvalContext, values... Value) Value {
@@ -153,17 +155,17 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 				}
 			}
 			functionName := tag.(Tag).Name
-			context.Add(functionName, func (context1 EvalContext, values... Value) Value {
+			context.Add(functionName, func (context1 EvalContext, values... Value) (Value, error) {
 				if len(values) != len(args) {
-					context.Log("ERROR", "For '%s' Expected %d arguments not %d", functionName, len(args), len(values))
-					return tuple.EMPTY
+					message := fmt.Sprintf( "For '%s' Expected %d arguments not %d", functionName, len(args), len(values))
+					return tuple.EMPTY, errors.New(message)
 				} else {
 					context.Log("TRACE", "** FUNC %s argValue: %s", functionName, values)
 					newScope := NewSymbolTable(context1)
 					for k,v := range values {
 						evaluated, err := Eval(context1, v)
 						if err != nil {
-							// TODO
+							return nil, err
 						}
 						name := args[k].(Tag).Name
 						newScope.Add(name, func () Value {
@@ -172,9 +174,9 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 					}
 					evaluated, err := Eval(&newScope, code)
 					if err != nil {
-						// TODO
+						return nil, err
 					}
-					return evaluated
+					return evaluated, nil
 				}
 			})
 			return tag
@@ -239,16 +241,16 @@ func AddControlStatementFunctions(table * SymbolTable) {
 	})
 
 	// https://www.gnu.org/software/emacs/manual/html_node/eintr/progn.html
-	table.Add("progn", func(context EvalContext, values... Value) Value {
+	table.Add("progn", func(context EvalContext, values... Value) (Value, error) {
 		var result Value = tuple.EMPTY
 		for _, v := range values {
 			evaluated, err := Eval(context, v)
 			if err != nil {
-				// TODO
+				return nil, err
 			}
 			result = evaluated
 		}
-		return result
+		return result, nil
 
 	})
 

@@ -139,6 +139,13 @@ func (context * SymbolTable) Error(value Value, format string, args ...interface
 
 func Eval(context EvalContext, expression Value) (Value, error) {
 
+	if tuple.IsCons(expression) {
+		return nil, errors.New("CONS cells not handled")
+	}
+	if tuple.IsConsInTuple(expression) {
+
+
+	}
 	switch val := expression.(type) {
 	case Tuple:
 		ll := val.Arity()
@@ -173,6 +180,9 @@ func evalTuple(context EvalContext, value Tuple) (Tuple, error) {
 	Trace(context, "Eval tuple return '%s'", newTuple)
 	return newTuple, nil
 }
+
+/////////////////////////////////////////////////////////////////////////////
+
 
 /////////////////////////////////////////////////////////////////////////////
 

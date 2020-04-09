@@ -105,8 +105,8 @@ func main() {
 		//
 		//  Set up the translator pipeline.
 		//
-		context := runner.RunParser(inputGrammar, expression, logger, pipeline)
-		if context.Errors() > 0 {
+		context , err := runner.RunParser(inputGrammar, expression, logger, pipeline)
+		if err != nil || context.Errors() > 0 {
 			os.Exit(1)
 		}
 

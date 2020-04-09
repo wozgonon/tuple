@@ -43,8 +43,9 @@ func do(w http.ResponseWriter, req *http.Request) {
 	if ok {
 		reader := bufio.NewReader(r) // TODO read from request
 		context := runner.NewParserContext("<http>", reader, runner.GetLogger(nil, false))
-		grammar.Parse(&context, func (value tuple.Value) {
+		grammar.Parse(&context, func (value tuple.Value) error {
 			fmt.Fprintf(w, "%s", value)
+			return nil
 		})
 	}
 	fmt.Fprintf(w, "\n")
