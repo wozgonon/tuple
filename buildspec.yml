@@ -43,10 +43,9 @@ phases:
       - echo build complete at `date`
 artifacts:
   files:
-      - bin/wexpr
-      - bin/wozg
-      - bin/wsh
-      - bin/whd
+      - pkg/**/*.a
+      - bin/*
+      - bin/**
   name: parsers
   discard-paths: yes
   base-directory: bin
