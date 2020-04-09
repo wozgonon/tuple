@@ -36,6 +36,7 @@ type Style = lexer.Style
 
 var CONS_ATOM = tuple.CONS_ATOM
 var IsAtom = tuple.IsAtom
+var Quote = tuple.Quote
 var Head = tuple.Head
 var PrintTuple = tuple.PrintTuple
 var PrintExpression = tuple.PrintExpression
@@ -102,15 +103,6 @@ func AddStandardCOperators(operators *Operators) {
 	//operators.AddInfix3(":", 30, CONS_OPERATOR)
 
 }
-
-
-// TODO can this be removed
-func quote(value string, out func(value string)) {
-	out(DOUBLE_QUOTE)
-	out(value)   // TODO Escape
-	out(DOUBLE_QUOTE)
-}
-
 
 func ParseString(logger LocationLogger, grammar Grammar, expression string) Value {
 	var result Value = tuple.EMPTY // TODO Void?

@@ -47,7 +47,7 @@ func (grammar Yaml) printObject(depth string, token Value, out func(value string
 		switch token.(type) {
 		case Tag:
 			out(style.ScalarPrefix)
-			quote(token.(Tag).Name, out)
+			Quote(token.(Tag).Name, out)
 		default:
 			PrintScalar(grammar, "", token, out)
 		}
@@ -63,7 +63,7 @@ func (grammar Yaml) printObject(depth string, token Value, out func(value string
 		newDepth := depth
 		if first {
 			out(depth)
-			quote(tag.Name, out)
+			Quote(tag.Name, out)
 			out(style.Open)
 			out(style.LineBreak)
 			newDepth = depth + style.Indent
@@ -112,14 +112,14 @@ func (parser Yaml) PrintOpenTuple(depth string, tuple Value, out StringFunction)
 }
 
 func (parser Yaml) PrintHeadTag(tag Tag, out StringFunction) {
-	quote(tag.Name, out)
+	Quote(tag.Name, out)
 	out(": ")
 }
 
 func (parser Yaml) PrintCloseTuple(depth string, tuple Value, out StringFunction) {}
 
 func (parser Yaml) PrintTag(depth string, tag Tag, out StringFunction) {
-	quote(tag.Name, out)
+	Quote(tag.Name, out)
 	//bout(tag.Name)
 }
 

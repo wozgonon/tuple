@@ -18,7 +18,6 @@ package eval
 
 import "strings"
 import "tuple"
-import "fmt"
 
 func NewSafeSymbolTable(global Global) SymbolTable {
 	table := NewHarmlessSymbolTable(global)
@@ -37,9 +36,9 @@ func toString(context EvalContext, value Value) string {
 	switch val := value.(type) {
 	case Tag: return val.Name
 	case String: return string(val)  // Quote ???
-	case Float64: return  fmt.Sprint(val)  // TODO Inf ???
+	case Float64: return  tuple.FloatToString(float64(val))
 	case Int64: return tuple.Int64ToString(val)
-	case Bool: return fmt.Sprintf("%t", val)
+	case Bool: return tuple.BoolToString(bool(val))
 	default: 
 		context.Log("ERROR", "cannot convert '%s' to string", value)
 		return "..." // TODO
@@ -63,6 +62,17 @@ func AddAllocatingStringFunctions(table * SymbolTable) {
 }
 
 func AddAllocatingTupleFunctions(table * SymbolTable)  {
+
+	/*	table.Add("keys", func(_ EvalContext, value Value) Value {
+		value.ForallValues(func(value Value) error  {
+			return 
+		}
+		return tuple.NewTuple(values...)
+	})*/
+
+	//table.Add("values", func(_ EvalContext, values Value) Value {
+	//	return tuple.NewTuple(values...)
+	//})
 
 	table.Add("list", func(_ EvalContext, values... Value) Value { return tuple.NewTuple(values...) })
 	// TODO table.Add("quote", func(value Value) Value { return NewTuple("quote", value) })
@@ -167,15 +177,15 @@ func AddControlStatementFunctions(table * SymbolTable) {
 		}
 		return Eval(context, code)
 	})
-	table.Add("for", func(context EvalContext, tag Tag, list Value, code Value) (Tuple, error) {
+	table.Add("for", func(context EvalContext, tag Tag, list Value, code Value) Value {
 		var iterator Value = nil
 		newScope := NewSymbolTable(context)
 		newScope.Add(tag.Name, func () Value {
 			return iterator
 		})
 		// TODO Ideally for efficiency allow the method to return a callback iterator rather than collect values into a tuple
-		result := tuple.NewTuple()
-		err := list.ForallValues(func (v Value) error {
+
+		result := tuple.NewFiniteStream(list, func (v Value, next func(v Value) error) error {
 			evaluated, err := Eval(context, v)
 			iterator = evaluated
 			if err != nil {
@@ -185,10 +195,9 @@ func AddControlStatementFunctions(table * SymbolTable) {
 			if err != nil {
 				return err
 			}
-			result.Append(value)
-			return nil
+			return next(value)
 		})
-		return result, err
+		return result
 	})
 	table.Add("while", func(context EvalContext, condition Value, code Value) (Value, error) {
 		var result Value = tuple.EMPTY

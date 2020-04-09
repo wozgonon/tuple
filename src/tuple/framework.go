@@ -19,6 +19,7 @@ package tuple
 import "path"
 import "math"
 import "strconv"
+import "fmt"
 
 /////////////////////////////////////////////////////////////////////////////
 //  Values, maps and callbacks
@@ -125,6 +126,7 @@ func Suffix(context Context) string {
 var CONS_ATOM = Tag{"cons"}
 var NAN Float64 = Float64(math.NaN())
 var EMPTY Tuple = NewTuple()
+const DOUBLE_QUOTE = "\""
 
 // TODO an atom is pretty subjective, should be grammar specific
 func IsAtom(value Value) bool {
@@ -284,12 +286,44 @@ func (tuple Tuple) ForallKeyValue(next func(key Tag, value Value)) {
 }
 */
 
+// A Finite Stream it implements the Value interface and so can be used in place of a map or an array collection.
+// It is an important abstraction for efficiency, as it avoids having to copy data into arrays or maps.
+// It involves no overhead of allocating memory and passes on the first element to next immediately so there is
+// no delay allocating and copying the whole collection.
+// A finite stream is 'safe' because it allocates no memory and runs in finite time.
+// It is not necessarilly 'harmless' in in thate finite time is variable and might be large.
+type FiniteStream struct {
+	value Value
+	next func(v Value, next func (v Value) error) error
+}
+
+func NewFiniteStream(value Value, next func(v Value, next func(v Value) error) error) FiniteStream {
+	return FiniteStream{value, next}
+}
+func (stream FiniteStream) Arity() int { return stream.value.Arity() }
+func (stream FiniteStream) ForallValues(next func(value Value) error) error {
+	return stream.value.ForallValues(func (v Value) error {
+		return stream.next(v, next)
+	})}
+
 /////////////////////////////////////////////////////////////////////////////
 // Basic conversion functions between scalar types
 /////////////////////////////////////////////////////////////////////////////
 
 func IntToString(value int64) string {
 	return strconv.FormatInt(value, 10)
+}
+
+func FloatToString(value float64) string {
+	if math.IsInf(value, 64) {
+		return "Inf" // style.INF)  // Do not print +Inf
+	} else {
+		return fmt.Sprint(value)
+	}
+}
+
+func Float64ToString(value Float64) string {
+	return FloatToString(float64(value))
 }
 
 func Int64ToString(value Int64) string {
@@ -312,6 +346,17 @@ func BoolToInt(value Bool) int64 {
 		return 1
 	}
 	return 0
+}
+
+
+func Quote(value string, out func(value string)) {
+	out(DOUBLE_QUOTE)
+	out(value)   // TODO Escape
+	out(DOUBLE_QUOTE)
+}
+
+func BoolToString(value bool) string {
+	return fmt.Sprintf("%t", value)
 }
 
 func NthBitOfInt(value int64, index int) bool {

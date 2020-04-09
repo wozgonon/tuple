@@ -36,39 +36,28 @@ type Printer interface {
 	PrintOpenTuple(depth string, tuple Value, out StringFunction) string
 	PrintCloseTuple(depth string, tuple Value, out StringFunction)
 	PrintHeadTag(value Tag, out StringFunction)
-	PrintTag(depth string, value Tag, out StringFunction)
-	PrintInt64(depth string, value int64, out StringFunction)
-	PrintFloat64(depth string, value float64, out StringFunction)
-	PrintString(depth string, value string, out StringFunction)
-	PrintBool(depth string, value bool, out StringFunction)
-	//PrintComment(depth string, value Comment, out StringFunction)
+	PrintScalar(depth string, token Value, out StringFunction)
 }
 
-func PrintScalar(printer Printer, depth string, token Value, out StringFunction) {
+func PrintScalar(printer Printer, depth string, value Value, out StringFunction) {
 	printer.PrintScalarPrefix(depth, out)
-	switch token.(type) {
-	case Tag:
-		printer.PrintTag(depth, token.(Tag), out)
-	case String:
-		printer.PrintString(depth, string(token.(String)), out)
-	case Bool:
-		printer.PrintBool(depth, bool(token.(Bool)), out)
-//	case Comment:
-//		printer.PrintComment(depth, token.(Comment), out)
-	case Int64:
-		printer.PrintInt64(depth, int64(token.(Int64)), out)
-	case Float64:
-		printer.PrintFloat64(depth, float64(token.(Float64)), out)
-	case Tuple:
-		if token.Arity() == 0 {
+
+	switch value.(type) {
+	case Tag: out(value.(Tag).Name)
+	case String: Quote(string(value.(String)), out)
+	case Bool: out(BoolToString(bool(value.(Bool))))
+	case Int64: out(Int64ToString(value.(Int64)))
+	case Float64: out(Float64ToString(value.(Float64)))
+	default:
+		if value.Arity() == 0 {
 			printer.PrintEmptyTuple(depth, out)
 		} else {
-			log.Printf("ERROR unexpected tuple '%s", token);  // TODO return error or prevent from ever happening
+			log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(value), value);  // TODO return error or prevent from ever happening
+			//log.Printf("ERROR unexpected tuple '%s", value);  // TODO return error or prevent from ever happening
 		}
-	default:
-		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);  // TODO return error or prevent from ever happening
 	}
 }
+
 
 func PrintTuple(printer Printer, depth string, tuple Array, out StringFunction) {
 	newDepth := printer.PrintOpenTuple(depth, tuple, out)
@@ -87,7 +76,8 @@ func PrintTuple(printer Printer, depth string, tuple Array, out StringFunction) 
 			printer.PrintSuffix(depth, out)
 		})
 	} else {
-		ForallKeyValuesInArray(tuple, func (k int, value Value) error {
+		k := 0
+		tuple.ForallValues(func (value Value) error {
 			printer.PrintIndent(newDepth, out)
 			if first && k == 0 {
 				printer.PrintHeadTag(value.(Tag), out)
@@ -98,6 +88,7 @@ func PrintTuple(printer Printer, depth string, tuple Array, out StringFunction) 
 				printer.PrintSeparator(newDepth, out)
 			}
 			printer.PrintSuffix(depth, out)
+			k += 1
 			return nil
 		})
 	}
@@ -112,37 +103,53 @@ func PrintExpression(printer Printer, depth string, token Value, out StringFunct
 
 func PrintExpression1(printer Printer, depth string, token Value, out StringFunction) {
 
-	_, isMap := token.(Map)
-	if isMap {
-		// TODO
+	if IsAtom(token) {
+		printer.PrintScalar(depth, token, out)
 		return
 	}
-	array := token.(Array)
-	if IsAtom(array) {
-		PrintScalar(printer, depth, array, out)
-	} else {
-		len := array.Arity()
-		if len == 0 {
-			printer.PrintScalarPrefix(depth, out) 
-			printer.PrintEmptyTuple(depth, out)
-		} else {
-			head := array.Get(0)
-			tag, ok := head.(Tag)
-			//log.Printf("Array [%s] %d\n", tag, len)
-			if ok {  // TODO and head in a (binary) operator
-				switch len {
-				case 1:
-					printer.PrintNullaryOperator(depth, tag, out)
-				case 2:
-					printer.PrintUnaryOperator(depth, tag, array.Get(1), out)
-				case 3:
-					printer.PrintBinaryOperator(depth, tag, array.Get(1), array.Get(2), out)
-				default:
-					PrintTuple(printer, depth, array, out)
-				}
-			} else {
+	ll := token.Arity()
+	if array, ok := token.(Array); ok {
+		head := array.Get(0)
+		tag, ok := head.(Tag)
+		//log.Printf("Array [%s] %d\n", tag, len)
+		if ok {  // TODO and head in a (binary) operator
+			switch ll {
+			case 1:
+				printer.PrintNullaryOperator(depth, tag, out)
+			case 2:
+				printer.PrintUnaryOperator(depth, tag, array.Get(1), out)
+			case 3:
+				printer.PrintBinaryOperator(depth, tag, array.Get(1), array.Get(2), out)
+			default:
 				PrintTuple(printer, depth, array, out)
 			}
+		} else {
+			PrintTuple(printer, depth, array, out)
 		}
+		return
 	}
+	newDepth := printer.PrintOpenTuple(depth, token, out)
+	printer.PrintSuffix(depth, out)
+	if mapp, ok := token.(Map); ok {
+		mapp.ForallKeyValue(func (k Tag, value Value) {
+			printer.PrintHeadTag(k, out)
+			out (":") // TODO
+			PrintExpression1(printer, newDepth, value, out)
+			printer.PrintSeparator(newDepth, out)
+			printer.PrintSuffix(depth, out)
+		})
+	} else {
+		k := 0
+		token.ForallValues(func (value Value) error {
+			printer.PrintIndent(newDepth, out)
+			PrintExpression1(printer, newDepth, value, out)
+			if k < ll-1 {
+				printer.PrintSeparator(newDepth, out)
+			}
+			printer.PrintSuffix(depth, out)
+			k += 1
+			return nil
+		})
+	}
+	printer.PrintCloseTuple(depth, token, out)
 }

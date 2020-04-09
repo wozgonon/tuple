@@ -16,7 +16,6 @@
 */
 package lexer
 
-import "fmt"
 import "io"
 import "unicode"
 import "strconv"
@@ -414,34 +413,8 @@ func (printer Style) PrintHeadTag(tag Tag, out StringFunction) {
 	out(tag.Name)
 }
 
-func (printer Style) PrintTag(depth string, tag Tag, out StringFunction) {
-	out(tag.Name)
-}
-
-func (printer Style) PrintInt64(depth string, value int64, out StringFunction) {
-	out(strconv.FormatInt(value, 10))
-}
-
-func (printer Style) PrintFloat64(depth string, value float64, out StringFunction) {
-	if math.IsInf(value, 64) {
-		out("Inf") // style.INF)  // Do not print +Inf
-	} else {
-		out(fmt.Sprint(value))
-	}
-}
-
-func (printer Style) PrintString(depth string, value string, out StringFunction) {
-	out(DOUBLE_QUOTE)
-	out(value)   // TODO Escape
-	out(DOUBLE_QUOTE)
-}
-
-func (printer Style) PrintBool(depth string, value bool, out StringFunction) {
-	if value {
-		out(printer.True)
-	} else {
-		out(printer.False)
-	}				
+func (printer Style) PrintScalar(depth string, value Value, out StringFunction) {
+	tuple.PrintScalar(printer, depth, value, out)
 }
 
 func (printer Style) PrintScalarPrefix(depth string, out StringFunction) {}
