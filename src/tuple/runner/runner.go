@@ -69,7 +69,7 @@ func NewRunner(grammars Grammars, symbols * eval.SymbolTable, logger LocationLog
 
 func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) (Value, error) {
 
-	var result Value = tuple.NAN
+	var result Value = tuple.NAN  // TODO ought to be EMPTY
 	pipeline := func(value Value) {
 		evaluated, err := eval.Eval(context, value)
 		if err != nil {

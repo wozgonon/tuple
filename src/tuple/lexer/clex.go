@@ -28,7 +28,6 @@ type Grammar = tuple.Grammar
 type Context = tuple.Context
 type Tag = tuple.Tag
 type Value = tuple.Value
-type Comment = tuple.Comment
 type StringFunction = tuple.StringFunction
 type String = tuple.String
 type Tuple = tuple.Tuple
@@ -37,7 +36,6 @@ type Lexer = tuple.Lexer
 type Float64 = tuple.Float64
 type Int64 = tuple.Int64
 
-var NewComment = tuple.NewComment
 var PrintTuple = tuple.PrintTuple
 var NewTuple = tuple.NewTuple
 var Error = tuple.Error
@@ -90,9 +88,6 @@ type Style struct {
 	False string
 	OneLineComment rune
 	ScalarPrefix string
-
-	//INF string
-	//NAN string
 
 	OpenChar rune
 	closeChar rune
@@ -154,25 +149,21 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 	switch {
 	case err != nil: return err
 	case err == io.EOF:
-		//next.NextEOF()
 		return err
 	case ch == NEWLINE:
-		//if context.Depth() == 0 {
-			eol()
-		//}
+		eol()
 		context.EOL()
 	case unicode.IsSpace(ch) || ch == '\r': break // TODO fix comma
 	case ch == style.OneLineComment:
+		// TODO Comment is not part of parse tree, store elsewhere
 		_, err = ReadUntilEndOfLine(context)
 		if err != nil {
 			return err
 		}
-		// TODO next.NextComment
 	case ch == style.OpenChar : context.Open(); open(style.Open)
 	case ch == style.closeChar : context.Close(); close(style.Close)
 	case ch == style.OpenChar2 : context.Open(); open(style.Open2)
 	case ch == style.closeChar2 : context.Close(); close(style.Close2)
-		//case ch == '+', ch== '*', ch == '-', ch== '/': return string(ch), nil
 	case ch == '"' :
 		value, err := ReadCLanguageString(context)
 		if err != nil {
@@ -180,7 +171,6 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		}
 		nextLiteral(value)
 	case ((ch == '.' || (ch== '-' && style.RecognizeNegative)) && unicode.IsNumber(context.LookAhead())) || unicode.IsNumber(ch): // TODO || ch == '+' 
-		//case ch == '.' || unicode.IsNumber(ch):
 		value, err := ReadNumber(context, string(ch))    // TODO minus
 		if err != nil {
 			return err
@@ -190,7 +180,7 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 		} else {
 			nextLiteral(value)
 		}
-	case ch == ',':  //nextTag(Tag{","})
+	case ch == ',':
 	case ch == ';':  nextTag(Tag{";"})
 	case ReadAndLookAhead(ch, '.', '.'):
 	case ch == style.KeyValueSeparatorRune:		nextTag(Tag{style.KeyValueSeparator})
@@ -200,7 +190,6 @@ func (style Style) GetNext(context Context, eol func(), open func(open string), 
 	case ReadAndLookAhead(ch, '=', '='):
 	case ReadAndLookAhead(ch, '*', '*'):
 	case ReadAndLookAhead(ch, '+', '+'):
-	//case ReadAndLookAhead(ch, '-', '-'):
 	case ReadAndLookAhead(ch, '|', '|'):
 	case ReadAndLookAhead(ch, '&', '&'):
 	case ch == '-' || ch== '/' || ch == '%': nextTag(Tag{string(ch)})
@@ -306,19 +295,19 @@ func ReadNumber(context Context, token string) (Value, error) {  // Number
 	} 
 }
 
-func ReadUntilEndOfLine(context Context) (Comment, error) {
+func ReadUntilEndOfLine(context Context) (string, error) {
 	token := ""
 	for {
 		ch := context.LookAhead()
 		if ch == NEWLINE {
-			return NewComment(context, token), nil
+			return token, nil
 		}
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
-			return NewComment(context, token), nil
+			return token, nil
 		case err != nil:
-			return NewComment(context, token), err
+			return token, err
 		default:
 			token = token + string(ch)
 		}
@@ -453,11 +442,6 @@ func (printer Style) PrintBool(depth string, value bool, out StringFunction) {
 	} else {
 		out(printer.False)
 	}				
-}
-
-func (printer Style) PrintComment(depth string, value Comment, out StringFunction) {
-	out(string(printer.OneLineComment))
-	out(value.Comment)
 }
 
 func (printer Style) PrintScalarPrefix(depth string, out StringFunction) {}

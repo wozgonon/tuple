@@ -21,33 +21,52 @@ import "fmt"
 import "errors"
 import "tuple"
 
-// TODO could populate this just from the function
-var conversions = map[string]reflect.Value{
-	"Int64 int64": reflect.ValueOf(func(value Int64) int64 { return int64(value) }),
-	"Float64 float64": reflect.ValueOf(func(value Float64) float64 { return float64(value) }),
-	"Bool bool": reflect.ValueOf(func(value Bool) bool { return bool(value) }),
-	"String string": reflect.ValueOf(func(value String) string { return string(value) }),
-	"Float64 bool":reflect.ValueOf(func (value Float64) bool { return value!=0. }),
-	"Int64 bool": reflect.ValueOf(func (value Int64) bool { return value!=0 }),
-	"Bool float64":reflect.ValueOf(boolToFloat),
-	"Bool int64": reflect.ValueOf(boolToInt),
-	"Int64 float64": reflect.ValueOf(func(value Int64) float64 { return float64(int64(value)) }),
-	"Float64 int64": reflect.ValueOf(func(value Float64) int64 { return int64(float64(value)) }),
-	"Float64 string": reflect.ValueOf(fmt.Sprint),  // TODO Inf rather than +Inf
-	"Int64 string": reflect.ValueOf(tuple.Int64ToString),
+
+// A table of basic conversion functions
+var conversions = NewConversions(
+	func(value Int64) int64 { return int64(value) },
+	func(value Float64) float64 { return float64(value) },
+	func(value Bool) bool { return bool(value) },
+	func(value String) string { return string(value) },
+	func (value Float64) bool { return value!=0. },
+	func (value Int64) bool { return value!=0 },
+	tuple.BoolToFloat,
+	tuple.BoolToInt,
+	func(value Int64) float64 { return float64(int64(value)) },
+	func(value Float64) int64 { return int64(float64(value)) },
+	fmt.Sprint,  // TODO Inf rather than +If
+	tuple.Int64ToString)
+
+/////////////////////////////////////////////////////////////////////////////
+//  Conversions using reflection
+/////////////////////////////////////////////////////////////////////////////
+
+type Conversions struct {
+	functions map[string]reflect.Value
 }
 
-func Convert (context EvalContext, evaluated Value, expectedType reflect.Type) (interface{}, error) {
+func NewConversions(functions ... interface{}) Conversions {
 
-	if expectedType == reflect.TypeOf(evaluated) || expectedType == ValueType {
-		return evaluated, nil
+	result := Conversions{make(map[string]reflect.Value)}
+	for _, function := range functions {
+		value := reflect.ValueOf(function)
+		typ := value.Type()
+		in := typ.In(0).Name()
+		out := typ.Out(0).Name()
+		key := in + " " + out
+		result.functions[key] = value
 	}
+	return result
+}
+
+func (conversions Conversions) Convert(evaluated Value, expectedType reflect.Type) (interface{}, error) {
 	key := reflect.TypeOf(evaluated).Name() + " " + expectedType.Name()
-	Verbose(context, "key=%s", key)
-	convert, ok := conversions[key]
+	//Verbose(context, "key=%s", key)
+	convert, ok := conversions.functions[key]
 	if ok {
-		in := convert.Call([]reflect.Value{reflect.ValueOf(evaluated)})
-		reflectValue := in [0]
+		reflectValues := convert.Call([]reflect.Value{reflect.ValueOf(evaluated)})
+		reflectValue := reflectValues [0]
+		//return reflectValueToValue(in[0])
 		switch reflectValue.Type() {
 		case IntType: return reflectValue.Int(), nil
 		case FloatType: return reflectValue.Float(), nil
@@ -62,33 +81,13 @@ func Convert (context EvalContext, evaluated Value, expectedType reflect.Type) (
 	return nil, errors.New("No conversion")
 }
 
-func boolToFloat(value Bool) float64 {
-	if bool(value) {
-		return 1.
-	}
-	return 0.0
-}
-func boolToInt(value Bool) int64 {
-	if bool(value) {
-		return 1
-	}
-	return 0
-}
+func Convert (context EvalContext, evaluated Value, expectedType reflect.Type) (interface{}, error) {
 
-func toString(context EvalContext, value Value) string {
-	switch val := value.(type) {
-	case Tag: return val.Name
-	case String: return string(val)  // Quote ???
-	case Float64: return  fmt.Sprint(val)  // TODO Inf ???
-	case Int64: return tuple.Int64ToString(val)
-	case Bool:
-		if val {
-			return "true"
-		} else {
-			return "false"
-		}
-	default: 
-		context.Log("ERROR", "cannot convert '%s' to string", value)
-		return "..." // TODO
+	if expectedType == reflect.TypeOf(evaluated) || expectedType == ValueType {
+		return evaluated, nil
 	}
+	if array, isArray := evaluated.(tuple.Array); isArray && expectedType == ArrayType {
+		return array, nil
+	}
+	return conversions.Convert(evaluated, expectedType)
 }

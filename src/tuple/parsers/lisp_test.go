@@ -50,8 +50,7 @@ func TestLispCons(t *testing.T) {
 		if ! tuple.IsConsInTuple(c) {
 			t.Errorf("Expected a cons cell got %s", c)
 		}
-		tuple2 := c.Get(0)
-		if ! tuple.IsCons(tuple2) {
+		if array, ok := c.(tuple.Array); ! ok || ! tuple.IsCons(array.Get(0)) {
 			t.Errorf("Expected a cons cell got %s", c)
 		}
 	}

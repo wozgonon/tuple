@@ -18,6 +18,7 @@ package eval
 
 import "strings"
 import "tuple"
+import "fmt"
 
 func NewSafeSymbolTable(global Global) SymbolTable {
 	table := NewHarmlessSymbolTable(global)
@@ -32,6 +33,19 @@ func NewSafeSymbolTable(global Global) SymbolTable {
 // Allocating functions
 /////////////////////////////////////////////////////////////////////////////
 
+func toString(context EvalContext, value Value) string {
+	switch val := value.(type) {
+	case Tag: return val.Name
+	case String: return string(val)  // Quote ???
+	case Float64: return  fmt.Sprint(val)  // TODO Inf ???
+	case Int64: return tuple.Int64ToString(val)
+	case Bool: return fmt.Sprintf("%t", val)
+	default: 
+		context.Log("ERROR", "cannot convert '%s' to string", value)
+		return "..." // TODO
+	}
+}
+
 func EvalToStrings(context EvalContext, values []Value) []string {
 
 	result := make([]string, len(values))
@@ -43,6 +57,7 @@ func EvalToStrings(context EvalContext, values []Value) []string {
 }
 
 func AddAllocatingStringFunctions(table * SymbolTable) {
+	// TODO change this to take an array
 	table.Add("join", func (context EvalContext, separator string, tuple Tuple) string { return strings.Join(EvalToStrings(context, tuple.List), separator) })
 	table.Add("concat", func (context EvalContext, values... Value) string  { return strings.Join(EvalToStrings(context, values), "") })
 }
@@ -160,7 +175,7 @@ func AddControlStatementFunctions(table * SymbolTable) {
 		})
 		// TODO Ideally for efficiency allow the method to return a callback iterator rather than collect values into a tuple
 		result := tuple.NewTuple()
-		err := tuple.Forall(list, func (v Value) error {
+		err := list.ForallValues(func (v Value) error {
 			evaluated, err := Eval(context, v)
 			iterator = evaluated
 			if err != nil {

@@ -25,7 +25,6 @@ type Grammar = tuple.Grammar
 type Context = tuple.Context
 type Tag = tuple.Tag
 type Value = tuple.Value
-type Comment = tuple.Comment
 type StringFunction = tuple.StringFunction
 type String = tuple.String
 type Tuple = tuple.Tuple
@@ -42,7 +41,6 @@ var PrintTuple = tuple.PrintTuple
 var PrintExpression = tuple.PrintExpression
 var PrintExpression1 = tuple.PrintExpression1
 var PrintScalar = tuple.PrintScalar
-var NewComment = tuple.NewComment
 var NewTuple = tuple.NewTuple
 var NewStyle = lexer.NewStyle
 //var NewScalar = tuple.NewScalar
@@ -115,7 +113,7 @@ func quote(value string, out func(value string)) {
 
 
 func ParseString(logger LocationLogger, grammar Grammar, expression string) Value {
-	var result Value = tuple.NAN
+	var result Value = tuple.EMPTY // TODO Void?
 	pipeline := func(value Value) {
 		result = value
 	}

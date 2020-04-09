@@ -77,7 +77,6 @@ func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 	table.Add("help", func (context eval.EvalContext) Value {
 		return table.AllSymbols()
 	})
-
 	table.Add("ctx", func (context eval.EvalContext) Value {
 		return context.Root()
 	})

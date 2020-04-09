@@ -18,10 +18,10 @@ package eval
 
 import "math"
 import "strings"
-import "tuple"
 import "reflect"
 import "fmt"
 import "errors"
+import "tuple"
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -31,8 +31,7 @@ func NewHarmlessSymbolTable(global Global) SymbolTable {
 	table := NewSymbolTable(global)
 	AddBooleanAndArithmeticFunctions(&table)
 	AddHarmlessStringFunctions(&table)
-	AddHarmlessTupleFunctions(&table)
-	
+	AddHarmlessArrayFunctions(&table)
 	return table
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -106,8 +105,8 @@ func AddHarmlessStringFunctions(table * SymbolTable) {
 	table.Add("upper", strings.ToUpper)
 }
 
-// Tuple functions that do not allocate any memory
-func AddHarmlessTupleFunctions(table * SymbolTable)  {
+// Array functions that do not allocate any memory
+func AddHarmlessArrayFunctions(table * SymbolTable)  {
 
 	table.Add("arity", func(context EvalContext, value Value) (int64, error) {
 		evaluated, err := Eval(context, value)
@@ -117,13 +116,13 @@ func AddHarmlessTupleFunctions(table * SymbolTable)  {
 		return int64(evaluated.Arity()), nil
 	})
 
-	table.Add("nth", func(context EvalContext, index64 int64, value Value) (Value, error) {
-		evaluated, err := Eval(context, value)
-		if err != nil {
-			return nil, err
-		}
+	table.Add("nth", func(context EvalContext, index64 int64, value tuple.Array) (Value, error) {
+		//evaluated, err := Eval(context, value)
+		//if err != nil {
+		//	return nil, err
+		//}
 		index := int(index64) // TODO use int64 everywhere
-		return evaluated.Get(index), err
+		return value.Get(index), nil
 	})
 
 	table.Add("istuple", func (context EvalContext, value Value) bool {
@@ -163,6 +162,9 @@ func (exec * ErrorIfFunctionNotFound) Logger() LocationLogger {
 }
 
 func (exec * ErrorIfFunctionNotFound) Root() Value {
-	return tuple.EMPTY  // TODO AllSymbols()
+	root := TagValueMap{}
+	root.Add(Tag{"abc"}, tuple.EMPTY)
+	root.Add(Tag{"def"}, tuple.EMPTY)
+	return tuple.EMPTY  //root  // TODO AllSymbols()
 }
 

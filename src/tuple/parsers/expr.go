@@ -57,8 +57,7 @@ func handleTag(tag Tag, style Style, context Context, operatorGrammar * Operator
 			_, err := context.ReadRune()
 			if err == io.EOF {
 				operatorGrammar.PushValue(tag)
-				//operatorGrammar.EOF(next)
-				return // TODO eof
+				return
 			}
 			if err != nil {
 				// TODO

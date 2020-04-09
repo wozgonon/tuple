@@ -176,8 +176,10 @@ func (exec * ExecIfNotFound) Logger() LocationLogger {
 }
 
 func (exec * ExecIfNotFound) Root() Value {
-	os := Os{}
-	return &os
+	root := NewTagValueMap()
+	os := &Os{}
+	root.Add(Tag{"os"}, os)
+	return os
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -194,8 +196,8 @@ func (oss * Os) Get(index int) Value {
 func (_ * Os) GetKeyValue(index int) (Tag,Value) {
 	switch index {
 	case 0: return Tag{"pid"}, Int64(os.Getpid())
-	case 1: return Tag{"args"}, ArraySliceValue{os.Args}
-	case 2: return Tag{"env"}, ArraySliceValue{os.Environ()}
+	case 1: return Tag{"args"}, StringArray{os.Args}
+	case 2: return Tag{"env"}, StringArray{os.Environ()}
 	case 3:
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -212,18 +214,65 @@ func (_ * Os) GetKeyValue(index int) (Tag,Value) {
 	}
 }	
 
-type ArraySliceValue struct {
+func (oss * Os) ForallKeyValue(next func(key Tag, value Value)) {
+	for k:=0; k <= oss.Arity(); k+=1 {
+		key, value := oss.GetKeyValue(k)
+		next(key, value)
+	}
+}
+func (oss * Os) ForallValues(next func(value Value) error) error {
+	for k:=0; k <= oss.Arity(); k+=1 {
+		_, value := oss.GetKeyValue(k)
+		err := next(value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type StringArray struct {
 	slice []string
 }
 
-func (array ArraySliceValue) Arity() int { return len(array.slice) }
-func (array ArraySliceValue) Get(index int) Value {
+func (array StringArray) Arity() int { return len(array.slice) }
+func (array StringArray) Get(index int) Value {
 	if index >= 0 && index < len(array.slice) {
 		return String(array.slice[index])
 	}
 	return tuple.EMPTY
 }
 
-func (array ArraySliceValue) GetKeyValue(index int) (Tag,Value) {
+func (array StringArray) GetKeyValue(index int) (Tag,Value) {
 	return tuple.IntToTag(index), array.Get(index)
 }
+func (array StringArray) ForallValues(next func(value Value) error) error { return tuple.ForallInArray(array, next) }
+
+
+type TagValueMap struct {
+	elements map[Tag]Value
+}
+
+func NewTagValueMap() TagValueMap {
+	return TagValueMap{make(map[Tag]Value)}
+}
+
+func (mapp * TagValueMap) Add(key Tag, value Value) { mapp.elements[key]= value }
+
+func (mapp TagValueMap) Arity() int { return len(mapp.elements) }
+
+func (mapp TagValueMap) ForallKeyValue(next func(key Tag, value Value)) {
+	for k, v := range mapp.elements {
+		next(k, v)
+	}
+}
+func (mapp TagValueMap) ForallValues(next func(value Value) error) error {
+	for _, v := range mapp.elements {
+		err := next(v)
+		if err != nil {
+			return nil
+		}
+	}
+	return nil
+}
+

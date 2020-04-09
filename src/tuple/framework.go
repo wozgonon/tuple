@@ -16,37 +16,44 @@
 */
 package tuple
 
-import "log"
-import "reflect"
 import "path"
 import "math"
 import "strconv"
 
 /////////////////////////////////////////////////////////////////////////////
-//  Callback signatures
+//  Values, maps and callbacks
 /////////////////////////////////////////////////////////////////////////////
 
+// The Value interface:
+// * must be implemented by any of the small number of types that can be produced by the lexer.
+// * is used in the parsers to represent the Parse Tree or AST
+// * is used in the backend Eval function at runtime
+// TODO include location and source for editors
+type Value interface {
+	// See: https://en.wikipedia.org/wiki/Arity
+	Arity() int
+	ForallValues(next func(value Value) error) error
+}
+
+type Array interface {
+	Value
+	Get(index int) Value
+}
+
+type Map interface {
+	Value
+	ForallKeyValue(next KeyValueFunction)
+}
+
+type KeyValueFunction func(key Tag, value Value)
 type StringFunction func(value string)
 type Next func(value Value)
 
-var CONS_ATOM = Tag{"cons"}
-var NAN Float64 = Float64(math.NaN())
-var EMPTY Tuple = NewTuple()
-
-func IntToString(value int64) string {
-	return strconv.FormatInt(value, 10)
-}
-
-func Int64ToString(value Int64) string {
-	return IntToString(int64(value))
-}
-
-func IntToTag(value int) Tag {
-	return Tag{IntToString(int64(value))}
-}
-
 /////////////////////////////////////////////////////////////////////////////
-//  Lexer and Values
+//  Lexer
+//
+//  The Value interface must be implemented by any of the small number of types
+//  that can be produced by the lexer.
 /////////////////////////////////////////////////////////////////////////////
 
 type Lexer interface {
@@ -54,177 +61,14 @@ type Lexer interface {
 	GetNext(context Context, eol func(), open func(open string), close func(close string), nextTag func(tag Tag), nextLiteral func (literal Value)) error
 }
 
-// The Value interface must be implected by any of the small number of types that can be produced by the lexer
-type Value interface {
-	// See: https://en.wikipedia.org/wiki/Arity
-	Arity() int
-	Get(index int) Value
-	GetKeyValue(index int) (Tag, Value)  // Key should probably be restricted to Scalars/Atoms
-}
-
-type Scalar interface {
-	Value
-	ToString() String
-}
-
-// TODO an atom is pretty subjective, should be grammar specific
-func IsAtom(value Value) bool {
-	return value.Arity() == 0
-}
-
-func Forall(value Value, next func(value Value) error) error {
-	ll := value.Arity()
-	for k := 0; k < ll; k+=1 {
-		err := next(value.Get(k))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func ForallN(value Value, next func(index int, value Value) error) error {
-	ll := value.Arity()
-	for k := 0; k < ll; k+=1 {
-		err := next(k, value.Get(k))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func  IsCons(value Value) bool {
-	if value.Arity() > 0 {
-		head := value.Get(0)
-		tag, ok := head.(Tag)
-		if ok && tag == CONS_ATOM {
-			return true
-		}
-	}
-	return false
-}
-
-func  Head(value Value) (Tag, bool) {
-	if value.Arity() > 0 {
-		first := value.Get(0)
-		head, ok := first.(Tag)
-		return head, ok
-	}
-	return Tag{""}, false
-}
-
-// TODO this may not make sense cons is embedded in another tuple
-func IsConsInTuple(value Value) bool {
-	return value.Arity() > 0 && IsCons(value.Get(0))
-}
-
 type String string
 type Float64 float64
 type Int64 int64
 type Bool bool
 
-// An Tag - a name for something, an identifier or operator
-// TODO include location and source for editors
+// A Tag - a name for something, an identifier or operator
 type Tag struct {
 	Name string
-}
-
-func (tag Tag) Arity() int { return 0 }
-func (value String) Arity() int { return 0 }
-func (comment Comment) Arity() int { return 0 }
-func (value Float64) Arity() int { return 0 }
-func (value Int64) Arity() int { return 0 }
-func (value Bool) Arity() int { return 0 }
-
-func (value Tag) Get(index int) Value {
-	if index == 0 {
-		return String(value.Name)
-	}
-	return EMPTY
-}
-func (value String) Get(index int) Value {
-	if index >=0 && index < len(string(value)) {
-		return String(value[index])
-	}
-	return EMPTY
-}
-func (value Comment) Get(_ int) Value { return EMPTY }
-func (value Float64) Get(index int) Value { return Int64(int64(value)) }
-func (value Int64) Get(index int) Value { return Bool(NthBitOfInt(int64(value), index)) }
-func (value Bool) Get(_ int) Value { return value }  // TODO should this return EMPTY or just itself??
-
-func (value Tag) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
-func (value String) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
-func (value Comment) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
-func (value Float64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
-func (value Int64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
-func (value Bool) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
-
-// A textual comment
-type Comment struct {
-	// TODO include location and source for editors
-	Comment string
-}
-
-func NewComment(_ Context, token string) Comment {
-	return Comment{token}
-}
-
-func NthBitOfInt(value int64, index int) bool {
-	bit := uint64(value) & (1<<uint(index))
-	return bit != 0
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Tuple
-/////////////////////////////////////////////////////////////////////////////
-
-type Tuple struct {
-	// TODO include location and source for editors
-	List []Value  // TODO change to elements
-}
-
-func NewTuple(values... Value) Tuple {
-	return Tuple{values}
-}
-
-func (tuple Tuple) Arity() int { return len(tuple.List) }
-func (tuple Tuple) Get(index int) Value {
-	if index >= 0 && index < len(tuple.List) {
-		return tuple.List[index]
-	}
-	return NAN  // TODO perhaps this should be an error or EMPTY
-}
-func (tuple Tuple) GetKeyValue(index int) (Tag,Value) {
-	return IntToTag(index), tuple.Get(index)
-}
-
-func (tuple *Tuple) Append(token Value) {
-	tuple.List = append(tuple.List, token)
-}
-
-/////////////////////////////////////////////////////////////////////////////
-//  Context
-/////////////////////////////////////////////////////////////////////////////
-
-// The Context interface represents the current state of parsing and translation.
-// It can provide: the name of the input and current depth and number of errors
-// TODO  change name to ParseContext
-type Context interface {
-	Location() Location
-	
-	Open()
-	Close()
-	EOL()
-	ReadRune() (rune, error)
-	LookAhead() rune
-	Log(level string, format string, args ...interface{})
-	Errors() int64
-}
-
-func Suffix(context Context) string {
-	return path.Ext(context.Location().SourceName())
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -253,114 +97,224 @@ type Grammar interface {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//  Printer
+//  Context
 /////////////////////////////////////////////////////////////////////////////
 
-type Printer interface {
-
-	PrintIndent(depth string, out StringFunction)
-	PrintSuffix(depth string, out StringFunction)
-	PrintScalarPrefix(depth string, out StringFunction)
-	PrintSeparator(depth string, out StringFunction)
-	PrintEmptyTuple(depth string, out StringFunction)
-	PrintNullaryOperator(depth string, tag Tag, out StringFunction)
-	PrintUnaryOperator(depth string, tag Tag, value Value, out StringFunction)
-	PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction)
-	PrintOpenTuple(depth string, tuple Value, out StringFunction) string
-	PrintCloseTuple(depth string, tuple Value, out StringFunction)
-	PrintHeadTag(value Tag, out StringFunction)
-	PrintTag(depth string, value Tag, out StringFunction)
-	PrintInt64(depth string, value int64, out StringFunction)
-	PrintFloat64(depth string, value float64, out StringFunction)
-	PrintString(depth string, value string, out StringFunction)
-	PrintBool(depth string, value bool, out StringFunction)
-	PrintComment(depth string, value Comment, out StringFunction)
+// The Context interface represents the current state of parsing and translation.
+// It can provide: the name of the input and current depth and number of errors
+// TODO  change name to ParseContext
+type Context interface {
+	Location() Location
+	Open()
+	Close()
+	EOL()
+	ReadRune() (rune, error)
+	LookAhead() rune
+	Log(level string, format string, args ...interface{})
+	Errors() int64
 }
 
-func PrintScalar(printer Printer, depth string, token Value, out StringFunction) {
-	printer.PrintScalarPrefix(depth, out)
-	switch token.(type) {
-	case Tag:
-		printer.PrintTag(depth, token.(Tag), out)
-	case String:
-		printer.PrintString(depth, string(token.(String)), out)
-	case Bool:
-		printer.PrintBool(depth, bool(token.(Bool)), out)
-	case Comment:
-		printer.PrintComment(depth, token.(Comment), out)
-	case Int64:
-		printer.PrintInt64(depth, int64(token.(Int64)), out)
-	case Float64:
-		printer.PrintFloat64(depth, float64(token.(Float64)), out)
-	case Tuple:
-		if token.Arity() == 0 {
-			printer.PrintEmptyTuple(depth, out)
-		} else {
-			log.Printf("ERROR unexpected tuple '%s", token);  // TODO return error or prevent from ever happening
-		}
-	default:
-		log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(token), token);  // TODO return error or prevent from ever happening
+func Suffix(context Context) string {
+	return path.Ext(context.Location().SourceName())
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//  
+/////////////////////////////////////////////////////////////////////////////
+
+var CONS_ATOM = Tag{"cons"}
+var NAN Float64 = Float64(math.NaN())
+var EMPTY Tuple = NewTuple()
+
+// TODO an atom is pretty subjective, should be grammar specific
+func IsAtom(value Value) bool {
+	return value.Arity() == 0
+}
+
+func ForallInArray(value Array, next func(value Value) error) error {  // Make this a method on the interface
+	ll := value.Arity()
+	for k := 0; k < ll; k+=1 {
+		err := next(value.Get(k))
+			if err != nil {
+				return err
+			}
 	}
+	return nil
 }
 
-func PrintTuple(printer Printer, depth string, tuple Value, out StringFunction) {
-	newDepth := printer.PrintOpenTuple(depth, tuple, out)
-	printer.PrintSuffix(depth, out)
-	ll := tuple.Arity()
-	first := false
-	if ll > 0 {
-		_, first = tuple.Get(0).(Tag)
+func ForallKeyValuesInArray(value Array, next func(index int, value Value) error) error {
+	ll := value.Arity()
+	for k := 0; k < ll; k+=1 {
+		err := next(k, value.Get(k))
+		if err != nil {
+			return err
+		}
 	}
-	ForallN(tuple, func (k int, value Value) error {
-		printer.PrintIndent(newDepth, out)
-		if first && k == 0 {
-			printer.PrintHeadTag(value.(Tag), out)
-		} else {
-			PrintExpression1(printer, newDepth, value, out)
-		}
-		if k < ll-1 {
-			printer.PrintSeparator(newDepth, out)
-		}
-		printer.PrintSuffix(depth, out)
-		return nil
-	})
-	printer.PrintCloseTuple(depth, tuple, out)
+	return nil
 }
 
-func PrintExpression(printer Printer, depth string, token Value, out StringFunction) {
-	printer.PrintIndent(depth, out)
-	PrintExpression1(printer, depth, token, out)
-	printer.PrintSuffix(depth, out)
-}
-
-func PrintExpression1(printer Printer, depth string, token Value, out StringFunction) {
-
-	if IsAtom(token) {
-		PrintScalar(printer, depth, token, out)
-	} else {
-		tuple := token
-		len := tuple.Arity()
-		if len == 0 {
-			printer.PrintScalarPrefix(depth, out)
-			printer.PrintEmptyTuple(depth, out)
-		} else {
-			head := tuple.Get(0)
+func  IsCons(value Value) bool {
+	if value.Arity() > 0 {
+		array, ok := value.(Array)
+		if ok {
+			head := array.Get(0)
 			tag, ok := head.(Tag)
-			//log.Printf("Tuple [%s] %d\n", tag, len)
-			if ok {  // TODO and head in a (binary) operator
-				switch len {
-				case 1:
-					printer.PrintNullaryOperator(depth, tag, out)
-				case 2:
-					printer.PrintUnaryOperator(depth, tag, tuple.Get(1), out)
-				case 3:
-					printer.PrintBinaryOperator(depth, tag, tuple.Get(1), tuple.Get(2), out)
-				default:
-					PrintTuple(printer, depth, tuple, out)
-				}
-			} else {
-				PrintTuple(printer, depth, tuple, out)
+			if ok && tag == CONS_ATOM {
+				return true
 			}
 		}
 	}
+	return false
+}
+
+func  Head(value Value) (Tag, bool) {
+	if value.Arity() > 0 {
+		if array, ok := value.(Array); ok {
+			first := array.Get(0)
+			head, ok := first.(Tag)
+			return head, ok
+		}
+	}
+	return Tag{""}, false
+}
+
+// TODO this may not make sense cons is embedded in another tuple
+func IsConsInTuple(value Value) bool {
+	if array, ok := value.(Array); ok {
+		return value.Arity() > 0 && IsCons(array.Get(0))
+	}
+	return false
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// 
+/////////////////////////////////////////////////////////////////////////////
+
+func (value Tag) Arity() int { return 0 }
+func (value String) Arity() int { return 0 }
+func (value Float64) Arity() int { return 0 }
+func (value Int64) Arity() int { return 0 }
+func (value Bool) Arity() int { return 0 }
+
+func (value Tag) ForallValues(next func(value Value) error) error { return ForallInArray(value, next) }
+func (value String) ForallValues(next func(value Value) error) error { return ForallInArray(value, next) }
+func (value Float64) ForallValues(next func(value Value) error) error { return ForallInArray(value, next) }
+func (value Int64) ForallValues(next func(value Value) error) error { return ForallInArray(value, next) }
+func (value Bool) ForallValues(next func(value Value) error) error { return ForallInArray(value, next) }
+func (value Tuple) ForallValues(next func(value Value) error) error { return ForallInArray(value, next) }
+
+func (value Tag) Get(index int) Value {
+	if index == 0 {
+		return String(value.Name)
+	}
+	return EMPTY
+}
+func (value String) Get(index int) Value {
+	if index >=0 && index < len(string(value)) {
+		return String(value[index])
+	}
+	return EMPTY
+}
+func (value Float64) Get(index int) Value { return Int64(int64(value)) }
+func (value Int64) Get(index int) Value { return Bool(NthBitOfInt(int64(value), index)) }
+func (value Bool) Get(_ int) Value { return value }  // TODO should this return EMPTY or just itself??
+
+func (value Tag) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value String) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value Float64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value Int64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+func (value Bool) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
+
+
+/*func (value Tag) ForallKeyValue(next func(key Tag, value Value)) {
+	next(Tag{"0"}, value.Get(0))
+}
+
+func (value String) ForallKeyValue(next func(key Tag, value Value)) {
+	for k, v := range string(value) {
+		next(IntToTag(k), String(v))
+	}
+}
+
+func (value Float64) ForallKeyValue(next func(key Tag, value Value)) {
+	next(Tag{"0"}, value.Get(0))
+}
+
+func (value Int64) ForallKeyValue(next func(key Tag, value Value)) {
+	for k:=0; k <= 64; k+=1 {
+		next(IntToTag(k), value.Get(k))
+	}
+}
+
+func (value Bool) ForallKeyValue(next func(key Tag, value Value)) {}
+*/
+
+////////////////////////////////////////////////////////////////////////////
+// Tuple
+/////////////////////////////////////////////////////////////////////////////
+
+type Tuple struct {
+	List []Value  // TODO change to elements
+}
+
+func NewTuple(values... Value) Tuple {
+	return Tuple{values}
+}
+
+func (tuple Tuple) Arity() int { return len(tuple.List) }
+func (tuple Tuple) Get(index int) Value {
+	if index >= 0 && index < len(tuple.List) {
+		return tuple.List[index]
+	}
+	return NAN  // TODO perhaps this should be an error or EMPTY
+}
+func (tuple Tuple) GetKeyValue(index int) (Tag,Value) {
+	return IntToTag(index), tuple.Get(index)
+}
+
+func (tuple *Tuple) Append(token Value) {
+	tuple.List = append(tuple.List, token)
+}
+
+/*
+func (tuple Tuple) ForallKeyValue(next func(key Tag, value Value)) {
+	for k, v := range tuple.List {
+		next(IntToTag(k), v)
+	}
+}
+*/
+
+/////////////////////////////////////////////////////////////////////////////
+// Basic conversion functions between scalar types
+/////////////////////////////////////////////////////////////////////////////
+
+func IntToString(value int64) string {
+	return strconv.FormatInt(value, 10)
+}
+
+func Int64ToString(value Int64) string {
+	return IntToString(int64(value))
+}
+
+func IntToTag(value int) Tag {
+	return Tag{IntToString(int64(value))}
+}
+
+func BoolToFloat(value Bool) float64 {
+	if bool(value) {
+		return 1.
+	}
+	return 0.0
+}
+
+func BoolToInt(value Bool) int64 {
+	if bool(value) {
+		return 1
+	}
+	return 0
+}
+
+func NthBitOfInt(value int64, index int) bool {
+	bit := uint64(value) & (1<<uint(index))
+	return bit != 0
 }

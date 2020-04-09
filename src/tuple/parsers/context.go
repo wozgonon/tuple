@@ -33,7 +33,7 @@ type ParserContext struct {
 	errors int64
 	scanner io.RuneScanner
 	logger LocationLogger
-	eol func(context Context)
+	eolCallback func(context Context)
 }
 
 func NewParserContext(sourceName string, scanner io.RuneScanner, logger LocationLogger) ParserContext {
@@ -66,7 +66,7 @@ func (context * ParserContext) Close() {
 }
 
 func (context * ParserContext) EOL() {
-	context.eol(context)
+	context.eolCallback(context)
 }
 
 func (context * ParserContext) ReadRune() (rune, error) {

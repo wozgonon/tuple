@@ -28,6 +28,7 @@ var StringType = reflect.TypeOf("")
 var TupleType = reflect.TypeOf(tuple.NewTuple())
 var TagType = reflect.TypeOf(Tag{""})
 var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
+var ArrayType = reflect.TypeOf(func (_ tuple.Array) {}).In(0)
 var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
 
 
@@ -80,7 +81,10 @@ func (call * ReflectCall) Call(context EvalContext, head string) (Value, error) 
 			return nil, err.(error)
 		}
 	}
-	result := reflectValues[0]
+	return reflectValueToValue(reflectValues[0])
+}
+
+func reflectValueToValue(result reflect.Value) (Value, error) {
 	switch result.Type() {
 	case IntType: return tuple.Int64(result.Int()), nil
 	case FloatType: return tuple.Float64(result.Float()), nil
