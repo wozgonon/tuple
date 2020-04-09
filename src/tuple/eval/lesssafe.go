@@ -214,8 +214,8 @@ func (_ * Os) GetKeyValue(index int) (Tag,Value) {
 	}
 }	
 
-func (oss * Os) ForallKeyValue(next func(key Tag, value Value)) {
-	for k:=0; k <= oss.Arity(); k+=1 {
+func (oss * Os) ForallKeyValue(next tuple.KeyValueFunction) {
+	for k:=0; k < oss.Arity(); k+=1 {
 		key, value := oss.GetKeyValue(k)
 		next(key, value)
 	}

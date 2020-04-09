@@ -63,16 +63,37 @@ func AddAllocatingStringFunctions(table * SymbolTable) {
 
 func AddAllocatingTupleFunctions(table * SymbolTable)  {
 
-	/*	table.Add("keys", func(_ EvalContext, value Value) Value {
-		value.ForallValues(func(value Value) error  {
-			return 
-		}
-		return tuple.NewTuple(values...)
-	})*/
+	table.Add("keys", func(context EvalContext, value Value) (Value, error) {
 
-	//table.Add("values", func(_ EvalContext, values Value) Value {
-	//	return tuple.NewTuple(values...)
-	//})
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			return nil, err
+		}
+		result := tuple.NewTuple()  // TODO not efficient use stream
+		if mmap, ok := evaluated.(tuple.Map); ok {
+			mmap.ForallKeyValue(func(k Tag, _ Value) {
+				result.Append(k)
+			})
+		} else {
+			for k := 0; k < evaluated.Arity(); k += 1 {
+				result.Append(tuple.IntToTag(k))
+			}
+		}
+		return result, nil
+	})
+
+	table.Add("values", func(context EvalContext, value Value) (Value, error) {
+		evaluated, err := Eval(context, value)
+		if err != nil {
+			return nil, err
+		}
+		result := tuple.NewTuple()  // TODO not efficient use stream
+		evaluated.ForallValues(func(value Value) error {
+			result.Append(value)
+			return nil
+		})
+		return result, nil
+	})
 
 	table.Add("list", func(_ EvalContext, values... Value) Value { return tuple.NewTuple(values...) })
 	// TODO table.Add("quote", func(value Value) Value { return NewTuple("quote", value) })

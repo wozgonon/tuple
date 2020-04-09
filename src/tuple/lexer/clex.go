@@ -110,8 +110,8 @@ func NewStyle(
 	
 	Separator string,
 	LineBreak string,
-	True string,
-	False string,
+	True string,  // Not used
+	False string, // Not used
 	OneLineComment rune,
 	ScalarPrefix string) Style {
 
@@ -411,6 +411,11 @@ func (printer Style) PrintCloseTuple(depth string, value Value, out StringFuncti
 
 func (printer Style) PrintHeadTag(tag Tag, out StringFunction) {
 	out(tag.Name)
+}
+
+func (printer Style) PrintKey(tag Tag, out StringFunction) {
+	out(tag.Name)
+	out(printer.KeyValueSeparator)
 }
 
 func (printer Style) PrintScalar(depth string, value Value, out StringFunction) {

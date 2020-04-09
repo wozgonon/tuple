@@ -37,6 +37,8 @@ type Printer interface {
 	PrintCloseTuple(depth string, tuple Value, out StringFunction)
 	PrintHeadTag(value Tag, out StringFunction)
 	PrintScalar(depth string, token Value, out StringFunction)
+
+	PrintKey(token Tag, out StringFunction)
 }
 
 func PrintScalar(printer Printer, depth string, value Value, out StringFunction) {
@@ -58,7 +60,6 @@ func PrintScalar(printer Printer, depth string, value Value, out StringFunction)
 	}
 }
 
-
 func PrintTuple(printer Printer, depth string, tuple Array, out StringFunction) {
 	newDepth := printer.PrintOpenTuple(depth, tuple, out)
 	printer.PrintSuffix(depth, out)
@@ -67,31 +68,21 @@ func PrintTuple(printer Printer, depth string, tuple Array, out StringFunction) 
 	if ll > 0 {
 		_, first = tuple.Get(0).(Tag)
 	}
-	if mapp, ok := tuple.(Map); ok {
-		mapp.ForallKeyValue(func (k Tag, value Value) {
-			printer.PrintHeadTag(k, out)
-			out (":") // TODO
+	k := 0
+	tuple.ForallValues(func (value Value) error {
+		printer.PrintIndent(newDepth, out)
+		if first && k == 0 {
+			printer.PrintHeadTag(value.(Tag), out)
+		} else {
 			PrintExpression1(printer, newDepth, value, out)
+		}
+		if k < ll-1 {
 			printer.PrintSeparator(newDepth, out)
-			printer.PrintSuffix(depth, out)
-		})
-	} else {
-		k := 0
-		tuple.ForallValues(func (value Value) error {
-			printer.PrintIndent(newDepth, out)
-			if first && k == 0 {
-				printer.PrintHeadTag(value.(Tag), out)
-			} else {
-				PrintExpression1(printer, newDepth, value, out)
-			}
-			if k < ll-1 {
-				printer.PrintSeparator(newDepth, out)
-			}
-			printer.PrintSuffix(depth, out)
-			k += 1
-			return nil
-		})
-	}
+		}
+		printer.PrintSuffix(depth, out)
+		k += 1
+		return nil
+	})
 	printer.PrintCloseTuple(depth, tuple, out)
 }
 
@@ -108,20 +99,30 @@ func PrintExpression1(printer Printer, depth string, token Value, out StringFunc
 		return
 	}
 	ll := token.Arity()
+
+	if mapp, ok := token.(Map); ok {
+		newDepth := printer.PrintOpenTuple(depth, token, out)
+		printer.PrintSuffix(depth, out)
+		mapp.ForallKeyValue(func (k Tag, value Value) {
+			printer.PrintIndent(newDepth, out)
+			//printer.PrintHeadTag(k, out)
+			printer.PrintKey(k, out)
+			PrintExpression1(printer, newDepth, value, out)
+			printer.PrintSeparator(newDepth, out)
+			printer.PrintSuffix(depth, out)
+		})
+		printer.PrintCloseTuple(depth, token, out)
+		return
+	}
+	
 	if array, ok := token.(Array); ok {
 		head := array.Get(0)
 		tag, ok := head.(Tag)
-		//log.Printf("Array [%s] %d\n", tag, len)
-		if ok {  // TODO and head in a (binary) operator
+		if ok && ll <= 3 {
 			switch ll {
-			case 1:
-				printer.PrintNullaryOperator(depth, tag, out)
-			case 2:
-				printer.PrintUnaryOperator(depth, tag, array.Get(1), out)
-			case 3:
-				printer.PrintBinaryOperator(depth, tag, array.Get(1), array.Get(2), out)
-			default:
-				PrintTuple(printer, depth, array, out)
+			case 1: printer.PrintNullaryOperator(depth, tag, out)
+			case 2: printer.PrintUnaryOperator(depth, tag, array.Get(1), out)
+			case 3: printer.PrintBinaryOperator(depth, tag, array.Get(1), array.Get(2), out)
 			}
 		} else {
 			PrintTuple(printer, depth, array, out)
@@ -130,26 +131,16 @@ func PrintExpression1(printer Printer, depth string, token Value, out StringFunc
 	}
 	newDepth := printer.PrintOpenTuple(depth, token, out)
 	printer.PrintSuffix(depth, out)
-	if mapp, ok := token.(Map); ok {
-		mapp.ForallKeyValue(func (k Tag, value Value) {
-			printer.PrintHeadTag(k, out)
-			out (":") // TODO
-			PrintExpression1(printer, newDepth, value, out)
+	k := 0
+	token.ForallValues(func (value Value) error {
+		printer.PrintIndent(newDepth, out)
+		PrintExpression1(printer, newDepth, value, out)
+		if k < ll-1 {
 			printer.PrintSeparator(newDepth, out)
-			printer.PrintSuffix(depth, out)
-		})
-	} else {
-		k := 0
-		token.ForallValues(func (value Value) error {
-			printer.PrintIndent(newDepth, out)
-			PrintExpression1(printer, newDepth, value, out)
-			if k < ll-1 {
-				printer.PrintSeparator(newDepth, out)
-			}
-			printer.PrintSuffix(depth, out)
-			k += 1
-			return nil
-		})
-	}
+		}
+		printer.PrintSuffix(depth, out)
+		k += 1
+		return nil
+	})
 	printer.PrintCloseTuple(depth, token, out)
 }
