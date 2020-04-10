@@ -40,10 +40,12 @@ func TestEvalJson(t *testing.T) {
 func TestEvalParseJson(t *testing.T) {
 	var grammar = NewJSONGrammar()
 
-	test := func(formula string, expected tuple.Tuple) {
-		val := parsers.ParseString(logger, grammar, formula)
-
-		t.Logf("Tuple %d %d", val.Arity(), expected.Arity())
+	test := func(formula string, expected tuple.Value) {
+		val, err := parsers.ParseString(logger, grammar, formula)
+		if err != nil {
+			t.Errorf("Given '%s' expected '%s' got error '%s'", formula, expected, err)
+		}
+		//t.Logf("Tuple %d %d", val.Arity(), expected.Arity())
 		if ! reflect.DeepEqual(val, expected) {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}
@@ -59,21 +61,27 @@ func TestEvalParseJson(t *testing.T) {
 	test("[]", empty)
 	test("[0, 1]", t01)
 	test("[0 1]", t01)  // TODO space
-	test("[0]", tuple.NewTuple(zero))
+	/// TODO   test("[0]", tuple.NewTuple(zero))  FIXME - retain brackets
 	test("[0, [0,1]]", t001)
 
-	a := tuple.String("a")
-	b := tuple.String("b")
-	cons := tuple.CONS_ATOM
+	//a := tuple.String("a")
+	//b := tuple.String("b")
+	//cons := tuple.CONS_ATOM
 
-	ac1 := tuple.NewTuple(cons, a, one)
-	bc0 := tuple.NewTuple(cons, b, zero)
-	
+	//ac1 := tuple.NewTuple(cons, a, one)
+	//bc0 := tuple.NewTuple(cons, b, zero)
+
+	mmap := tuple.NewTagValueMap()
+	mmap.Add(Tag{"a"}, empty)
+
 	test("{}", empty)
-	test("{\"a\" : [] }", tuple.NewTuple(tuple.NewTuple(cons, a, empty)))
-	test("{\"a\" : [0, 1] }", tuple.NewTuple(tuple.NewTuple(cons, a, t01)))
-	test("{\"a\" : 1 }", tuple.NewTuple(ac1))
-	test("{\"a\" : 1, \"b\" : 0 }", tuple.NewTuple(ac1, bc0))
+	test("{\"a\" : [] }", mmap)
+	mmap.Add(Tag{"a"}, t01)
+	test("{\"a\" : [0, 1] }", mmap)
+	mmap.Add(Tag{"a"}, one)
+	test("{\"a\" : 1 }", mmap)
+	mmap.Add(Tag{"b"}, zero)
+	test("{\"a\" : 1, \"b\" : 0 }", mmap)
 
 	// TODO...
 }

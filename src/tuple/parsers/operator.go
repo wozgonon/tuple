@@ -17,7 +17,7 @@
 package parsers
 
 import "strings"
-//import "fmt"
+import "fmt"
 
 /////////////////////////////////////////////////////////////////////////////
 //  An operator grammar
@@ -94,6 +94,7 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
 			}
 			Verbose(stack.context," REDUCE:\t'SPACE'\t'%s'\t'%s'\t...%d...   \n", tuple.List[0], tuple.List[1], tuple.Arity()) //, tuple.List==(*values))
 		} else {
+			// TODO this can fail, for instance if no brackets are registered
 			val1 := (*values) [lv - 2]
 			val2 := (*values) [lv - 1]
 			tuple = NewTuple(name, val1, val2)
@@ -101,13 +102,25 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
 		}
 		index = popped - 2
 	}
-	stack.Values.List = append((*values)[:lv-popped], tuple)
+
+	value, err := consFilter(tuple)  // TODO generalize this
+	if err != nil {
+		panic(fmt.Sprintf("TODO handle err: %s", err))
+		// TODO
+	}
+	if value == nil {
+		panic("Unexpected nil")
+	}
+	stack.Values.List = append((*values)[:lv-popped], value)
 	return index
 }
 
 
 func (stack * OperatorGrammar) PushValueWithoutInsertingMissingSepator(value Value) {
 	Verbose(stack.context,"PUSH VALUE\t'%s'\n", value)
+	if value == nil {
+		panic("Unexpected nil")
+	}
 	stack.Values.Append(value)
 	stack.wasOperator = false
 }
@@ -206,21 +219,32 @@ func (stack * OperatorGrammar) EndOfInput(next Next) error {
 		}
 		// TODO this is a hack to handle space separated expressions: 1+2 3*4 5
 		if len(stack.Values.List) == 1 {
-			err := next(stack.Values.List[0])
+			result, err := consFilterFinal(stack.Values.Get(0))
 			if err != nil {
+				stack.flush()
+				return err
+			}
+			err = next(result)
+			if err != nil {
+				stack.flush()
 				return err
 			}
 		} else {
 			err := next(stack.Values)
 			if err != nil {
+				stack.flush()
 				return err
 			}
 		}
 	}
+	stack.flush()
+	return nil
+}
+
+func (stack * OperatorGrammar) flush() {
 	stack.Values = NewTuple()
 	stack.operatorStack = make([]Tag, 0)
 	stack.wasOperator = true
-	return nil
 }
 
 func (stack * OperatorGrammar) PushOperator(operator Tag) {
@@ -385,7 +409,6 @@ func (operators *Operators) AddBracket(open string, close string) {
 
 func (operators *Operators) Precedence(token Tag) int {
 	value, ok := operators.precedence[token.Name]
-	//fmt.Printf("Precedence %s %s %s\n", token, value, ok)
 	if ok {
 		return value
 	}

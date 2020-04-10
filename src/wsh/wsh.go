@@ -16,6 +16,7 @@
 */
 package main
 
+import "tuple"
 import "tuple/eval"
 import "tuple/runner"
 import "tuple/parsers"
@@ -46,7 +47,7 @@ func main () {
 	//
 	inputGrammar := parsers.NewShellGrammar()
 	outputGrammar := inputGrammar
-	logger := runner.GetLogger(nil, *verbose)
+	logger := tuple.GetLogger(nil, *verbose)
 	global := eval.NewExecIfNotFound(logger)
 	table := eval.NewLessSafeSymbolTable(global)
 	table.Add("|", eval.Pipe)

@@ -21,11 +21,69 @@ import "io"
 var LISP_CONS_OPERATOR = "."
 
 /////////////////////////////////////////////////////////////////////////////
+
+func parse(context Context, operators Operators, style Style, next Next) error {
+	operatorGrammar := NewOperatorGrammar(context, &operators)
+
+	flush := func() bool {
+		if context.Location().Depth() == 0 && operatorGrammar.Values.Arity() == 1 && len(operatorGrammar.operatorStack) == 0  {
+			err := operatorGrammar.EndOfInput(next)
+			if err != nil {
+				Error(context, "%s", err)
+			}
+			return true
+		}
+		return false
+	}
+	for {
+		err := style.GetNext(context,
+			func() {
+				flush()
+				if context.Location().Depth() == 0 {
+					err := operatorGrammar.EndOfInput(next)
+					if err != nil {
+						Error(context, "%s", err)
+					}
+				}
+			},
+			func (open string) {
+				flush()
+				operatorGrammar.OpenBracket(Tag{open})
+			},
+			func (close string) {
+				flush()
+				operatorGrammar.CloseBracket(Tag{close})
+			},
+			func (tag Tag) {
+				flush()
+				if operators.Precedence(tag) != -1 {
+					operatorGrammar.PushOperator(tag)
+				} else {
+					operatorGrammar.PushValue(tag)
+				}
+			},
+			func (literal Value) {
+				flush()
+				operatorGrammar.PushValue(literal)
+			})
+		
+		if err == io.EOF {
+			return operatorGrammar.EndOfInput(next)
+		}
+		if err != nil {
+			return err
+		}			
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Lisp with conventional Prefix Grammar
 /////////////////////////////////////////////////////////////////////////////
 
 type LispGrammar struct {
-	parser SExpressionParser
+	style Style
+	operators Operators
+	//parser SExpressionParser
 }
 
 func (grammar LispGrammar) Name() string {
@@ -37,19 +95,31 @@ func (grammar LispGrammar) FileSuffix() string {
 }
 
 func (grammar LispGrammar) Parse(context Context, next Next) error {
-	return grammar.parser.Parse(context, next)
+	return parse(context, grammar.operators, grammar.style, next)
 }
 
-func (grammar LispGrammar) Print(object Value, out func(value string)) {
-	PrintExpression(grammar.parser.lexer, "", object, out)
+func (grammar LispGrammar) Print(object Value, next func(value string)) {
+	//PrintExpression(grammar.parser.lexer, "", object, out)
+	PrintExpression(&(grammar.operators), "", object, next)
 }
 
 func NewLispGrammar() Grammar {
-	style := NewStyle("", "", "  ",
-		OPEN_BRACKET, CLOSE_BRACKET, "", "", LISP_CONS_OPERATOR,
-		"", "\n", "true", "false", ';', "")
+	//style := NewStyle("", "", "  ",
+	//	OPEN_BRACKET, CLOSE_BRACKET, "", "", LISP_CONS_OPERATOR,
+	//	"", "\n", "true", "false", ';', "")
+
+
+	style := LispWithInfixStyle()
 	style.RecognizeNegative = true
-	return LispGrammar{NewSExpressionParser(style)}
+	//return LispGrammar{NewSExpressionParser(style)}
+
+	operators := NewOperators(style)
+	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
+	operators.AddInfix(CONS_ATOM.Name, 30)
+	operators.AddInfix(LISP_CONS_OPERATOR, 105) // CONS Operator
+	operators.AddInfix(SPACE_ATOM.Name, 20)  // TODO space???
+	return LispGrammar{style, operators}
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -70,43 +140,7 @@ func (grammar LispWithInfixGrammar) FileSuffix() string {
 }
 
 func (grammar LispWithInfixGrammar) Parse(context Context, next Next) error {
-
-	operators := grammar.operators
-	operatorGrammar := NewOperatorGrammar(context, &operators)
-	for {
-		err := grammar.style.GetNext(context,
-			func() {
-				if context.Location().Depth() == 0 {
-					err := operatorGrammar.EndOfInput(next)
-					if err != nil {
-						Error(context, "%s", err)
-					}
-				}
-			},
-			func (open string) {
-				operatorGrammar.OpenBracket(Tag{open})
-			},
-			func (close string) {
-				operatorGrammar.CloseBracket(Tag{close})
-			},
-			func (tag Tag) {
-				if operators.Precedence(tag) != -1 {
-					operatorGrammar.PushOperator(tag)
-				} else {
-					operatorGrammar.PushValue(tag)
-				}
-			},
-			func (literal Value) {
-				operatorGrammar.PushValue(literal)
-			})
-		
-		if err == io.EOF {
-			return operatorGrammar.EndOfInput(next)
-		}
-		if err != nil {
-			return err
-		}			
-	}
+	return parse(context, grammar.operators, grammar.style, next)
 }
 
 func (grammar LispWithInfixGrammar) Print(token Value, next func(value string)) {
@@ -125,9 +159,10 @@ func LispWithInfixStyle () Style {
 
 func NewLispWithInfixGrammar() Grammar {
 	style := LispWithInfixStyle()
-	
+	// TODO style.RecognizeNegative = false
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
+	operators.AddInfix(CONS_ATOM.Name, 30)
 	operators.AddInfix(LISP_CONS_OPERATOR, 105) // CONS Operator
 	return LispWithInfixGrammar{style, operators}
 }

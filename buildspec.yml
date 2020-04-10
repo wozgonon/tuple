@@ -26,6 +26,7 @@ phases:
       - echo CODEBUILD_SRC_DIR - $CODEBUILD_SRC_DIR
       - echo GOPATH - $GOPATH
       - echo GOROOT - $GOROOT
+      - echo sudo apt-get install jsonlint
   pre_build:
     run-as: root
     commands:

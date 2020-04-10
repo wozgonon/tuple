@@ -100,7 +100,7 @@ func AddStandardCOperators(operators *Operators) {
 	operators.AddInfix(SPACE_ATOM.Name, 20)  // TODO space???
 }
 
-func ParseString(logger LocationLogger, grammar Grammar, expression string) Value {
+func ParseString(logger LocationLogger, grammar Grammar, expression string) (Value, error) {
 	var result Value = tuple.EMPTY // TODO Void?
 	pipeline := func(value Value) error {
 		result = value
@@ -109,8 +109,15 @@ func ParseString(logger LocationLogger, grammar Grammar, expression string) Valu
 
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := NewParserContext("<parse>", reader, logger)
-	grammar.Parse(&context, pipeline)
-	return result
+	err := grammar.Parse(&context, pipeline)
+	return result, err
 }
 
+func RunParser(grammar Grammar, expression string, logger LocationLogger, next Next) (Context, error) {
+
+	reader := bufio.NewReader(strings.NewReader(expression))
+	context := NewParserContext("<eval>", reader, logger)
+	err := grammar.Parse(&context, next)
+	return &context, err
+}
 

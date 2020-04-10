@@ -1,6 +1,7 @@
 package main
 
 import (
+	"tuple"
 	"tuple/runner"
 	"tuple/eval"
 	"tuple/parsers"
@@ -35,7 +36,7 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	logger := runner.GetLogger(nil, *verbose)
+	logger := tuple.GetLogger(nil, *verbose)
 	outputGrammar := parsers.NewInfixExpressionGrammar()
 	var symbols * SymbolTable = nil
 	global := eval.NewErrorIfFunctionNotFound(logger)

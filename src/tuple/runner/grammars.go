@@ -110,7 +110,7 @@ func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 	table.Add("ast2", func (context eval.EvalContext, grammarFileSuffix string, expression string) (Value, error) {
 		grammar, ok := grammars.FindBySuffix(grammarFileSuffix)
 		if ok {
-			return parsers.ParseString(context.Logger(), grammar, expression), nil
+			return parsers.ParseString(context.Logger(), grammar, expression)
 		} else {
 			context.Log("ERROR", "No such grammar '%s'", grammarFileSuffix)
 			return nil, errors.New("No such grammar")  //tuple.EMPTY // TODO eror

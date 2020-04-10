@@ -22,6 +22,7 @@ import "strconv"
 import "math"
 import "unicode/utf8"
 import "tuple"
+//import "reflect"
 
 type Grammar = tuple.Grammar
 type Context = tuple.Context
@@ -370,7 +371,7 @@ func (printer Style) PrintSuffix(depth string, out StringFunction) {
 }
 
 func (printer Style) PrintSeparator(depth string, out StringFunction) {
-	//out(printer.Separator)
+	out(printer.Separator)
 }
 
 func (printer Style) PrintEmptyTuple(depth string, out StringFunction) {
@@ -391,17 +392,24 @@ func (printer Style) PrintBinaryOperator(depth string, tag Tag, value1 Value, va
 }
 
 func (printer Style) PrintOpenTuple(depth string, value Value, out StringFunction) string {
-	if tuple.IsConsInTuple(value) {
+
+	//_, isArray := value.(tuple.Array)
+	_, isMap := value.(tuple.Map)
+	if isMap {// && ! isArray {
 		out(printer.Open2)
+		//out(reflect.TypeOf(value).Name())
 	} else {
 		out(printer.Open)
+		//out(reflect.TypeOf(value).Name())
 	}
 	return depth + "  "
 }
 
 func (printer Style) PrintCloseTuple(depth string, value Value, out StringFunction) {
 	printer.PrintIndent(depth, out)
-	if tuple.IsConsInTuple(value) {
+	_, isArray := value.(tuple.Array)
+	_, isMap := value.(tuple.Map)
+	if isMap && ! isArray {
 		out(printer.Close2)
 	} else {
 		out(printer.Close)

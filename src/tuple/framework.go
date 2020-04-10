@@ -167,28 +167,6 @@ func  Head(value Value) (Tag, bool) {
 	return Tag{""}, false
 }
 
-func  IsCons(value Value) bool {
-	if value.Arity() > 0 {
-		array, ok := value.(Array)
-		if ok {
-			head := array.Get(0)
-			tag, ok := head.(Tag)
-			if ok && tag == CONS_ATOM {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// TODO this may not make sense cons is embedded in another tuple
-func IsConsInTuple(value Value) bool {
-	if array, ok := value.(Array); ok {
-		return value.Arity() > 0 && IsCons(array.Get(0))
-	}
-	return false
-}
-
 /////////////////////////////////////////////////////////////////////////////
 // 
 /////////////////////////////////////////////////////////////////////////////
@@ -276,7 +254,17 @@ func (tuple Tuple) GetKeyValue(index int) (Tag,Value) {
 }
 
 func (tuple *Tuple) Append(token Value) {
+	if token == nil {
+		panic("Unexpected nil value")
+	}
 	tuple.List = append(tuple.List, token)
+}
+
+func (tuple *Tuple) Set(index int, token Value) {
+	if token == nil {
+		panic("Unexpected nil value")
+	}
+	tuple.List[index] = token
 }
 
 /*
@@ -286,6 +274,37 @@ func (tuple Tuple) ForallKeyValue(next func(key Tag, value Value)) {
 	}
 }
 */
+/////////////////////////////////////////////////////////////////////////////
+
+type TagValueMap struct {
+	elements map[Tag]Value
+}
+
+func NewTagValueMap() TagValueMap {
+	return TagValueMap{make(map[Tag]Value)}
+}
+
+func (mapp * TagValueMap) Add(key Tag, value Value) { mapp.elements[key] = value }
+
+func (mapp TagValueMap) Arity() int { return len(mapp.elements) }
+
+func (mapp TagValueMap) ForallKeyValue(next KeyValueFunction) {
+	for k, v := range mapp.elements {
+		next(k, v)
+	}
+}
+
+func (mapp TagValueMap) ForallValues(next func(value Value) error) error {
+	for _, v := range mapp.elements {
+		err := next(v)
+		if err != nil {
+			return nil
+		}
+	}
+	return nil
+}
+
+/////////////////////////////////////////////////////////////////////////////
 
 // A Finite Stream it implements the Value interface and so can be used in place of a map or an array collection.
 // It is an important abstraction for efficiency, as it avoids having to copy data into arrays or maps.

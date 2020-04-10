@@ -3,7 +3,6 @@ package parsers_test
 import (
 	"testing"
 	"tuple"
-	"tuple/parsers"
 	"math"
 )
 
@@ -23,7 +22,10 @@ func testIntExpression(t *testing.T, grammar tuple.Grammar, formula string, expe
 
 func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, expected float64) {
 	//t.Logf("TRY: %s==%f", formula, expected)
-	val,_ := ParseAndEval(&symbols, grammar, formula)
+	val,err := ParseAndEval(&symbols, grammar, formula)
+	if err != nil {
+		t.Errorf("Given '%s' expected got error %s", formula, err)
+	}
 	floatExpected := tuple.Float64(expected)
 	floatVal, ok := val.(tuple.Float64)
 	if ok {
@@ -38,19 +40,21 @@ func testFloatExpression(t *testing.T, grammar tuple.Grammar, formula string, ex
 func TestLispCons(t *testing.T) {
 
 	test := func(formula string) {
-		c := parsers.ParseString(logger, NewLispGrammar(), formula)
-		if ! tuple.IsConsInTuple(c) {
-			t.Errorf("Given '%s' expected a cons cell got %s", formula, c)
+		var grammar = NewLispGrammar()
+		c,err := ParseAndEval(&symbols, grammar, formula)
+		if err != nil {
+			t.Errorf("Given '%s' expected got error %s", formula, err)
 		}
-		if array, ok := c.(tuple.Array); ! ok || ! tuple.IsCons(array.Get(0)) {
-			t.Errorf("Expected a cons cell got %s", c)
+		if b, ok := c.(tuple.Bool); !ok || ! bool(b) {
+			t.Errorf("Given '%s' expected true got %s", formula, c)
 		}
 	}
 	//test("a.b")
 	// test("((cons a b) ())")  // TODO investigate
-	test("(a.b)")
-	test("(a.b c.d)")
-	test("(a.b c.d e.f)")
+	
+	test("(ismap (a.b))")
+	test("(ismap (a.b c.d))")
+	test("(ismap (a.b c.d e.f))")
 }
 
 func TestEvalLisp1(t *testing.T) {

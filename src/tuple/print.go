@@ -103,14 +103,25 @@ func PrintExpression1(printer Printer, depth string, token Value, out StringFunc
 	if mapp, ok := token.(Map); ok {
 		newDepth := printer.PrintOpenTuple(depth, token, out)
 		printer.PrintSuffix(depth, out)
+
+		sep := false
+		
 		mapp.ForallKeyValue(func (k Tag, value Value) {
+
+			if sep {
+				printer.PrintSeparator(newDepth, out)
+				printer.PrintSuffix(depth, out)
+			}
 			printer.PrintIndent(newDepth, out)
 			//printer.PrintHeadTag(k, out)
 			printer.PrintKey(k, out)
 			PrintExpression1(printer, newDepth, value, out)
-			printer.PrintSeparator(newDepth, out)
-			printer.PrintSuffix(depth, out)
+			if ! sep {
+				//printer.PrintSuffix(depth, out)
+				sep = true
+			}
 		})
+		printer.PrintSuffix(depth, out)
 		printer.PrintCloseTuple(depth, token, out)
 		return
 	}

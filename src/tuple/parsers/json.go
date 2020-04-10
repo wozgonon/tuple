@@ -22,6 +22,7 @@ package parsers
 
 type JSONGrammar struct {
 	Style
+	operators Operators
 }
 
 func (grammar JSONGrammar) Name() string {
@@ -33,12 +34,14 @@ func (grammar JSONGrammar) FileSuffix() string {
 }
 
 func (grammar JSONGrammar) Parse(context Context, next Next) error {
-	parser := NewSExpressionParser(grammar.Style)
-	return parser.Parse(context, next)
+	return parse(context, grammar.operators, grammar.Style, next)
+	//parser := NewSExpressionParser(grammar.Style)
+	//return parser.Parse(context, next)
 }
 
-func (grammar JSONGrammar) Print(object Value, out func(value string)) {
-	PrintExpression(grammar, "", object, out)  // TODO Use Printer
+func (grammar JSONGrammar) Print(object Value, next func(value string)) {
+	PrintExpression(grammar, "", object, next)  // TODO Use Printer
+	//PrintExpression(&(grammar.operators), "", object, next)
 }
 
 var JSON_CONS_OPERATOR = ":"
@@ -46,8 +49,28 @@ var JSON_CONS_OPERATOR = ":"
 func NewJSONGrammar() Grammar {
 	style := NewStyle("", "", "  ",
 		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_BRACE, CLOSE_BRACE, JSON_CONS_OPERATOR,
-		",", "\n", "true", "false", '%', "") // prolog, sql '--' for 
-	return JSONGrammar{style}
+		",", "\n", "true", "false", '%', "") // prolog, sql '--' for   // TODO remove comment %
+	//return JSONGrammar{style}
+
+	style.RecognizeNegative = true
+
+	operators := NewOperators(style)
+	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
+	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
+	//operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
+	operators.AddInfix(CONS_ATOM.Name, 30)
+	operators.AddInfix(";", 10)
+	operators.AddInfix(SPACE_ATOM.Name, 20)  // TODO space???
+	return JSONGrammar{style, operators}
+
+}
+
+func (printer JSONGrammar) PrintKey(tag Tag, out StringFunction) {
+	out("\"")
+	out(tag.Name)
+	out("\"")
+	out(printer.KeyValueSeparator)
+	out(" ")
 }
 
 func (printer JSONGrammar) PrintNullaryOperator(depth string, tag Tag, out StringFunction) {
@@ -62,7 +85,7 @@ func (printer JSONGrammar) PrintSeparator(depth string, out StringFunction) {
 	out(printer.Style.Separator)
 }
 
-func (printer JSONGrammar) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {
+/*func (printer JSONGrammar) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {
 
 	if tag == CONS_ATOM {  // TODO This can go
 		newDepth := depth + "  "
@@ -79,4 +102,4 @@ func (printer JSONGrammar) PrintBinaryOperator(depth string, tag Tag, value1 Val
 	} else {
 		PrintTuple(&printer, depth, NewTuple(tag, value1, value2), out)
 	}
-}
+}*/

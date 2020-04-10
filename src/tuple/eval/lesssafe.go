@@ -176,7 +176,7 @@ func (exec * ExecIfNotFound) Logger() LocationLogger {
 }
 
 func (exec * ExecIfNotFound) Root() Value {
-	root := NewTagValueMap()
+	root := tuple.NewTagValueMap()
 	os := &Os{}
 	root.Add(Tag{"os"}, os)
 	return os
@@ -248,31 +248,4 @@ func (array StringArray) GetKeyValue(index int) (Tag,Value) {
 }
 func (array StringArray) ForallValues(next func(value Value) error) error { return tuple.ForallInArray(array, next) }
 
-
-type TagValueMap struct {
-	elements map[Tag]Value
-}
-
-func NewTagValueMap() TagValueMap {
-	return TagValueMap{make(map[Tag]Value)}
-}
-
-func (mapp * TagValueMap) Add(key Tag, value Value) { mapp.elements[key] = value }
-
-func (mapp TagValueMap) Arity() int { return len(mapp.elements) }
-
-func (mapp TagValueMap) ForallKeyValue(next tuple.KeyValueFunction) {
-	for k, v := range mapp.elements {
-		next(k, v)
-	}
-}
-func (mapp TagValueMap) ForallValues(next func(value Value) error) error {
-	for _, v := range mapp.elements {
-		err := next(v)
-		if err != nil {
-			return nil
-		}
-	}
-	return nil
-}
 

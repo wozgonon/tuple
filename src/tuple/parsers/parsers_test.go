@@ -34,7 +34,7 @@ var NewTuple = tuple.NewTuple
 var Error = tuple.Error
 var Verbose = tuple.Verbose
 
-var GetLogger = runner.GetLogger
+var GetLogger = tuple.GetLogger
 
 var NewJSONGrammar = parsers.NewJSONGrammar
 var NewInfixExpressionGrammar = parsers.NewInfixExpressionGrammar

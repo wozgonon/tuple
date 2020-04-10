@@ -179,7 +179,7 @@ func (exec * ErrorIfFunctionNotFound) Logger() LocationLogger {
 }
 
 func (exec * ErrorIfFunctionNotFound) Root() Value {
-	root := NewTagValueMap()
+	root := tuple.NewTagValueMap()
 	root.Add(Tag{"abc"}, tuple.EMPTY)
 	root.Add(Tag{"def"}, tuple.EMPTY)
 	return tuple.EMPTY  //root  // TODO AllSymbols()

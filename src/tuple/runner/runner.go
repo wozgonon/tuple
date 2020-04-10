@@ -22,7 +22,6 @@ import 	"fmt"
 import 	"bufio"
 import 	"os"
 import "errors"
-import 	"strings"
 import "path"
 import "flag"
 import "tuple/eval"
@@ -37,7 +36,6 @@ type Int64 = tuple.Int64
 type LocationLogger = tuple.LocationLogger
 
 var NewParserContext = parsers.NewParserContext
-var GetLogger = tuple.GetLogger
 const STDIN = "<stdin>"
 const PROMPT = "$ "
 
@@ -79,7 +77,7 @@ func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) 
 		result = evaluated
 		return nil
 	}
-	ctx, err := RunParser(grammar, expression, GetLogger(nil, false), pipeline)  // TODO
+	ctx, err := parsers.RunParser(grammar, expression, context.Logger(), pipeline)
 	if ctx.Errors() > 0 {
 		return nil, errors.New("Errors during parse")
 	}
@@ -87,14 +85,6 @@ func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) 
 		return nil, err
 	}
 	return result, nil
-}
-
-func RunParser(grammar Grammar, expression string, logger LocationLogger, next Next) (Context, error) {
-
-	reader := bufio.NewReader(strings.NewReader(expression))
-	context := NewParserContext("<eval>", reader, logger)
-	err := grammar.Parse(&context, next)
-	return &context, err
 }
 
 func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) int64 {

@@ -62,7 +62,7 @@ func main() {
 
 	outputGrammar := grammars.FindBySuffixOrPanic(*out)
 	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
-	logger := runner.GetLogger(loggerGrammar, *verbose)
+	logger := tuple.GetLogger(loggerGrammar, *verbose)
 
 	//
 	//  Set up the translator pipeline.
@@ -105,7 +105,7 @@ func main() {
 		//
 		//  Set up the translator pipeline.
 		//
-		context , err := runner.RunParser(inputGrammar, expression, logger, pipeline)
+		context , err := parsers.RunParser(inputGrammar, expression, logger, pipeline)
 		if err != nil || context.Errors() > 0 {
 			os.Exit(1)
 		}

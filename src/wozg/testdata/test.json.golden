@@ -1,31 +1,27 @@
 {
-    "menu" :
-    {
-            "id" : "file",
-            "value" : "File",
-            "a" :
-        [
-          1,
-          2,
-          3
-        ],
-            "popup" :
+  "menu": {
+    "id": "file",
+    "value": "File",
+    "a": [
+      1,
+      2,
+      3
+    ],
+    "popup": {
+      "menuitem": [
         {
-                    "menuitem" :
-            [
-              {
-                                "value" : "New",
-                                "onclick" : "CreateNewDoc()"
-              },
-              {
-                                "value" : "Open",
-                                "onclick" : "OpenDoc()"
-              },
-              {
-                                "value" : "Close",
-                                "onclick" : "CloseDoc()"
-              }
-            ]
+          "value": "New",
+          "onclick": "CreateNewDoc()"
+        },
+        {
+          "value": "Open",
+          "onclick": "OpenDoc()"
+        },
+        {
+          "onclick": "CloseDoc()",
+          "value": "Close"
         }
+      ]
     }
+  }
 }

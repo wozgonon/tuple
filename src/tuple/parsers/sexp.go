@@ -66,7 +66,11 @@ func (parser SExpressionParser) parserKeyValueOperator(context Context, tuple *T
 				Verbose(context,"** OPEN")
 				tuple1 := NewTuple()
 				parser.parseSExpressionTuple(context, &tuple1)
-				right = tuple1
+				value, err := consFilter(tuple1)
+				if err != nil {
+					Error(context, "%s", err)
+				}
+				right = value
 			},
 			func (close string) {
 				Error(context,"Unexpected close bracket '%s'", close)
@@ -109,14 +113,19 @@ func (parser SExpressionParser) parseSExpressionTuple(context Context, tuple *Tu
 					Error(context, "%s", err)
 					return
 				}
-				tuple.Append(subTuple)
+				value, err := consFilter(subTuple)
+				if err != nil {
+					Error(context, "%s", err)
+					return
+				}
+				tuple.Append(value)
 			},
 			func (close string) {
 				closeBracketFound = true
 			},
 			func (tag Tag) {
 				Verbose(context, "TAG tag=%s kv=%s", tag, parser.keyValueSeparator)
-				if tag == CONS_ATOM {
+				if tag.Name == parser.keyValueSeparator {
 					err := parser.parserKeyValueOperator(context, tuple)
 					if err != nil {
 						Error(context, "%s", err)
@@ -151,7 +160,12 @@ func (parser SExpressionParser) parse(context Context, next Next) (error) {
 		func (open string) {
 			tuple := NewTuple()
 			parser.parseSExpressionTuple(context, &tuple)
-			next(tuple)
+			tuple1, err := consFilterFinal(tuple)
+			if err != nil {
+				Error(context, "%s", err)
+			} else {
+				next(tuple1)
+			}
 		},
 		func (close string) {
 			Error(context,"Unexpected close bracket '%s'", close)
