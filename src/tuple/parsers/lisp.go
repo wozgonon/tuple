@@ -22,6 +22,14 @@ var LISP_CONS_OPERATOR = "."
 
 /////////////////////////////////////////////////////////////////////////////
 
+func LispStyle () Style {
+	return NewStyle("", "", "  ",
+	OPEN_BRACKET, CLOSE_BRACKET, "", "", LISP_CONS_OPERATOR, 
+		"", "\n", "true", "false", ';', "")
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
 func parse(context Context, operators Operators, style Style, next Next) error {
 	operatorGrammar := NewOperatorGrammar(context, &operators)
 
@@ -83,7 +91,6 @@ func parse(context Context, operators Operators, style Style, next Next) error {
 type LispGrammar struct {
 	style Style
 	operators Operators
-	//parser SExpressionParser
 }
 
 func (grammar LispGrammar) Name() string {
@@ -99,20 +106,12 @@ func (grammar LispGrammar) Parse(context Context, next Next) error {
 }
 
 func (grammar LispGrammar) Print(object Value, next func(value string)) {
-	//PrintExpression(grammar.parser.lexer, "", object, out)
 	PrintExpression(&(grammar.operators), "", object, next)
 }
 
 func NewLispGrammar() Grammar {
-	//style := NewStyle("", "", "  ",
-	//	OPEN_BRACKET, CLOSE_BRACKET, "", "", LISP_CONS_OPERATOR,
-	//	"", "\n", "true", "false", ';', "")
-
-
-	style := LispWithInfixStyle()
+	style := LispStyle()
 	style.RecognizeNegative = true
-	//return LispGrammar{NewSExpressionParser(style)}
-
 	operators := NewOperators(style)
 	operators.AddBracket(OPEN_BRACKET, CLOSE_BRACKET)
 	operators.AddInfix(CONS_ATOM.Name, 30)
@@ -147,19 +146,9 @@ func (grammar LispWithInfixGrammar) Print(token Value, next func(value string)) 
 	PrintExpression(&(grammar.operators), "", token, next)
 }
 
-func LispWithInfixStyle () Style {
-	style := NewStyle("", "", "  ",
-	OPEN_BRACKET, CLOSE_BRACKET, "", "", LISP_CONS_OPERATOR, 
-		"", "\n", "true", "false", ';', "")
-
-	// TODO infix should not have this
-	style.RecognizeNegative = true
-	return style
-}
-
 func NewLispWithInfixGrammar() Grammar {
-	style := LispWithInfixStyle()
-	// TODO style.RecognizeNegative = false
+	style := LispStyle()
+	style.RecognizeNegative = true	// TODO style.RecognizeNegative = false
 	operators := NewOperators(style)
 	AddStandardCOperators(&operators)
 	operators.AddInfix(CONS_ATOM.Name, 30)

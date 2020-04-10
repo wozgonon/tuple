@@ -19,7 +19,7 @@ func testGetNext(t *testing.T, logger tuple.LocationLogger, expression string, e
 	context := parsers.NewParserContext("<eval>", reader, logger)
 
 	result := NO_RESULT
-	style := parsers.LispWithInfixStyle()
+	style := parsers.LispStyle()
 	err := style.GetNext(&context,
 		func() {},
 		func(open string) {
@@ -78,7 +78,7 @@ func testLex1(t *testing.T, logger tuple.LocationLogger) {
 func TestCLanguageOperators(t *testing.T) {
 
 	logger := GetLogger(parsers.NewLispGrammar(), false)
-	operators := parsers.NewOperators(parsers.LispWithInfixStyle())
+	operators := parsers.NewOperators(parsers.LispStyle())
 	parsers.AddStandardCOperators(&operators)
 	operators.Forall(func(operator string) {
 		if operator != " " && operator != ";" && operator != "," {  // TODO handle space
