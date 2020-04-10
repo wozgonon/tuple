@@ -206,30 +206,6 @@ func (value Float64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index
 func (value Int64) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
 func (value Bool) GetKeyValue(index int) (Tag, Value) { return IntToTag(index), value.Get(index) }
 
-
-/*func (value Tag) ForallKeyValue(next func(key Tag, value Value)) {
-	next(Tag{"0"}, value.Get(0))
-}
-
-func (value String) ForallKeyValue(next func(key Tag, value Value)) {
-	for k, v := range string(value) {
-		next(IntToTag(k), String(v))
-	}
-}
-
-func (value Float64) ForallKeyValue(next func(key Tag, value Value)) {
-	next(Tag{"0"}, value.Get(0))
-}
-
-func (value Int64) ForallKeyValue(next func(key Tag, value Value)) {
-	for k:=0; k <= 64; k+=1 {
-		next(IntToTag(k), value.Get(k))
-	}
-}
-
-func (value Bool) ForallKeyValue(next func(key Tag, value Value)) {}
-*/
-
 ////////////////////////////////////////////////////////////////////////////
 // Tuple
 /////////////////////////////////////////////////////////////////////////////
@@ -267,13 +243,6 @@ func (tuple *Tuple) Set(index int, token Value) {
 	tuple.List[index] = token
 }
 
-/*
-func (tuple Tuple) ForallKeyValue(next func(key Tag, value Value)) {
-	for k, v := range tuple.List {
-		next(IntToTag(k), v)
-	}
-}
-*/
 /////////////////////////////////////////////////////////////////////////////
 
 type TagValueMap struct {
@@ -367,7 +336,6 @@ func BoolToInt(value Bool) int64 {
 	}
 	return 0
 }
-
 
 func Quote(value string, out func(value string)) {
 	out(DOUBLE_QUOTE)

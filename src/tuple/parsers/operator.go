@@ -316,6 +316,7 @@ type Operators struct {
 	evalName map[string]Tag
 }
 
+// TODO replace some of the maps in Operators with a class
 type Operator struct {
 	tag Tag
 	precedence int
@@ -448,11 +449,9 @@ func (printer Operators) PrintBinaryOperator(depth string, tag Tag, value1 Value
 		
 		PrintExpression1(printer, newDepth, value1, out)
 
-		//printer.PrintIndent(newDepth, out)
 		out(" ")
 		out(tag.Name)
 		out(" ")
-		//printer.PrintSuffix(newDepth, out)
 
 		PrintExpression1(printer, newDepth, value2, out)
 		printer.PrintSuffix(newDepth, out)

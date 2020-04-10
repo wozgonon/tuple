@@ -99,10 +99,3 @@ func isCons(value Value) bool {
 	return false
 }
 
-func isConsInTuple(value Value) bool {
-	if array, ok := value.(tuple.Array); ok {
-		return value.Arity() > 0 && isCons(array.Get(0))
-	}
-	return false
-}
-

@@ -16,6 +16,8 @@
 */
 package parsers
 
+import "tuple"
+
 /////////////////////////////////////////////////////////////////////////////
 // JSON Grammar
 /////////////////////////////////////////////////////////////////////////////
@@ -35,13 +37,10 @@ func (grammar JSONGrammar) FileSuffix() string {
 
 func (grammar JSONGrammar) Parse(context Context, next Next) error {
 	return parse(context, grammar.operators, grammar.Style, next)
-	//parser := NewSExpressionParser(grammar.Style)
-	//return parser.Parse(context, next)
 }
 
 func (grammar JSONGrammar) Print(object Value, next func(value string)) {
 	PrintExpression(grammar, "", object, next)  // TODO Use Printer
-	//PrintExpression(&(grammar.operators), "", object, next)
 }
 
 var JSON_CONS_OPERATOR = ":"
@@ -50,10 +49,7 @@ func NewJSONGrammar() Grammar {
 	style := NewStyle("", "", "  ",
 		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_BRACE, CLOSE_BRACE, JSON_CONS_OPERATOR,
 		",", "\n", "true", "false", '%', "") // prolog, sql '--' for   // TODO remove comment %
-	//return JSONGrammar{style}
-
 	style.RecognizeNegative = true
-
 	operators := NewOperators(style)
 	operators.AddBracket(OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET)
 	operators.AddBracket(OPEN_BRACE, CLOSE_BRACE)
@@ -66,9 +62,7 @@ func NewJSONGrammar() Grammar {
 }
 
 func (printer JSONGrammar) PrintKey(tag Tag, out StringFunction) {
-	out("\"")
-	out(tag.Name)
-	out("\"")
+	tuple.Quote(tag.Name, out)
 	out(printer.KeyValueSeparator)
 	out(" ")
 }
@@ -84,22 +78,3 @@ func (printer JSONGrammar) PrintUnaryOperator(depth string, tag Tag, value Value
 func (printer JSONGrammar) PrintSeparator(depth string, out StringFunction) {
 	out(printer.Style.Separator)
 }
-
-/*func (printer JSONGrammar) PrintBinaryOperator(depth string, tag Tag, value1 Value, value2 Value, out StringFunction) {
-
-	if tag == CONS_ATOM {  // TODO This can go
-		newDepth := depth + "  "
-		printer.PrintIndent(depth, out)
-		PrintExpression1(printer, newDepth, value1, out)
-		out(" :")
-		if _, ok := value2.(Tuple); ok {
-			printer.PrintSuffix(newDepth, out)
-			printer.PrintIndent(newDepth, out)
-		} else {
-			out (" ")
-		}
-		PrintExpression1(printer, newDepth, value2, out)
-	} else {
-		PrintTuple(&printer, depth, NewTuple(tag, value1, value2), out)
-	}
-}*/
