@@ -53,8 +53,7 @@ func testFiles(t *testing.T) {
 	count := 0
 	files := []string{"../wozg/testdata/test.l"}
 	grammars := runner.NewGrammars(parsers.NewLispGrammar())
-	runner1 := runner.NewRunner(safeEvalContext, logger)
-	errors := runner1.RunFiles(&grammars, files, func (next tuple.Value) error {
+	errors := runner.RunFiles(&grammars, logger, files, func (next tuple.Value) error {
 		count += 1
 		return nil
 	})

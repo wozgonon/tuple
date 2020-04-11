@@ -93,7 +93,7 @@ func (grammars * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
 	return syntax
 }
 
-func (grammars * Grammars) AddSafeGrammarFunctions(table * Runner) {
+func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 
 	table.AddToRoot(tuple.Tag{"grammars"}, grammars)
 

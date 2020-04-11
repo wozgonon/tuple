@@ -77,7 +77,7 @@ func main() {
 	logger := tuple.GetLogger(loggerGrammar, *verbose)
 
 	finder := eval.NewErrorIfFunctionNotFound()
-	runner1 := runner.NewRunner(finder, logger)
+	runner1 := eval.NewRunner(finder, logger)
 
 	//
 	//  Set up the translator pipeline.
@@ -111,7 +111,7 @@ func main() {
 		//
 		//  Run the translators over all the input files.
 		//
-		errors := runner1.RunFiles(&grammars, args, pipeline)
+		errors := runner.RunFiles(&grammars, logger, args, pipeline)
 
 		//
 		//  Exit with non-zero response code if any errors occurred.

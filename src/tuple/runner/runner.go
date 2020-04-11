@@ -21,7 +21,6 @@ import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
-import 	"reflect"
 import "errors"
 import "path"
 import "flag"
@@ -59,110 +58,17 @@ func promptOnEOL(context Context) {
 
 func NewSafeEvalContext(logger LocationLogger) eval.EvalContext {
 	ifNotFound := eval.NewErrorIfFunctionNotFound()
-	runner := NewRunner(ifNotFound, logger)
+	runner := eval.NewRunner(ifNotFound, logger)
 	eval.AddSafeFunctions(&runner)
 	return &runner
 }
 
 func NewHarmlessEvalContext(logger LocationLogger) eval.EvalContext {
 	ifNotFound := eval.NewErrorIfFunctionNotFound()
-	runner := NewRunner(ifNotFound, logger)
+	runner := eval.NewRunner(ifNotFound, logger)
 	eval.AddHarmlessFunctions(&runner)
 	return &runner
 }
-
-/////////////////////////////////////////////////////////////////////////////
-
-type Runner struct {
-	locationLogger LocationLogger
-	symbols eval.SymbolTable
-	root tuple.TagValueMap
-}
-
-func NewRunner(notFound eval.Finder, logger LocationLogger) Runner {
-	symbols :=  eval.NewSymbolTable(notFound)
-	runner := Runner{logger, symbols, tuple.NewTagValueMap()}
-
-	runner.AddToRoot(Tag{"funcs"}, &symbols)
-	return runner
-}
-
-func (runner * Runner) Root() Value {
-	return runner.root
-}
-
-func (runner * Runner) AddToRoot(key Tag, value Value) {
-	runner.root.Add(key, value)
-}
-
-func (runner * Runner) LocationLogger() LocationLogger {
-	return runner.locationLogger
-}
-
-func (runner * Runner) Log(level string, format string, args ...interface{}) {
-	location := tuple.NewLocation("<eval>", 0, 0, 0)
-	runner.locationLogger(location, level, fmt.Sprintf(format, args...))
-}
-
-func (runner * Runner) Find(context eval.EvalContext, name Tag, args [] Value) (eval.LocalScope, reflect.Value) {
-	return runner.symbols.Find(context, name, args)
-}
-
-func (runner * Runner) Add(name string, function interface{}) {
-	runner.symbols.Add(name, function)
-}
-
-func (runner * Runner) NewLocalScope() eval.EvalContext {
-	symbols :=  eval.NewSymbolTable(runner)
-	scope := RunnerLocalScope{runner,symbols}
-	return &scope
-}
-
-/////////////////////////////////////////////////////////////////////////////
-
-type RunnerLocalScope struct {
-	global * Runner
-	symbols eval.SymbolTable
-}
-
-func (scope * RunnerLocalScope) NewLocalScope() eval.EvalContext {
-	symbols :=  eval.NewSymbolTable(scope)
-	newScope := RunnerLocalScope{scope.global,symbols}
-	return &newScope
-}
-
-func (scope * RunnerLocalScope) Root() Value {
-	return scope.global.Root()
-}
-
-func (scope * RunnerLocalScope) LocationLogger() LocationLogger {
-	return scope.global.locationLogger
-}
-
-func (scope * RunnerLocalScope) Log(level string, format string, args ...interface{}) {
-	location := tuple.NewLocation("<eval>", 0, 0, 0)
-	scope.global.locationLogger(location, level, fmt.Sprintf(format, args...))
-}
-
-func (scope * RunnerLocalScope) Find(context eval.EvalContext, name Tag, args [] Value) (eval.LocalScope, reflect.Value) {
-	return scope.symbols.Find(context, name, args)
-}
-
-func (scope * RunnerLocalScope) Add(name string, function interface{}) {
-	scope.symbols.Add(name, function)
-}
-
-func (scope * RunnerLocalScope) AddToRoot(key Tag, value Value) {
-	scope.global.AddToRoot(key, value)
-}
-
-//func (exec * ErrorIfFunctionNotFound) Root() Value {
-//	root := tuple.NewTagValueMap()
-//	root.Add(Tag{"abc"}, tuple.EMPTY)
-//	root.Add(Tag{"def"}, tuple.EMPTY)
-//	return tuple.EMPTY  //root  // TODO AllSymbols()
-//}
-
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -206,10 +112,10 @@ func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) int64 {
 	return context.Errors()
 }
 
-func (runner * Runner) RunFiles(grammars * Grammars, args []string, next Next) int64 {
+func RunFiles(grammars * Grammars, locationLogger LocationLogger, args []string, next Next) int64 {
 
 	if len(args) == 0 {
-		return RunStdin(runner.locationLogger, grammars.Default(), next)
+		return RunStdin(locationLogger, grammars.Default(), next)
 	}
 	errors := int64(0)
 	for _, fileName := range args {
@@ -221,7 +127,7 @@ func (runner * Runner) RunFiles(grammars * Grammars, args []string, next Next) i
 				log.Fatal(err) // TODO Should not be fatal
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, runner.locationLogger)
+			context := NewParserContext(fileName, reader, locationLogger)
 			err = grammar.Parse(&context, next)
 			if err != nil {
 				context.Log("ERROR", "%s", err)

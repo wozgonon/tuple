@@ -50,7 +50,7 @@ func main () {
 
 	grammars := runner.NewGrammars(parsers.NewShellGrammar())
 	runner.AddAllKnownGrammars(&grammars)
-	runner1 := runner.NewRunner(ifNotFound, logger)
+	runner1 := eval.NewRunner(ifNotFound, logger)
 
 	eval.AddSafeFunctions(&runner1)
 	grammars.AddSafeGrammarFunctions(&runner1)
@@ -73,7 +73,7 @@ func main () {
 	pipeline := runner.SimplePipeline (&runner1, !*ast, *queryPattern, outputGrammar, runner.PrintString)
 
 	files := runner.GetRemainingNonFlagOsArgs()
-	errors := runner1.RunFiles(&grammars, files, pipeline)
+	errors := runner.RunFiles(&grammars, logger, files, pipeline)
 
 	if errors > 0 {
 		os.Exit(1)
