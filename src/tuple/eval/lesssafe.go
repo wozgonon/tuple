@@ -25,10 +25,11 @@ import "bytes"
 import "tuple"
 
 // These functions are potentially not harmless since they can access resources out of the sandbox
-func NewLessSafeSymbolTable(global Global) SymbolTable {
-	table := NewSafeSymbolTable(global)
-	AddOperatingSystemFunctions(&table)
-	return table
+func AddLessSafeFunctions(local LocalScope, global GlobalScope) {
+	AddSafeFunctions(local)
+	AddOperatingSystemFunctions(local)
+	os:= Os{}
+	global.AddToRoot(Tag{"os"}, &os)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -121,7 +122,7 @@ func spawnProcess (arg string) bool {
 
 // These functions access the operating system and so an actor
 // could use them to harm the computer.
-func AddOperatingSystemFunctions(table * SymbolTable) {
+func AddOperatingSystemFunctions(table LocalScope) {
 	//
 	//  Add shell specific commands
 	//  These are typically not a 'safe' in that they allow access to the file system
@@ -151,15 +152,14 @@ func AddOperatingSystemFunctions(table * SymbolTable) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-type ExecIfNotFound struct {
-	logger LocationLogger
+type ExecIfNotFound struct {}
+
+func NewExecIfNotFound() Finder {
+	finder := ExecIfNotFound{}
+	return &finder
 }
 
-func NewExecIfNotFound(logger LocationLogger) Global {
-	return &ExecIfNotFound{logger}
-}
-
-func (exec * ExecIfNotFound) Find (context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value) {
+func (exec * ExecIfNotFound) Find (context EvalContext, name Tag, args [] Value) (LocalScope, reflect.Value) {
 
 	return nil, reflect.ValueOf(func(context EvalContext, args... Value) bool {
 
@@ -167,19 +167,9 @@ func (exec * ExecIfNotFound) Find (context EvalContext, name Tag, args [] Value)
 		for k,_:= range args {
 			result[k] = toString(context, args[k])
 		}
+		context.Log("VERBOSE", "ExecIfNotFound function '%s' so executing process", name.Name)
 		return executeProcess(name.Name, result...)
 	})
-}
-
-func (exec * ExecIfNotFound) Logger() LocationLogger {
-	return exec.logger
-}
-
-func (exec * ExecIfNotFound) Root() Value {
-	root := tuple.NewTagValueMap()
-	os := &Os{}
-	root.Add(Tag{"os"}, os)
-	return os
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -196,8 +186,8 @@ func (oss * Os) Get(index int) Value {
 func (_ * Os) GetKeyValue(index int) (Tag,Value) {
 	switch index {
 	case 0: return Tag{"pid"}, Int64(os.Getpid())
-	case 1: return Tag{"args"}, StringArray{os.Args}
-	case 2: return Tag{"env"}, StringArray{os.Environ()}
+	case 1: return Tag{"args"}, tuple.NewStringArray(os.Args)
+	case 2: return Tag{"env"}, tuple.NewStringArray(os.Environ())
 	case 3:
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -230,22 +220,4 @@ func (oss * Os) ForallValues(next func(value Value) error) error {
 	}
 	return nil
 }
-
-type StringArray struct {
-	slice []string
-}
-
-func (array StringArray) Arity() int { return len(array.slice) }
-func (array StringArray) Get(index int) Value {
-	if index >= 0 && index < len(array.slice) {
-		return String(array.slice[index])
-	}
-	return tuple.EMPTY
-}
-
-func (array StringArray) GetKeyValue(index int) (Tag,Value) {
-	return tuple.IntToTag(index), array.Get(index)
-}
-func (array StringArray) ForallValues(next func(value Value) error) error { return tuple.ForallInArray(array, next) }
-
 

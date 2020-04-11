@@ -3,14 +3,14 @@ package parsers_test
 import (
 	"testing"
 	"tuple"
-	"tuple/eval"
+	"tuple/runner"
 	"math"
 )
 
 
 var grammar = NewInfixExpressionGrammar()
 var logger = tuple.GetLogger(nil, false)
-var symbols = NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))  // TODO perhaps another default function would be better
+var safeEvalContext = runner.NewSafeEvalContext(logger)
 
 
 func TestExpr1(t *testing.T) {
@@ -72,7 +72,7 @@ func TestExprToFloat64(t *testing.T) {
 func TestFailToParse(t *testing.T) {
 
 	test := func (t *testing.T, grammar tuple.Grammar, formula string) {
-		val,err := ParseAndEval(&symbols, grammar, formula)
+		val,err := ParseAndEval(safeEvalContext, grammar, formula)
 		if err == nil {
 			t.Errorf("expected fail to parse: grammar='%s' formula='%s' val='%s' err=%s", grammar.FileSuffix(), formula, val, err)
 		}
@@ -93,7 +93,7 @@ func TestExpr(t *testing.T) {
 	
 
 	test := func(formula string, expected tuple.Value) {
-		val, _ := ParseAndEval(&symbols, grammar, formula)
+		val, _ := ParseAndEval(safeEvalContext, grammar, formula)
 		if val != expected {
 			t.Errorf("%s=%f  expected=%s", formula, val, expected)
 		}
@@ -127,7 +127,7 @@ func TestArithmeticAndLogic(t *testing.T) {
 func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 
 	test := func (formula string) {
-		val, _ := ParseAndEval(&symbols, grammar, formula)
+		val, _ := ParseAndEval(safeEvalContext, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -212,7 +212,7 @@ func TestNewLinesInBraces(t *testing.T) {
 	//var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
-		val, _ := ParseAndEval(&symbols, grammar, formula)
+		val, _ := ParseAndEval(safeEvalContext, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -245,7 +245,7 @@ func TestExprDeclareFunctions(t *testing.T) {
 	//var symbols = NewSafeSymbolTable(&ErrorIfFunctionNotFound{})  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
-		val, _ := ParseAndEval(&symbols, grammar, formula)
+		val, _ := ParseAndEval(safeEvalContext, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -306,7 +306,7 @@ bb(3)==18*-4`)
 
 func TestMap(t *testing.T) {
 	test := func (formula string) {
-		val, _ := ParseAndEval(&symbols, grammar, formula)
+		val, _ := ParseAndEval(safeEvalContext, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}

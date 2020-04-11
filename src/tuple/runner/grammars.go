@@ -38,45 +38,68 @@ func AddAllKnownGrammars(grammars * Grammars) {
 // A set of Grammars
 type Grammars struct {
 	All map[string]Grammar
+	defaultGrammar Grammar
 }
 
-// Returns a new empty set of syntaxes
-func NewGrammars() Grammars{
-	return Grammars{make(map[string]Grammar)}
+// Returns a new empty set of grammars
+func NewGrammars(defaultGrammar Grammar) Grammars{
+	grammars := Grammars{make(map[string]Grammar),defaultGrammar}
+	grammars.Add(defaultGrammar)
+	return grammars
 }
 
-func (syntaxes * Grammars) Forall(next func(grammar Grammar)) {
-	for _, grammar := range syntaxes.All {
+func (grammars * Grammars) Arity() int {
+	return len(grammars.All)
+}
+
+func  (grammars * Grammars) ForallValues(next func(value Value) error) error {
+	for key, _ := range grammars.All {
+		err := next(Tag{key})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (grammars * Grammars) Default() Grammar {
+	return grammars.defaultGrammar
+}
+
+func (grammars * Grammars) Forall(next func(grammar Grammar)) {
+	for _, grammar := range grammars.All {
 		next (grammar)
 	}
 }
 
-func (syntaxes * Grammars) Add(syntax Grammar) {
+func (grammars * Grammars) Add(syntax Grammar) {
 	suffix := syntax.FileSuffix()
-	syntaxes.All[suffix] = syntax
+	grammars.All[suffix] = syntax
 }
 
-func (syntaxes * Grammars) FindBySuffix(suffix string) (Grammar, bool) {
+func (grammars * Grammars) FindBySuffix(suffix string) (Grammar, bool) {
 	if ! strings.HasPrefix(suffix, ".") {
 		suffix = "." + suffix
 	}
-	syntax, ok := syntaxes.All[suffix]
+	syntax, ok := grammars.All[suffix]
 	return syntax, ok
 }
 
-func (syntaxes * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
-	syntax, ok := syntaxes.FindBySuffix(suffix)
+func (grammars * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
+	syntax, ok := grammars.FindBySuffix(suffix)
 	if ! ok {
 		panic("Unsupported file suffix: '" + suffix + "'")
 	}
 	return syntax
 }
 
-func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
+func (grammars * Grammars) AddSafeGrammarFunctions(table * Runner) {
 
-	table.Add("help", func (context eval.EvalContext) Value {
-		return table.AllSymbols()
-	})
+	table.AddToRoot(tuple.Tag{"grammars"}, grammars)
+
+	//table.Add("help", func (context eval.EvalContext) Value {
+	//	return table.AllSymbols()
+	//})
 	table.Add("ctx", func (context eval.EvalContext) Value {
 		return context.Root()
 	})
@@ -110,7 +133,7 @@ func AddSafeGrammarFunctions(table * eval.SymbolTable, grammars * Grammars) {
 	table.Add("ast2", func (context eval.EvalContext, grammarFileSuffix string, expression string) (Value, error) {
 		grammar, ok := grammars.FindBySuffix(grammarFileSuffix)
 		if ok {
-			return parsers.ParseString(context.Logger(), grammar, expression)
+			return parsers.ParseString(context.LocationLogger(), grammar, expression)
 		} else {
 			context.Log("ERROR", "No such grammar '%s'", grammarFileSuffix)
 			return nil, errors.New("No such grammar")  //tuple.EMPTY // TODO eror

@@ -39,7 +39,6 @@ var GetLogger = tuple.GetLogger
 var NewJSONGrammar = parsers.NewJSONGrammar
 var NewInfixExpressionGrammar = parsers.NewInfixExpressionGrammar
 var NewShellGrammar = parsers.NewShellGrammar
-var NewSafeSymbolTable = eval.NewSafeSymbolTable
 var ParseAndEval = runner.ParseAndEval
 var NewLispGrammar = parsers.NewLispGrammar
 var NewLispWithInfixGrammar = parsers.NewLispWithInfixGrammar

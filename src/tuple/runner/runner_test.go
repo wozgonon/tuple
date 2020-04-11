@@ -5,17 +5,16 @@ import (
 	"tuple"
 	"tuple/parsers"
 	"tuple/runner"
-	"tuple/eval"
 	"math"
 	"strings"
 )
 
 var logger = tuple.GetLogger(nil, false)
-var symbols = eval.NewSafeSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
+var safeEvalContext = runner.NewSafeEvalContext(logger)
 
 func TestEval1(t *testing.T) {
 	var grammar = parsers.NewInfixExpressionGrammar()
-	val,_ := runner.ParseAndEval(&symbols, grammar, "1+1")
+	val,_ := runner.ParseAndEval(safeEvalContext, grammar, "1+1")
 	if val != tuple.Float64(2) {
 		t.Errorf("1+1=%s", val)
 	}
@@ -40,7 +39,7 @@ func TestEvalToInt64(t *testing.T) {
 		"acos(cos(PI))" : math.Pi,
 	}
 	for k, v := range tests {
-		val,_ := runner.ParseAndEval(&symbols, grammar, k)
+		val,_ := runner.ParseAndEval(safeEvalContext, grammar, k)
 		if val != tuple.Float64(v) {
 			t.Errorf("%s=%d   %s", k, int64(v), val)
 		}
@@ -53,10 +52,9 @@ func testFiles(t *testing.T) {
 
 	count := 0
 	files := []string{"../wozg/testdata/test.l"}
-	grammars := runner.NewGrammars()
-	runner1 := runner.NewRunner(grammars, &symbols, logger, parsers.NewLispGrammar())
-	grammars.Add((parsers.NewLispGrammar()))
-	errors := runner1.RunFiles(files, func (next tuple.Value) error {
+	grammars := runner.NewGrammars(parsers.NewLispGrammar())
+	runner1 := runner.NewRunner(safeEvalContext, logger)
+	errors := runner1.RunFiles(&grammars, files, func (next tuple.Value) error {
 		count += 1
 		return nil
 	})
@@ -71,14 +69,14 @@ func testFiles(t *testing.T) {
 
 func TestSimplePipeline(t *testing.T) {
 	
-	runner.SimplePipeline(&symbols, "*", parsers.NewLispGrammar(), func (_ string) {})
+	runner.SimplePipeline(safeEvalContext, true, "*", parsers.NewLispGrammar(), func (_ string) {})
 	// TODO
 }
 
 
 func TestGrammars(t *testing.T) {
 
-	grammars := runner.NewGrammars()
+	grammars := runner.NewGrammars(parsers.NewLispGrammar())
 	runner.AddAllKnownGrammars(&grammars)
 
 	count := 0

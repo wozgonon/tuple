@@ -19,7 +19,6 @@ package eval
 import "math"
 import "strings"
 import "reflect"
-import "fmt"
 import "errors"
 import "tuple"
 
@@ -27,18 +26,16 @@ import "tuple"
 
 // These functions are harmless
 // One can execute them from a script without any worry they will access something they ought not to or use up resources.
-func NewHarmlessSymbolTable(global Global) SymbolTable {
-	table := NewSymbolTable(global)
-	AddBooleanAndArithmeticFunctions(&table)
-	AddHarmlessStringFunctions(&table)
-	AddHarmlessArrayFunctions(&table)
-	return table
+func AddHarmlessFunctions(table LocalScope) {
+	AddBooleanAndArithmeticFunctions(table)
+	AddHarmlessStringFunctions(table)
+	AddHarmlessArrayFunctions(table)
 }
 /////////////////////////////////////////////////////////////////////////////
 
 // These functions are harmless in the sense that they just do basic functions and do not provide any access to resources
 // such as operating system or even allocating memory.
-func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
+func AddBooleanAndArithmeticFunctions(table LocalScope) {
 
 	table.Add("exp", math.Exp)
 	table.Add("sqrt", math.Sqrt)
@@ -99,14 +96,14 @@ func AddBooleanAndArithmeticFunctions(table * SymbolTable) {
 }
 
 // String functions that do not allocate any memory
-func AddHarmlessStringFunctions(table * SymbolTable) {
+func AddHarmlessStringFunctions(table LocalScope) {
 	table.Add("len", func(value string) int64 { return int64(len(value)) })  // TODO arity
 	table.Add("lower", strings.ToLower)
 	table.Add("upper", strings.ToUpper)
 }
 
 // Array functions that do not allocate any memory
-func AddHarmlessArrayFunctions(table * SymbolTable)  {
+func AddHarmlessArrayFunctions(table LocalScope)  {
 
 	table.Add("arity", func(context EvalContext, value Value) (int64, error) {
 		evaluated, err := Eval(context, value)
@@ -158,30 +155,17 @@ func AddHarmlessArrayFunctions(table * SymbolTable)  {
 
 /////////////////////////////////////////////////////////////////////////////
 
-type ErrorIfFunctionNotFound struct {
-	logger LocationLogger
+type ErrorIfFunctionNotFound struct {}
+
+func NewErrorIfFunctionNotFound() Finder {
+	finder := ErrorIfFunctionNotFound{}
+	return &finder
 }
 
-func NewErrorIfFunctionNotFound(logger LocationLogger) Global {
-	result := ErrorIfFunctionNotFound{logger}
-	return &result
-}
-
-func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value) {
+func (function * ErrorIfFunctionNotFound) Find(context EvalContext, name Tag, args [] Value) (LocalScope, reflect.Value) {
 	return nil, reflect.ValueOf(func(args... Value) bool {
-		fmt.Printf("ERROR: function not found: '%s' %s\n", name.Name, args)  // TODO ought to use context logger
+		context.Log("ERROR", "function not found: '%s' %s\n", name.Name, args)
 		return false
 	})
-}
-
-func (exec * ErrorIfFunctionNotFound) Logger() LocationLogger {
-	return exec.logger
-}
-
-func (exec * ErrorIfFunctionNotFound) Root() Value {
-	root := tuple.NewTagValueMap()
-	root.Add(Tag{"abc"}, tuple.EMPTY)
-	root.Add(Tag{"def"}, tuple.EMPTY)
-	return tuple.EMPTY  //root  // TODO AllSymbols()
 }
 

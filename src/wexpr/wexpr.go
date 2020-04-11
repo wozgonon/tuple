@@ -37,24 +37,17 @@ func main () {
 	//  Set up the translator pipeline.
 	//
 	logger := tuple.GetLogger(nil, *verbose)
-	outputGrammar := parsers.NewInfixExpressionGrammar()
-	var symbols * SymbolTable = nil
-	global := eval.NewErrorIfFunctionNotFound(logger)
-	table := eval.NewSafeSymbolTable(global)
-	if !*ast {
-		symbols = &table
-	}
-	//table.Add("func", func(name string, body tuple.Tuple) { fmt.Printf("TODO Implement 'func' '%s' '%s'", name, body) })
-
-	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
+	runner1 := runner.NewSafeEvalContext(logger)
+	
+	grammars := runner.NewGrammars(parsers.NewInfixExpressionGrammar())
+	pipeline := runner.SimplePipeline (runner1, !*ast, *queryPattern, grammars.Default(), runner.PrintString)
 	reader := bufio.NewReader(strings.NewReader(expression))
 	context := runner.NewParserContext("<cli>", reader, logger)
-	grammar := parsers.NewInfixExpressionGrammar()
 
 	//
 	//  Set up the translator pipeline.
 	//
-	grammar.Parse(&context, pipeline)
+	grammars.Default().Parse(&context, pipeline)
 
 	if context.Errors() > 0 {
 		os.Exit(1)

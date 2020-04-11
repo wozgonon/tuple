@@ -2,22 +2,20 @@ package eval_test
 
 import (
 	"testing"
-	"tuple"
 	"tuple/eval"
 )
 
 func TestBuildSymbolTable(t *testing.T) {
 
-	logger := tuple.GetLogger(nil, false)
-	symbols := eval.NewSymbolTable(eval.NewErrorIfFunctionNotFound(logger))
-	if symbols.Count() != 0 {
-		t.Errorf("Expected empty table got %d", symbols.Count())
+	symbols := eval.NewSymbolTable(eval.NewErrorIfFunctionNotFound())
+	if symbols.Arity() != 0 {
+		t.Errorf("Expected empty table got %d", symbols.Arity())
 
 	}
-	count := symbols.Count()
+	count := symbols.Arity()
 	eval.AddBooleanAndArithmeticFunctions(&symbols)
 	eval.AddOperatingSystemFunctions(&symbols)
-	if symbols.Count() <= count {
+	if symbols.Arity() <= count {
 		t.Errorf("Expected functions to be added to symbol table")
 	}
 

@@ -28,6 +28,19 @@ are made up of a series of CONS cells.
 The basic wozg uses arrays and maps rather than CONS c ells, though at a syntax level it looks much the same.
 
 
+## Why would I want a componentized language?
+
+This gives you scope to experiment, if you have an idea for a particular feature you can
+try it out to see how well it works.
+
+If you don't want some language feature, perhaps for reasons of security or misuse, you can leave it out.
+For instance, if you want to enforce a particular style, you can build this in as a component.
+
+Why would you want any software with de-coupled components?
+
+Programming languages
+
+
 ## What's with JSON
 
 JSON syntax is simple: just two operators comma and colon, square brackets for arrays and braces for maps.

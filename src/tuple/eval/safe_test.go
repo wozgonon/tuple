@@ -25,30 +25,15 @@ import (
 	"tuple/parsers"
 )
 
-//var logger = tuple.GetLogger(nil, false)
-//var notFound = eval.NewErrorIfFunctionNotFound(logger)
-//var symbols = eval.NewHarmlessSymbolTable(notFound)
-
-func TestSafe(t *testing.T) {
-
-	symbols := eval.NewSafeSymbolTable(notFound)
-	if symbols.Count() == 0  {
-		t.Errorf("Expected functions to be added to symbol table")
-	}
-
-
-	
-}
+var safeEvalContext = runner.NewSafeEvalContext(logger)
 
 
 func TestDeclareFunctions(t *testing.T) {
 
 	grammar := parsers.NewShellGrammar()
-
-	var symbols = eval.NewSafeSymbolTable(notFound)  // TODO perhaps another default function would be better
 	
 	test := func (formula string) {
-		val,_ := runner.ParseAndEval(&symbols, grammar, formula)
+		val,_ := runner.ParseAndEval(safeEvalContext, grammar, formula)
 		if val != tuple.Bool(true) {
 			t.Errorf("Expected '%s' to be TRUE", formula)
 		}
@@ -67,7 +52,7 @@ aa(2)==4`)
 	test("if(false,1,2) == 2")
 	test("if(false,1, cos(PI)) == -1")
 
-	symbols.Add("=", eval.AssignLocal)
+	safeEvalContext.Add("=", eval.AssignLocal)
 
 	// Test assignment to a variable updates the a local variable or a global variable
 	test("progn n=12 { func a b { progn n=b n } } a(234)!=n")

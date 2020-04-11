@@ -393,14 +393,11 @@ func (printer Style) PrintBinaryOperator(depth string, tag Tag, value1 Value, va
 
 func (printer Style) PrintOpenTuple(depth string, value Value, out StringFunction) string {
 
-	//_, isArray := value.(tuple.Array)
 	_, isMap := value.(tuple.Map)
 	if isMap {// && ! isArray {
 		out(printer.Open2)
-		//out(reflect.TypeOf(value).Name())
 	} else {
 		out(printer.Open)
-		//out(reflect.TypeOf(value).Name())
 	}
 	return depth + "  "
 }

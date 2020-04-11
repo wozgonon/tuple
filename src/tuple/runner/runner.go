@@ -21,6 +21,7 @@ import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
+import 	"reflect"
 import "errors"
 import "path"
 import "flag"
@@ -54,17 +55,123 @@ func promptOnEOL(context Context) {
 	}
 }
 
-type Runner struct {
-	Grammars Grammars
-	symbols * eval.SymbolTable
-	logger LocationLogger
-	inputGrammar Grammar
+/////////////////////////////////////////////////////////////////////////////
+
+func NewSafeEvalContext(logger LocationLogger) eval.EvalContext {
+	ifNotFound := eval.NewErrorIfFunctionNotFound()
+	runner := NewRunner(ifNotFound, logger)
+	eval.AddSafeFunctions(&runner)
+	return &runner
 }
 
-func NewRunner(grammars Grammars, symbols * eval.SymbolTable, logger LocationLogger, inputGrammar Grammar) Runner {
-	
-	return Runner{grammars, symbols, logger, inputGrammar}
+func NewHarmlessEvalContext(logger LocationLogger) eval.EvalContext {
+	ifNotFound := eval.NewErrorIfFunctionNotFound()
+	runner := NewRunner(ifNotFound, logger)
+	eval.AddHarmlessFunctions(&runner)
+	return &runner
 }
+
+/////////////////////////////////////////////////////////////////////////////
+
+type Runner struct {
+	locationLogger LocationLogger
+	symbols eval.SymbolTable
+	root tuple.TagValueMap
+}
+
+func NewRunner(notFound eval.Finder, logger LocationLogger) Runner {
+	symbols :=  eval.NewSymbolTable(notFound)
+	runner := Runner{logger, symbols, tuple.NewTagValueMap()}
+
+	runner.AddToRoot(Tag{"funcs"}, &symbols)
+	return runner
+}
+
+func (runner * Runner) Root() Value {
+	return runner.root
+}
+
+func (runner * Runner) AddToRoot(key Tag, value Value) {
+	runner.root.Add(key, value)
+}
+
+func (runner * Runner) LocationLogger() LocationLogger {
+	return runner.locationLogger
+}
+
+func (runner * Runner) Log(level string, format string, args ...interface{}) {
+	location := tuple.NewLocation("<eval>", 0, 0, 0)
+	runner.locationLogger(location, level, fmt.Sprintf(format, args...))
+}
+
+func (runner * Runner) Find(context eval.EvalContext, name Tag, args [] Value) (eval.LocalScope, reflect.Value) {
+	return runner.symbols.Find(context, name, args)
+}
+
+func (runner * Runner) Add(name string, function interface{}) {
+	runner.symbols.Add(name, function)
+}
+
+func (runner * Runner) NewLocalScope() eval.EvalContext {
+	symbols :=  eval.NewSymbolTable(runner)
+	scope := RunnerLocalScope{runner,symbols}
+	return &scope
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+type RunnerLocalScope struct {
+	global * Runner
+	symbols eval.SymbolTable
+}
+
+func (scope * RunnerLocalScope) NewLocalScope() eval.EvalContext {
+	symbols :=  eval.NewSymbolTable(scope)
+	newScope := RunnerLocalScope{scope.global,symbols}
+	return &newScope
+}
+
+func (scope * RunnerLocalScope) Root() Value {
+	return scope.global.Root()
+}
+
+func (scope * RunnerLocalScope) LocationLogger() LocationLogger {
+	return scope.global.locationLogger
+}
+
+func (scope * RunnerLocalScope) Log(level string, format string, args ...interface{}) {
+	location := tuple.NewLocation("<eval>", 0, 0, 0)
+	scope.global.locationLogger(location, level, fmt.Sprintf(format, args...))
+}
+
+func (scope * RunnerLocalScope) Find(context eval.EvalContext, name Tag, args [] Value) (eval.LocalScope, reflect.Value) {
+	return scope.symbols.Find(context, name, args)
+}
+
+func (scope * RunnerLocalScope) Add(name string, function interface{}) {
+	scope.symbols.Add(name, function)
+}
+
+func (scope * RunnerLocalScope) AddToRoot(key Tag, value Value) {
+	scope.global.AddToRoot(key, value)
+}
+
+//func (exec * ErrorIfFunctionNotFound) Root() Value {
+//	root := tuple.NewTagValueMap()
+//	root.Add(Tag{"abc"}, tuple.EMPTY)
+//	root.Add(Tag{"def"}, tuple.EMPTY)
+//	return tuple.EMPTY  //root  // TODO AllSymbols()
+//}
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+func LocationForValue(value Value) tuple.Location {
+	// TODO get the location associate with a Value
+	return tuple.NewLocation("<eval>", 0, 0, 0) // TODO
+}
+
+/////////////////////////////////////////////////////////////////////////////
 
 func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) (Value, error) {
 
@@ -77,7 +184,7 @@ func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) 
 		result = evaluated
 		return nil
 	}
-	ctx, err := parsers.RunParser(grammar, expression, context.Logger(), pipeline)
+	ctx, err := parsers.RunParser(grammar, expression, context.LocationLogger(), pipeline)
 	if ctx.Errors() > 0 {
 		return nil, errors.New("Errors during parse")
 	}
@@ -99,22 +206,22 @@ func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) int64 {
 	return context.Errors()
 }
 
-func (runner * Runner) RunFiles(args []string, next Next) int64 {
+func (runner * Runner) RunFiles(grammars * Grammars, args []string, next Next) int64 {
 
 	if len(args) == 0 {
-		return RunStdin(runner.logger, runner.inputGrammar, next)
+		return RunStdin(runner.locationLogger, grammars.Default(), next)
 	}
 	errors := int64(0)
 	for _, fileName := range args {
 		suffix := path.Ext(fileName)
-		grammar, ok := runner.Grammars.FindBySuffix(suffix)
+		grammar, ok := grammars.FindBySuffix(suffix)
 		if ok {
 			file, err := os.Open(fileName)
 			if err != nil {
 				log.Fatal(err) // TODO Should not be fatal
 			}
 			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, runner.logger)
+			context := NewParserContext(fileName, reader, runner.locationLogger)
 			err = grammar.Parse(&context, next)
 			if err != nil {
 				context.Log("ERROR", "%s", err)
@@ -135,17 +242,17 @@ func PrintString(value string) {
 //
 //  Set up the translator pipeline.
 //
-func SimplePipeline (symbols * eval.SymbolTable, queryPattern string, outputGrammar Grammar, out func(value string)) Next {
+func SimplePipeline (context eval.EvalContext, runEval bool, queryPattern string, outputGrammar Grammar, out func(value string)) Next {
 
 	prettyPrint := func(tuple Value) error {
 		outputGrammar.Print(tuple, out)
 		return nil
 	}
 	pipeline := prettyPrint
-	if symbols != nil {
+	if runEval {
 		next := pipeline
 		pipeline = func(value Value) error {
-			evaluated, err := eval.Eval(symbols, value)
+			evaluated, err := eval.Eval(context, value)
 			if err != nil {
 				return err
 			}

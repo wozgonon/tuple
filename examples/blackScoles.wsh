@@ -1,0 +1,18 @@
+
+
+# https://en.wikipedia.org/wiki/Black%E2%80%93Scholes_model
+
+func d1  sigma T t St K r q {
+     #  TODO Note it is nice to be able to use square and round brackets in an equation
+     progn
+	dt = T-t
+     	1/(sigma*dt) * ( ln(St/K) + (r -q + sigma*sigma/2)dt )
+}
+
+func d2  sigma T t d1  {
+     progn
+	dt = T-t
+	d1 - sigma*dt     
+}
+
+

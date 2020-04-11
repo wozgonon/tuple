@@ -244,6 +244,8 @@ func (tuple *Tuple) Set(index int, token Value) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//  An implementation of the Map interface
+/////////////////////////////////////////////////////////////////////////////
 
 type TagValueMap struct {
 	elements map[Tag]Value
@@ -272,6 +274,30 @@ func (mapp TagValueMap) ForallValues(next func(value Value) error) error {
 	}
 	return nil
 }
+
+/////////////////////////////////////////////////////////////////////////////
+//  An implementation of the String interface
+/////////////////////////////////////////////////////////////////////////////
+
+type StringArray struct {
+	slice []string
+}
+
+func NewStringArray(slice []string) StringArray {
+	return StringArray{slice}
+}
+func (array StringArray) Arity() int { return len(array.slice) }
+func (array StringArray) Get(index int) Value {
+	if index >= 0 && index < len(array.slice) {
+		return String(array.slice[index])
+	}
+	return EMPTY
+}
+
+func (array StringArray) GetKeyValue(index int) (Tag,Value) {
+	return IntToTag(index), array.Get(index)
+}
+func (array StringArray) ForallValues(next func(value Value) error) error { return ForallInArray(array, next) }
 
 /////////////////////////////////////////////////////////////////////////////
 

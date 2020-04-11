@@ -49,93 +49,33 @@ var Trace = tuple.Trace
 //  * [Meta-circular_evaluator](https://en.wikipedia.org/wiki/Meta-circular_evaluator)
 //  
 
-type Global interface {
-	Logger() LocationLogger
-	Find(context EvalContext, name Tag, args [] Value) (*SymbolTable, reflect.Value)
+type EvalContext interface {
+	LocalScope
+	GlobalScope
 
+	NewLocalScope() EvalContext
+}
+
+type Finder interface {
+	// TODO return a single Callable object not a reflect.Value
+	Find(context EvalContext, name Tag, args [] Value) (LocalScope, reflect.Value)
+}
+
+type GlobalScope interface {
+	Logger
+	LocationLogger() LocationLogger
+	
 	// The root is analageous to the root of a data hierarchy such as a directory, file system or registry.
 	// Rather than provide individual functions to return contextual information it is much more flexible
 	// to provide a searchable directory structure.
 	Root() Value
+	AddToRoot(string Tag, value Value)  // Is this needed
 }
 
-type EvalContext interface {
-	Global
-	Logger
+type LocalScope interface {
+	Finder
 	Add(name string, function interface{})
-	Call(head Tag, args []Value) (Value, error)
-	AllSymbols() Tuple
 }
-
-/////////////////////////////////////////////////////////////////////////////
-
-type SymbolTable struct {
-	symbols map[string]reflect.Value
-	global Global
-}
-
-func NewSymbolTable(notFound Global) SymbolTable {
-	if notFound.Logger() == nil {
-		panic("nil logger")  // TODO not a good idea to have fatals in the code
-	}
-	return SymbolTable{map[string]reflect.Value{},notFound}
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-
-/*
-func (context * SymbolTable) Arity() int { return len(array.slice) }
-func (context * SymbolTable) Get(index int) Value {
-	if index >= 0 && index < len(array.slice) {
-		return String(array.slice[index])
-	}
-	return tuple.EMPTY
-}
-
-func (context * SymbolTable) GetKeyValue(index int) (Tag,Value) {
-	return tuple.IntToTag(index), array.Get(index)
-}*/
-
-/////////////////////////////////////////////////////////////////////////////
-
-// TODO change to a Value
-func (context * SymbolTable) AllSymbols() Tuple {
-	tuple := tuple.NewTuple()
-	for k,v := range context.symbols {
-		key := signatureOfFunction(k, v)
-		tuple.Append(String(key))
-	}
-	return tuple
-}
-
-func (context * SymbolTable) Logger() LocationLogger {
-	return context.global.Logger()
-}
-
-func (context * SymbolTable) Root() Value {
-	return context.global.Root()
-}
-
-func LocationForValue(value Value) Location {
-	// TODO get the location associate with a Value
-	return tuple.NewLocation("<eval>", 0, 0, 0) // TODO
-}
-
-// TODO use location from values from 
-func (context * SymbolTable) Log(level string, format string, args ...interface{}) {
-	location := tuple.NewLocation("<eval>", 0, 0, 0) // TODO
-	message := fmt.Sprintf(format, args...)
-	context.global.Logger()(location, level, message)
-}
-
-func (context * SymbolTable) Error(value Value, format string, args ...interface{}) {
-	location := LocationForValue(value)
-	message := fmt.Sprintf(format, args...)
-	context.global.Logger()(location, "ERROR", message)
-}
-
-/////////////////////////////////////////////////////////////////////////////
 
 func Eval(context EvalContext, expression Value) (Value, error) {
 
@@ -154,9 +94,9 @@ func Eval(context EvalContext, expression Value) (Value, error) {
 		if ! ok {
 			return evalTuple(context, val)
 		}
-		return context.Call(tag, val.List[1:])
+		return Call(context, tag, val.List[1:])
 	case Tag:
-		return context.Call(val, []Value{})
+		return Call(context, val, []Value{})
 	default:
 		return val, nil
 	}
@@ -175,8 +115,111 @@ func evalTuple(context EvalContext, value Tuple) (Tuple, error) {
 	return newTuple, nil
 }
 
+func Call(context EvalContext, head Tag, args []Value) (Value, error) {  // Reduce
+
+	_, f := context.Find(context, head, args)
+	call := NewReflectCall(context, f, len(args))
+	for key,v:= range args {
+		var result interface{} = v
+		if ! f.Type().IsVariadic() {
+			_, isTag := v.(Tag)
+			expectedType := call.expectedTypeOfArg(key)
+			switch  {
+			case expectedType == TagType && isTag:
+			case expectedType == ValueType:
+			default:
+				evaluated, err := Eval(context, v)
+				if err != nil {
+					return tuple.EMPTY, err
+				}
+				converted, err := Convert(context, evaluated, expectedType)
+				if err != nil {
+					context.Log("ERROR", "Cannot convert '%s' to '%s'", evaluated, expectedType)  // TODO Log v location
+					return tuple.EMPTY, err
+				}
+				result = converted
+			}
+		}
+		if result == nil {
+			return tuple.EMPTY, errors.New("Unexpected nil head=" + head.Name)
+		}
+		call.setArg(key, result)
+	}
+	return call.Call(context, head.Name)
+}
+
 /////////////////////////////////////////////////////////////////////////////
 
+type SymbolTable struct {
+	symbols map[string]reflect.Value
+	notFound Finder
+}
+
+func NewSymbolTable(notFound Finder) SymbolTable {
+	return SymbolTable{map[string]reflect.Value{},notFound}
+}
+
+func (context * SymbolTable) Arity() int {
+	return len(context.symbols)
+}
+
+func  (context * SymbolTable) ForallValues(next func(value Value) error) error {
+	for k, v := range context.symbols {
+		key := signatureOfFunction(k, v)
+		err := next(Tag{key})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (table * SymbolTable) Add(name string, function interface{}) {
+	reflectValue := reflect.ValueOf(function)
+	typ := reflectValue.Type()
+
+	nn := typ.NumIn()
+	if nn > 0 {
+		if typ.In(0) == EvalContextType {
+			nn -= 1
+		}
+	}
+	key := signatureOfFunction(name, reflect.ValueOf(function))
+	table.symbols[key] = reflectValue
+	
+	key = makeKey(name, nn, typ.IsVariadic())
+	table.symbols[key] = reflectValue
+}
+
+func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (LocalScope, reflect.Value) {  // Reduce
+
+	/*key := signatureOfCall(head.Name, args)
+	f, ok := table.symbols[key]
+	if ok {
+		return table, f
+	}
+
+	key = strings.Replace(key, "int64", "float64", 99999)
+	f, ok = table.symbols[key]
+	if ok {
+		return table, f
+	}*/
+	
+	name := head.Name
+	nn := len(args)
+
+	for _, variadic := range []bool{ false, true } {
+		key := makeKey(name, nn, variadic)
+		f, ok := table.symbols[key]
+		if ok {
+			context.Log ("TRACE", "FIND Found '%s' variadic=%s in this symbol table (%d entries), forwarding",  head, variadic, len(table.symbols))
+			return table, f
+		}
+	}
+	//context.Log ("TRACE1", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
+	// TODO look up variatic functions
+	return table.notFound.Find(context, head, args)
+}
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -213,94 +256,4 @@ func makeKey(name string, arity int, variadic bool) string {
 		return fmt.Sprintf("*_%s", name)
 	}
 	return fmt.Sprintf("%d_%s", arity, name)
-}
-
-func (table * SymbolTable) Count() int {
-	return len(table.symbols)
-}
-
-func (table * SymbolTable) Add(name string, function interface{}) {
-	reflectValue := reflect.ValueOf(function)
-	typ := reflectValue.Type()
-
-	nn := typ.NumIn()
-	if nn > 0 {
-		if typ.In(0) == EvalContextType {
-			nn -= 1
-		}
-	}
-	key := signatureOfFunction(name, reflect.ValueOf(function))
-	table.symbols[key] = reflectValue
-	
-	key = makeKey(name, nn, typ.IsVariadic())
-	table.symbols[key] = reflectValue
-}
-
-func (table * SymbolTable) Find(context EvalContext, head Tag, args []Value) (*SymbolTable, reflect.Value) {  // Reduce
-
-	/*key := signatureOfCall(head.Name, args)
-	f, ok := table.symbols[key]
-	if ok {
-		return table, f
-	}
-
-	key = strings.Replace(key, "int64", "float64", 99999)
-	f, ok = table.symbols[key]
-	if ok {
-		return table, f
-	}*/
-	
-	name := head.Name
-	nn := len(args)
-
-	for _, variadic := range []bool{ false, true } {
-		key := makeKey(name, nn, variadic)
-		f, ok := table.symbols[key]
-		if ok {
-			context.Log ("TRACE", "FIND Found '%s' variadic=%s in this symbol table (%d entries), forwarding",  head, variadic, len(table.symbols))
-			return table, f
-		}
-	}
-	//context.Log ("TRACE1", "FIND Could not find '%s' in this symbol table (%d entries), forwarding",  head, len(table.symbols))
-	// TODO look up variatic functions
-	return table.global.Find(context, head, args)
-}
-
-
-
-func (context * SymbolTable) Call(head Tag, args []Value) (Value, error) {
-	return context.call3(context, head, args)
-}
-
-func (table * SymbolTable) call3(context EvalContext, head Tag, args []Value) (Value, error) {  // Reduce
-
-	_, f := table.Find(context, head, args)
-	call := NewReflectCall(context, f, len(args))
-	for key,v:= range args {
-		var result interface{} = v
-		if ! f.Type().IsVariadic() {
-			_, isTag := v.(Tag)
-			expectedType := call.expectedTypeOfArg(key)
-			switch  {
-			case expectedType == TagType && isTag:
-			case expectedType == ValueType:
-			default:
-				evaluated, err := Eval(context, v)
-				if err != nil {
-					return tuple.EMPTY, err
-				}
-				converted, err := Convert(context, evaluated, expectedType)
-				if err != nil {
-					table.Error(v, "Cannot convert '%s' to '%s'", evaluated, expectedType)
-					return tuple.EMPTY, err
-				}
-				result = converted
-			}
-		}
-		if result == nil {
-			return tuple.EMPTY, errors.New("Unexpected nil head=" + head.Name)
-		}
-		call.setArg(key, result)
-	}
-	return call.Call(context, head.Name)
 }

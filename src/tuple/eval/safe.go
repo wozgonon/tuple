@@ -21,13 +21,12 @@ import "tuple"
 import "fmt"
 import "errors"
 
-func NewSafeSymbolTable(global Global) SymbolTable {
-	table := NewHarmlessSymbolTable(global)
-	AddAllocatingStringFunctions(&table)
-	AddAllocatingTupleFunctions(&table)
-	AddSetAndDeclareFunctions(&table)
-	AddControlStatementFunctions(&table)
-	return table
+func AddSafeFunctions(table LocalScope) {
+	AddHarmlessFunctions(table)
+	AddAllocatingStringFunctions(table)
+	AddAllocatingTupleFunctions(table)
+	AddSetAndDeclareFunctions(table)
+	AddControlStatementFunctions(table)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,13 +56,13 @@ func EvalToStrings(context EvalContext, values []Value) []string {
 	return result
 }
 
-func AddAllocatingStringFunctions(table * SymbolTable) {
+func AddAllocatingStringFunctions(table LocalScope) {
 	// TODO change this to take an array
 	table.Add("join", func (context EvalContext, separator string, tuple Tuple) string { return strings.Join(EvalToStrings(context, tuple.List), separator) })
 	table.Add("concat", func (context EvalContext, values... Value) string  { return strings.Join(EvalToStrings(context, values), "") })
 }
 
-func AddAllocatingTupleFunctions(table * SymbolTable)  {
+func AddAllocatingTupleFunctions(table LocalScope)  {
 
 	table.Add("keys", func(context EvalContext, value Value) (Value, error) {
 
@@ -129,10 +128,10 @@ func AssignLocal (context EvalContext, tag Tag, value Value) (Value, error) {
 	return evaluated, nil
 }
 
-func AddSetAndDeclareFunctions(table * SymbolTable) {
+func AddSetAndDeclareFunctions(table LocalScope) {
 
 	table.Add("get", func(context EvalContext, tag Tag) (Value, error) {
-		result, err := context.Call(tag, []Value{})
+		result, err := Call(context, tag, []Value{})
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +160,7 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 					return tuple.EMPTY, errors.New(message)
 				} else {
 					context.Log("TRACE", "** FUNC %s argValue: %s", functionName, values)
-					newScope := NewSymbolTable(context1)
+					newScope := context1.NewLocalScope()
 					for k,v := range values {
 						evaluated, err := Eval(context1, v)
 						if err != nil {
@@ -172,7 +171,7 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 							return evaluated
 						})
 					}
-					evaluated, err := Eval(&newScope, code)
+					evaluated, err := Eval(newScope, code)
 					if err != nil {
 						return nil, err
 					}
@@ -188,7 +187,7 @@ func AddSetAndDeclareFunctions(table * SymbolTable) {
 //  These are nearly harmless but do allocate
 /////////////////////////////////////////////////////////////////////////////
 
-func AddControlStatementFunctions(table * SymbolTable) {
+func AddControlStatementFunctions(table LocalScope) {
 
 	// Perhaps this could be moved to harmless.
 	table.Add("if", func(context EvalContext, condition bool, trueCode Value, falseCode Value) (Value, error) {
@@ -202,7 +201,7 @@ func AddControlStatementFunctions(table * SymbolTable) {
 	})
 	table.Add("for", func(context EvalContext, tag Tag, list Value, code Value) Value {
 		var iterator Value = nil
-		newScope := NewSymbolTable(context)
+		newScope := context.NewLocalScope()
 		newScope.Add(tag.Name, func () Value {
 			return iterator
 		})
@@ -214,7 +213,7 @@ func AddControlStatementFunctions(table * SymbolTable) {
 			if err != nil {
 				return err
 			}
-			value, err := Eval(&newScope, code)
+			value, err := Eval(newScope, code)
 			if err != nil {
 				return err
 			}

@@ -57,35 +57,8 @@ func main() {
 		return
 	}
 
-	grammars := runner.NewGrammars()
+	grammars := runner.NewGrammars(parsers.NewLispGrammar())
 	runner.AddAllKnownGrammars(&grammars)
-
-	outputGrammar := grammars.FindBySuffixOrPanic(*out)
-	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
-	logger := tuple.GetLogger(loggerGrammar, *verbose)
-
-	//
-	//  Set up the translator pipeline.
-	//
-	var symbols * SymbolTable = nil
-	global := eval.NewErrorIfFunctionNotFound(logger)
-	table := eval.NewSafeSymbolTable(global)
-	if *runEval {
-		symbols = &table
-		runner.AddSafeGrammarFunctions(symbols, &grammars)
-	}
-
-	var inputGrammar tuple.Grammar = parsers.NewLispGrammar()
-	if *in != "" {
-		inputGrammar = grammars.FindBySuffixOrPanic(*in)
-	}
-
-	runner1 := runner.NewRunner(grammars, symbols, logger, inputGrammar)
-
-	//
-	// Set up and then look up the set of supported grammars.
-	//
-
 	// To list all grammars: wozg -eval -command grammars
 	if *listGrammars {
 		grammars.Forall(func (grammar tuple.Grammar) {
@@ -94,7 +67,31 @@ func main() {
 		return
 	}
 
-	pipeline := runner.SimplePipeline (symbols, *queryPattern, outputGrammar, runner.PrintString)
+	var inputGrammar tuple.Grammar = grammars.Default()
+	if *in != "" {
+		inputGrammar = grammars.FindBySuffixOrPanic(*in)
+	}
+
+	outputGrammar := grammars.FindBySuffixOrPanic(*out)
+	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
+	logger := tuple.GetLogger(loggerGrammar, *verbose)
+
+	finder := eval.NewErrorIfFunctionNotFound()
+	runner1 := runner.NewRunner(finder, logger)
+
+	//
+	//  Set up the translator pipeline.
+	//
+	if *runEval {
+		eval.AddSafeFunctions(&runner1)
+		grammars.AddSafeGrammarFunctions(&runner1)
+	}
+
+	//
+	// Set up and then look up the set of supported grammars.
+	//
+
+	pipeline := runner.SimplePipeline (&runner1, *runEval, *queryPattern, outputGrammar, runner.PrintString)
 
 	args := runner.GetRemainingNonFlagOsArgs()
 	if *command {
@@ -114,7 +111,7 @@ func main() {
 		//
 		//  Run the translators over all the input files.
 		//
-		errors := runner1.RunFiles(args, pipeline)
+		errors := runner1.RunFiles(&grammars, args, pipeline)
 
 		//
 		//  Exit with non-zero response code if any errors occurred.

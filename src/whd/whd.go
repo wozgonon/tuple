@@ -19,6 +19,7 @@ package main
 import (
 	"tuple"
 	"tuple/runner"
+	"tuple/parsers"
 	"fmt"
 	"net/http"
 	"bufio"
@@ -37,7 +38,7 @@ func do(w http.ResponseWriter, req *http.Request) {
 	} else {
 		grammarName = grammarNames[0]
 	}
-	grammars := runner.NewGrammars()
+	grammars := runner.NewGrammars(parsers.NewJSONGrammar())
 	runner.AddAllKnownGrammars(&grammars)
 	grammar, ok := grammars.FindBySuffix(grammarName)
 	if ok {
