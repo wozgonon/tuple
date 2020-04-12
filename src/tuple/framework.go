@@ -230,16 +230,12 @@ func (tuple Tuple) GetKeyValue(index int) (Tag,Value) {
 }
 
 func (tuple *Tuple) Append(token Value) {
-	if token == nil {
-		panic("Unexpected nil value")
-	}
+	AssertNotNil(token)
 	tuple.List = append(tuple.List, token)
 }
 
 func (tuple *Tuple) Set(index int, token Value) {
-	if token == nil {
-		panic("Unexpected nil value")
-	}
+	AssertNotNil(token)
 	tuple.List[index] = token
 }
 
@@ -376,4 +372,14 @@ func BoolToString(value bool) string {
 func NthBitOfInt(value int64, index int) bool {
 	bit := uint64(value) & (1<<uint(index))
 	return bit != 0
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//  Assertiosn for pre-condiitons
+/////////////////////////////////////////////////////////////////////////////
+
+func AssertNotNil(value interface{}) {
+	if value == nil {
+		panic("Unexpected nil value")
+	}
 }

@@ -17,7 +17,6 @@
 package runner
 
 import "tuple"
-import 	"log"
 import 	"fmt"
 import 	"bufio"
 import 	"os"
@@ -94,48 +93,50 @@ func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) 
 	if ctx.Errors() > 0 {
 		return nil, errors.New("Errors during parse")
 	}
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+	return result, err
 }
 
-func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) int64 {
-
+func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) (Context, error) {
 	reader := bufio.NewReader(os.Stdin)
 	context := parsers.NewParserContext2(STDIN, reader, logger, promptOnEOL)
 	context.EOL() // prompt
 	err := inputGrammar.Parse(&context, next)
-	if err != nil {
-		context.Log("ERROR", "%s", err)
-	}
-	return context.Errors()
+	return &context, err
 }
 
-func RunFiles(grammars * Grammars, locationLogger LocationLogger, args []string, next Next) int64 {
-
-	if len(args) == 0 {
-		return RunStdin(locationLogger, grammars.Default(), next)
+func RunFile(grammars * Grammars, locationLogger LocationLogger, fileName string, next Next) (Context, error) {
+	suffix := path.Ext(fileName)
+	grammar, ok := grammars.FindBySuffix(suffix)
+	if ! ok {
+		return nil, errors.New("Unsupported file suffix: " + suffix)
 	}
+	file, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(file)
+	context := NewParserContext(fileName, reader, locationLogger)
+	err = grammar.Parse(&context, next)
+	file.Close()
+	return &context, err
+}
+
+func RunFiles(grammars * Grammars, locationLogger LocationLogger, args []string, next Next) (int64) {
 	errors := int64(0)
-	for _, fileName := range args {
-		suffix := path.Ext(fileName)
-		grammar, ok := grammars.FindBySuffix(suffix)
-		if ok {
-			file, err := os.Open(fileName)
+	if len(args) == 0 {
+		 context, err := RunStdin(locationLogger, grammars.Default(), next)
+		if err != nil {
+			tuple.Error(context, "%s", err)
+		}
+		errors += context.Errors()
+	} else {
+		for _, fileName := range args {
+			context, err := RunFile(grammars, locationLogger, fileName, next)
 			if err != nil {
-				log.Fatal(err) // TODO Should not be fatal
-			}
-			reader := bufio.NewReader(file)
-			context := NewParserContext(fileName, reader, locationLogger)
-			err = grammar.Parse(&context, next)
-			if err != nil {
-				context.Log("ERROR", "%s", err)
+				tuple.Error(context, "%s", err)
+				break
 			}
 			errors += context.Errors()
-			file.Close()
-		} else {
-			panic("Unsupported file suffix: " + suffix)  // TODO should not be fatal
 		}
 	}
 	return errors
@@ -145,9 +146,7 @@ func PrintString(value string) {
 	fmt.Printf ("%s", value)
 }
 
-//
 //  Set up the translator pipeline.
-//
 func SimplePipeline (context eval.EvalContext, runEval bool, queryPattern string, outputGrammar Grammar, out func(value string)) Next {
 
 	prettyPrint := func(tuple Value) error {

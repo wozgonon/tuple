@@ -85,14 +85,6 @@ func (grammars * Grammars) FindBySuffix(suffix string) (Grammar, bool) {
 	return syntax, ok
 }
 
-func (grammars * Grammars) FindBySuffixOrPanic(suffix string) Grammar {
-	syntax, ok := grammars.FindBySuffix(suffix)
-	if ! ok {
-		panic("Unsupported file suffix: '" + suffix + "'")
-	}
-	return syntax
-}
-
 func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 
 	table.AddToRoot(tuple.Tag{"grammars"}, grammars)
@@ -141,9 +133,4 @@ func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 			return tuple.EMPTY, nil // TODO error
 		}
 	})
-
-	//table.Add("grammars", func (context eval.EvalContext, value Value) Value {
-	//	return ParseAndEval(grammar, context, value)
-	//})
-
 }

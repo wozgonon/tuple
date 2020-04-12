@@ -18,8 +18,8 @@ package main
 
 import (
 	"tuple/runner"
-	"tuple/eval"
 	"tuple/parsers"
+	"tuple/eval"
 	"tuple"
 	"os"
 	"fmt"
@@ -28,6 +28,7 @@ import (
 )
 
 type SymbolTable = eval.SymbolTable
+type Grammars = runner.Grammars
 
 func main() {
 
@@ -69,10 +70,10 @@ func main() {
 
 	var inputGrammar tuple.Grammar = grammars.Default()
 	if *in != "" {
-		inputGrammar = grammars.FindBySuffixOrPanic(*in)
+		inputGrammar = FindBySuffixOrPanic(&grammars, *in)
 	}
 
-	outputGrammar := grammars.FindBySuffixOrPanic(*out)
+	outputGrammar := FindBySuffixOrPanic(&grammars, *out)
 	loggerGrammar, _ := grammars.FindBySuffix(*loggerGrammarSuffix)
 	logger := tuple.GetLogger(loggerGrammar, *verbose)
 
@@ -123,3 +124,12 @@ func main() {
 	}
 
 }
+
+func FindBySuffixOrPanic(grammars * Grammars, suffix string) tuple.Grammar {
+	syntax, ok := grammars.FindBySuffix(suffix)
+	if ! ok {
+		panic("Unsupported file suffix: '" + suffix + "'")
+	}
+	return syntax
+}
+

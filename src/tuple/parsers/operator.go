@@ -18,6 +18,9 @@ package parsers
 
 import "strings"
 import "fmt"
+import "tuple"
+
+var AssertNotNil = tuple.AssertNotNil
 
 /////////////////////////////////////////////////////////////////////////////
 //  An operator grammar
@@ -108,19 +111,15 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
 		panic(fmt.Sprintf("TODO handle err: %s", err))
 		// TODO
 	}
-	if value == nil {
-		panic("Unexpected nil")
-	}
+	AssertNotNil(value)
 	stack.Values.List = append((*values)[:lv-popped], value)
 	return index
 }
 
 
 func (stack * OperatorGrammar) PushValueWithoutInsertingMissingSepator(value Value) {
+	AssertNotNil(value)
 	Verbose(stack.context,"PUSH VALUE\t'%s'\n", value)
-	if value == nil {
-		panic("Unexpected nil")
-	}
 	stack.Values.Append(value)
 	stack.wasOperator = false
 }

@@ -20,6 +20,7 @@ import "tuple"
 import "tuple/lexer"
 import "bufio"
 import "strings"
+import "errors"
 
 type Grammar = tuple.Grammar
 type Context = tuple.Context
@@ -106,10 +107,11 @@ func ParseString(logger LocationLogger, grammar Grammar, expression string) (Val
 		result = value
 		return nil
 	}
+	ctx, err := RunParser(grammar, expression, logger, pipeline)
+	if ctx.Errors() > 0 {
+		return nil, errors.New("Errors during parse")
+	}
 
-	reader := bufio.NewReader(strings.NewReader(expression))
-	context := NewParserContext("<parse>", reader, logger)
-	err := grammar.Parse(&context, pipeline)
 	return result, err
 }
 
