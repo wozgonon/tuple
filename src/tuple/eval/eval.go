@@ -77,6 +77,11 @@ type LocalScope interface {
 	Add(name string, function interface{})
 }
 
+type Quoted struct {
+	value Value
+}
+func (quoted Quoted) Value() Value { return quoted.value }
+
 func Eval(context EvalContext, expression Value) (Value, error) {
 
 	context.Log("VERBOSE", "eval: '%s'", expression)
@@ -126,7 +131,7 @@ func Call(context EvalContext, head Tag, args []Value) (Value, error) {  // Redu
 			expectedType := call.expectedTypeOfArg(key)
 			switch  {
 			case expectedType == TagType && isTag:
-			case expectedType == ValueType:
+			case expectedType == QuotedType: result = Quoted{v}
 			default:
 				evaluated, err := Eval(context, v)
 				if err != nil {

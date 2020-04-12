@@ -218,20 +218,20 @@ func TestNewLinesInBraces(t *testing.T) {
 		}
 	}
 
-	test("eqt { 1 2 ; 3 4 ; } { 1 2 ; 3 4 }")
+	test("eq { 1 2 ; 3 4 ; } { 1 2 ; 3 4 }")
 
-	test(`eqt { 1 2 ; 3 4 ; 5 6 } { 1 2
+	test(`eq { 1 2 ; 3 4 ; 5 6 } { 1 2
  3 4
  5 6
 }`)
 
-	test(`eqt { 1 2 ; 3 4 ; 5 6 } {
+	test(`eq { 1 2 ; 3 4 ; 5 6 } {
  1 2
  3 4
  5 6
 }`)
 
-	test(`eqt { 1 2 ; 3 4 ; 5 6 } {
+	test(`eq { 1 2 ; 3 4 ; 5 6 } {
  1 2
  3 4
  5 6}`)

@@ -77,7 +77,7 @@ func AddBooleanAndArithmeticFunctions(table LocalScope) {
 		}
 		return aa%bb, nil
 	})
-	table.Add("eq", func (aa string, bb string) bool { return aa==bb })  // Should take Value as argument
+	table.Add("streq", func (aa string, bb string) bool { return aa==bb })  // Should take Value as argument
 	table.Add("==", func (aa float64, bb float64) bool { return aa==bb })  // Should take Value as argument
 	table.Add("!=", func (aa float64, bb float64) bool { return aa!=bb })
 	table.Add(">=", func (aa float64, bb float64) bool { return aa>=bb })
@@ -105,50 +105,30 @@ func AddHarmlessStringFunctions(table LocalScope) {
 // Array functions that do not allocate any memory
 func AddHarmlessArrayFunctions(table LocalScope)  {
 
-	table.Add("arity", func(context EvalContext, value Value) (int64, error) {
-		evaluated, err := Eval(context, value)
-		if err != nil {
-			return 0, err
-		}
-		return int64(evaluated.Arity()), nil
+	table.Add("quote", func(context EvalContext, quoted Quoted) Value {
+		return quoted.Value()
+	})
+	table.Add("arity", func(context EvalContext, value Value) int64 {
+		return int64(value.Arity())
 	})
 
-	table.Add("nth", func(context EvalContext, index64 int64, value tuple.Array) (Value, error) {
-		//evaluated, err := Eval(context, value)
-		//if err != nil {
-		//	return nil, err
-		//}
+	table.Add("nth", func(context EvalContext, index64 int64, value tuple.Array) Value {
 		index := int(index64) // TODO use int64 everywhere
-		return value.Get(index), nil
+		return value.Get(index)
 	})
 
-	table.Add("istuple", func (context EvalContext, value Value) (bool, error) {
-		evaluated, err := Eval(context, value)
-		if err != nil {
-			return false, err
-		}
-		_, ok := evaluated.(Tuple)
-		return ok, nil
+	table.Add("istuple", func (context EvalContext, value Value) bool {
+		_, ok := value.(Tuple)
+		return ok
 	})
-
-	table.Add("ismap", func (context EvalContext, value Value) (bool, error) {
-		evaluated, err := Eval(context, value)
-		if err != nil {
-			return false, err
-		}
-		_, ok := evaluated.(tuple.Map)
-		return ok, nil
+	table.Add("ismap", func (context EvalContext, value Value) bool {
+		_, ok := value.(tuple.Map)
+		return ok
 	})
-
-	table.Add("typeof", func (context EvalContext, value Value) (string, error) {
-		evaluated, err := Eval(context, value)
-		if err != nil {
-			return "", err
-		}
-		return reflect.TypeOf(evaluated).Name(), nil
+	table.Add("typeof", func (context EvalContext, value Value) string {
+		return reflect.TypeOf(value).Name()
 	})
-
-	table.Add("eqt", func (context EvalContext, aa Tuple, bb Tuple) bool {
+	table.Add("eq", func (context EvalContext, aa Value, bb Value) bool {
 		return reflect.DeepEqual(aa, bb)
 	})
 }

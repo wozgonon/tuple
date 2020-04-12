@@ -103,15 +103,6 @@ func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 	table.Add("ctx", func (context eval.EvalContext) Value {
 		return context.Root()
 	})
-	table.Add("query", func (context eval.EvalContext, path string) Value {
-		result := tuple.NewTuple()
-		query := NewQuery(path)
-		query.Match(context.Root(), func (value Value) error {
-			result.Append(value)
-			return nil
-		})
-		return result
-	})
 
 	// TODO Add to root
 	table.Add("grammars", func (context eval.EvalContext) Value {
@@ -126,7 +117,7 @@ func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 	//table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(&table, inputGrammar, expression) })
 
 	table.Add("expr", func (context eval.EvalContext, expression string) (Value, error) {
-		grammar := parsers.NewInfixExpressionGrammar()
+		grammar := parsers.NewInfixExpressionGrammar()  // Default???
 		return ParseAndEval(context, grammar, expression)
 	})
 

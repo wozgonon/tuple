@@ -66,28 +66,20 @@ func AddAllocatingTupleFunctions(table LocalScope)  {
 
 	table.Add("keys", func(context EvalContext, value Value) (Value, error) {
 
-		evaluated, err := Eval(context, value)
-		if err != nil {
-			return nil, err
-		}
 		result := tuple.NewTuple()  // TODO not efficient use stream
-		if mmap, ok := evaluated.(tuple.Map); ok {
+		if mmap, ok := value.(tuple.Map); ok {
 			mmap.ForallKeyValue(func(k Tag, _ Value) {
 				result.Append(k)
 			})
 		} else {
-			for k := 0; k < evaluated.Arity(); k += 1 {
+			for k := 0; k < value.Arity(); k += 1 {
 				result.Append(tuple.IntToTag(k))
 			}
 		}
 		return result, nil
 	})
 
-	table.Add("values", func(context EvalContext, value Value) (Value, error) {
-		evaluated, err := Eval(context, value)
-		if err != nil {
-			return nil, err
-		}
+	table.Add("values", func(context EvalContext, evaluated Value) (Value, error) {
 		result := tuple.NewTuple()  // TODO not efficient use stream
 		evaluated.ForallValues(func(value Value) error {
 			result.Append(value)
@@ -105,11 +97,7 @@ func AddAllocatingTupleFunctions(table LocalScope)  {
 /////////////////////////////////////////////////////////////////////////////
 
 // This assign might set the value of a global variable if one exists
-func Assign (context EvalContext, tag Tag, value Value) (Value, error) {
-	evaluated, err := Eval(context, value)
-	if err != nil {
-		return nil, err
-	}
+func Assign (context EvalContext, tag Tag, evaluated Value) (Value, error) {
 	if table, _ := context.Find(context, tag, []Value{}); table != nil {
 		table.Add(tag.Name, func () Value { return evaluated })
 	} else {
@@ -119,11 +107,7 @@ func Assign (context EvalContext, tag Tag, value Value) (Value, error) {
 }
 
 // This assign will only set a loca variable in the top most context.
-func AssignLocal (context EvalContext, tag Tag, value Value) (Value, error) {
-	evaluated, err := Eval(context, value)
-	if err != nil {
-		return nil, err
-	}
+func AssignLocal (context EvalContext, tag Tag, evaluated Value) (Value, error) {
 	context.Add(tag.Name, func () Value { return evaluated })
 	return evaluated, nil
 }
@@ -190,16 +174,16 @@ func AddSetAndDeclareFunctions(table LocalScope) {
 func AddControlStatementFunctions(table LocalScope) {
 
 	// Perhaps this could be moved to harmless.
-	table.Add("if", func(context EvalContext, condition bool, trueCode Value, falseCode Value) (Value, error) {
+	table.Add("if", func(context EvalContext, condition bool, trueCode Quoted, falseCode Quoted) (Value, error) {
 		var code Value
 		if condition {
-			code = trueCode
+			code = trueCode.Value()
 		} else {
-			code = falseCode
+			code = falseCode.Value()
 		}
 		return Eval(context, code)
 	})
-	table.Add("for", func(context EvalContext, tag Tag, list Value, code Value) Value {
+	table.Add("for", func(context EvalContext, tag Tag, list Quoted, code Quoted) Value {
 		var iterator Value = nil
 		newScope := context.NewLocalScope()
 		newScope.Add(tag.Name, func () Value {
@@ -207,13 +191,13 @@ func AddControlStatementFunctions(table LocalScope) {
 		})
 		// TODO Ideally for efficiency allow the method to return a callback iterator rather than collect values into a tuple
 
-		result := tuple.NewFiniteStream(list, func (v Value, next func(v Value) error) error {
+		result := tuple.NewFiniteStream(list.Value(), func (v Value, next func(v Value) error) error {
 			evaluated, err := Eval(context, v)
 			iterator = evaluated
 			if err != nil {
 				return err
 			}
-			value, err := Eval(newScope, code)
+			value, err := Eval(newScope, code.Value())
 			if err != nil {
 				return err
 			}
@@ -221,10 +205,10 @@ func AddControlStatementFunctions(table LocalScope) {
 		})
 		return result
 	})
-	table.Add("while", func(context EvalContext, condition Value, code Value) (Value, error) {
+	table.Add("while", func(context EvalContext, condition Quoted, code Quoted) (Value, error) {
 		var result Value = tuple.EMPTY
 		for {
-			condition, err := Eval(context, condition)
+			condition, err := Eval(context, condition.Value())
 			if err != nil {
 				return nil, err
 			}
@@ -232,7 +216,7 @@ func AddControlStatementFunctions(table LocalScope) {
 			if ! ok || ! bool(conditionResult) {
 				return result, nil
 			}
-			result, err = Eval(context, code)
+			result, err = Eval(context, code.Value())
 			if err != nil {
 				return nil, err
 			}

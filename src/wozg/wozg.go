@@ -85,6 +85,7 @@ func main() {
 	if *runEval {
 		eval.AddSafeFunctions(&runner1)
 		grammars.AddSafeGrammarFunctions(&runner1)
+		runner.AddSafeQueryFunctions(&runner1)
 	}
 
 	//

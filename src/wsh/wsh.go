@@ -53,6 +53,7 @@ func main () {
 	runner1 := eval.NewRunner(ifNotFound, logger)
 
 	eval.AddSafeFunctions(&runner1)
+	runner.AddSafeQueryFunctions(&runner1)
 	grammars.AddSafeGrammarFunctions(&runner1)
 
 	//runner.AddSafeGrammarFunctions(&table, &runner1.Grammars)

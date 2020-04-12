@@ -170,7 +170,7 @@ func SimplePipeline (context eval.EvalContext, runEval bool, queryPattern string
 		next := pipeline
 		query := NewQuery(queryPattern)
 		pipeline = func(value Value) error {
-			query.Match(value, next)
+			query.Match(context, value, next)
 			return nil
 		}
 	}

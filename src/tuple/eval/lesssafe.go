@@ -141,8 +141,8 @@ func AddOperatingSystemFunctions(table LocalScope) {
 		}
 		return true, nil
 	})
-	table.Add("eval", func (context EvalContext, value Value) (Value, error) {
-		evaluated, err := Eval(context, value)
+	table.Add("eval", func (context EvalContext, value Quoted) (Value, error) {
+		evaluated, err := Eval(context, value.Value())
 		if err != nil {
 			return nil, err
 		}

@@ -30,6 +30,7 @@ var TagType = reflect.TypeOf(Tag{""})
 var ValueType = reflect.TypeOf(func (_ Value) {}).In(0)
 var ArrayType = reflect.TypeOf(func (_ tuple.Array) {}).In(0)
 var EvalContextType = reflect.TypeOf(func (_ EvalContext) {}).In(0)
+var QuotedType = reflect.TypeOf(func (_ Quoted) {}).In(0)
 
 
 // Represents a call to a function using the golang reflect API.
