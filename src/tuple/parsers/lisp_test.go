@@ -93,6 +93,10 @@ func TestEvalLispWithInfixGrammar1(t *testing.T) {
 func TestEvalLispWithInfixGrammarToInt64(t *testing.T) {
 	var grammar = NewLispWithInfixGrammar()
 	tests := map[string]float64{
+		"11.1" : 11.1,
+		`11.12
+` : 11.12,
+		"-11.1" : -11.1,
 		"(1+1)" : 2,
 		"(1.)" : 1,
 		"(-1.)" : -1,
@@ -124,6 +128,7 @@ func TestLispInfixEquals(t *testing.T) {
 		}
 	}
 
+	test("(NaN != NaN)")
 	test("(11 == 11)")
 	test("(7 == 1+2*3)")
 	test("(5 == 1*2+3)")

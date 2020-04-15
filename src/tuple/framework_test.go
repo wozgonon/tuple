@@ -4,7 +4,7 @@ import (
 	"testing"
 	"tuple"
 //	"strings"
-//	"math"
+	"math"
 //	"tuple/parsers"
 )
 
@@ -50,6 +50,9 @@ func TestConversions(t *testing.T) {
 		t.Errorf("Expected 1234")
 	}
 	if tuple.FloatToString(123.456) != "123.456" {
+		t.Errorf("Expected")
+	}
+	if tuple.FloatToString(math.Inf(1)) != "Inf" {
 		t.Errorf("Expected")
 	}
 	if tuple.Float64ToString(tuple.Float64(145.002)) != "145.002" {

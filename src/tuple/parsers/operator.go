@@ -211,6 +211,7 @@ func (stack * OperatorGrammar) EndOfInput(next Next) error {
 		for index := lo-1 ; index >= 0; index -= 1 {
 			top := stack.operatorStack[index]
 			if stack.operators.IsOpenBracket(top) {
+				Error(stack.context,"Missing close bracket for '%s'", top.Name)
 				stack.popOperator()
 			} else {
 				index -= stack.reduceOperatorExpression(top)

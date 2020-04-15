@@ -21,6 +21,7 @@ import (
 	"testing"
 	"tuple"
 	"tuple/eval"
+	"tuple/parsers"
 	"tuple/runner"
 	"math"
 	"math/rand"
@@ -141,4 +142,23 @@ func TestUnaryFloat64(t *testing.T) {
 	test("acos", r1, math.Acos(r1))
 	test("atan", r1, math.Atan(r1))
 	test("round", r1, math.Round(r1))
+}
+
+
+func TestTestFunctions(t *testing.T) {
+
+	grammar := parsers.NewShellGrammar()
+	
+	test := func (formula string) {
+		val,_ := runner.ParseAndEval(safeEvalContext, grammar, formula)
+		if val != tuple.Bool(true) {
+			t.Errorf("Expected '%s' to be TRUE", formula)
+		}
+	}
+
+	test("istuple (1 2 3)")
+	test("! (istuple \"a\")")
+	test("ismap (1:2 3:4)")
+	test("! (ismap \"a\")")
+	test("eq (nth 1 (11 22 33)) 22")
 }

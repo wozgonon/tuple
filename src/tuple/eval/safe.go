@@ -183,7 +183,7 @@ func AddControlStatementFunctions(table LocalScope) {
 		}
 		return Eval(context, code)
 	})
-	table.Add("for", func(context EvalContext, tag Tag, list Quoted, code Quoted) Value {
+	table.Add("for", func(context EvalContext, tag Tag, list Value, code Quoted) Value {
 		var iterator Value = nil
 		newScope := context.NewLocalScope()
 		newScope.Add(tag.Name, func () Value {
@@ -191,7 +191,7 @@ func AddControlStatementFunctions(table LocalScope) {
 		})
 		// TODO Ideally for efficiency allow the method to return a callback iterator rather than collect values into a tuple
 
-		result := tuple.NewFiniteStream(list.Value(), func (v Value, next func(v Value) error) error {
+		result := tuple.NewFiniteStream(list, func (v Value, next func(v Value) error) error {
 			evaluated, err := Eval(context, v)
 			iterator = evaluated
 			if err != nil {

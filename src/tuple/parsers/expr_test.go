@@ -81,6 +81,11 @@ func TestFailToParse(t *testing.T) {
 	test(t, grammar, "*")
 	test(t, grammar, ")(")
 	test(t, grammar, ")")
+	test(t, grammar, `
+(
+`)
+	test(t, grammar, "(")
+	test(t, grammar, "(()")
 	test(t, grammar, ")")
 	test(t, grammar, ")-")
 	test(t, grammar, "())")
@@ -134,6 +139,8 @@ func testArithmeticAndLogic(t *testing.T, grammar tuple.Grammar) {
 	}
 
 	test("11 == 11")
+	test(`11 == 11
+`)
 	test("7 == 1+2*3")
 	test("5 == 1*2+3")
 	test("120 == 1*2*3*4*5")
@@ -274,7 +281,7 @@ func TestExprDeclareFunctions(t *testing.T) {
 	// TODO BUG in operator grammar test("nth(-1 ( 1 2 3 )) != 1")
 	test("nth(3  ( 1 2 3 )) != 4")
 
-	test("-1 == progn(1+2 3+4 cos(PI)")
+	test("-1 == progn(1+2 3+4 cos(PI))")
 	// TODO uses assign test("6==progn (m=3) (s=2) (m*s)")
 	
 	//test("for a (1 2) { for b (4 5) { a+b }} == ((5 6) (6 7))")

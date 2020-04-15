@@ -14,6 +14,14 @@ var one = tuple.Int64(1)
 func TestEvalJson(t *testing.T) {
 	var grammar = NewJSONGrammar()
 
+	if len(grammar.Name()) <= 0 {
+		t.Errorf("%s", grammar.Name())
+	}
+	if grammar.FileSuffix() != ".json" {
+		t.Errorf("%s", grammar.FileSuffix())
+	}
+
+		
 	test := func(formula string, expected tuple.Value) {
 		val,_ := ParseAndEval(safeEvalContext, grammar, formula)
 		if ! reflect.DeepEqual(val, expected) {

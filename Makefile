@@ -81,7 +81,7 @@ version: wozg
 	bin/wozg --version
 
 go_test: all
-	go test tuple wexpr tuple/eval tuple/lexer tuple/parsers tuple/runner -coverprofile=c.out
+	go test tuple wexpr tuple/eval tuple/parsers tuple/runner -coverprofile=c.out
 	echo RUN: go tool cover -html=c.out
 
 test_dirs: 

@@ -1,4 +1,4 @@
-package lexer_test
+package parsers_test
 
 import (
 	"testing"
@@ -11,7 +11,6 @@ import (
 )
 
 const NO_RESULT = "..."
-var GetLogger = tuple.GetLogger
 
 func testGetNext(t *testing.T, logger tuple.LocationLogger, expression string, expected string) {
 

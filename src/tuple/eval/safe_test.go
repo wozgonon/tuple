@@ -39,6 +39,13 @@ func TestDeclareFunctions(t *testing.T) {
 		}
 	}
 
+	test("eq (join \"-\" (1 2 3)) \"1-2-3\"")
+	test("eq (concat 1 2 3) \"123\"")
+	test("eq (concat true 2.2 3 \"x\") \"true2.23x\"")
+
+	test("eq (values (a:2 b:3)) (2 3)")
+	test("eq (arity (keys (a:2 b:3))) 2")
+	
 	test(`
 func aa a { a*2 }
 aa(2)==4`)
@@ -48,6 +55,8 @@ aa(2)==4`)
 	test("15   == (progn (func a b c { b+c }) a(13 2))")
 	test("23   == (progn (func a b c d { b+c*d }) a(13 2 5))")
 
+	test("eq (while false 1) ()")
+	// eq (for v (list true) { v }) (list true)
 	test("if(true,1,2) == 1")
 	test("if(false,1,2) == 2")
 	test("if(false,1, cos(PI)) == -1")

@@ -14,7 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package lexer
+package parsers
 
 import "io"
 import "unicode"
@@ -23,23 +23,6 @@ import "math"
 import "unicode/utf8"
 import "tuple"
 //import "reflect"
-
-type Grammar = tuple.Grammar
-type Context = tuple.Context
-type Tag = tuple.Tag
-type Value = tuple.Value
-type StringFunction = tuple.StringFunction
-type String = tuple.String
-type Tuple = tuple.Tuple
-type Next = tuple.Next
-type Lexer = tuple.Lexer
-type Float64 = tuple.Float64
-type Int64 = tuple.Int64
-
-var PrintTuple = tuple.PrintTuple
-var NewTuple = tuple.NewTuple
-var Error = tuple.Error
-var Verbose = tuple.Verbose
 
 /////////////////////////////////////////////////////////////////////////////
 //  A lexer similar to that used by UNIX/C based languages
@@ -94,6 +77,14 @@ type Style struct {
 	KeyValueSeparatorRune rune
 
 	RecognizeNegative bool
+
+	//
+	// TODO provide a lexer that understands indent grammars than use indentation rather than brackets to denote nesting.
+	//      similar to those used by Occam, Python or Yaml
+	//      An increase in indentation is equal to an open bracket or brace
+	//      A  decrease to the previous level of indentation rquals a close bracket or brace
+	//
+
 }
 
 func NewStyle(

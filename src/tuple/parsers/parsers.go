@@ -17,7 +17,6 @@
 package parsers
 
 import "tuple"
-import "tuple/lexer"
 import "bufio"
 import "strings"
 import "errors"
@@ -30,10 +29,8 @@ type StringFunction = tuple.StringFunction
 type String = tuple.String
 type Tuple = tuple.Tuple
 type Next = tuple.Next
-type Lexer = tuple.Lexer
 type Float64 = tuple.Float64
 type Int64 = tuple.Int64
-type Style = lexer.Style
 
 var CONS_ATOM = tuple.CONS_ATOM
 var IsAtom = tuple.IsAtom
@@ -43,21 +40,8 @@ var PrintExpression = tuple.PrintExpression
 var PrintExpression1 = tuple.PrintExpression1
 var PrintScalar = tuple.PrintScalar
 var NewTuple = tuple.NewTuple
-var NewStyle = lexer.NewStyle
-//var NewScalar = tuple.NewScalar
 var Error = tuple.Error
 var Verbose = tuple.Verbose
-
-const OPEN_BRACKET = lexer.OPEN_BRACKET
-const CLOSE_BRACKET = lexer.CLOSE_BRACKET
-const OPEN_SQUARE_BRACKET = lexer.OPEN_SQUARE_BRACKET
-const CLOSE_SQUARE_BRACKET = lexer.CLOSE_SQUARE_BRACKET
-const OPEN_BRACE = lexer.OPEN_BRACE
-const CLOSE_BRACE = lexer.CLOSE_BRACE
-const NEWLINE = lexer.NEWLINE
-const DOUBLE_QUOTE = lexer.DOUBLE_QUOTE
-var SPACE_ATOM = lexer.SPACE_ATOM
-
 
 func UnexpectedCloseBracketError(context Context, token string) {
 	Error(context,"Unexpected close bracket '%s'", token)
