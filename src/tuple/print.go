@@ -46,7 +46,7 @@ func PrintScalar(printer Printer, depth string, value Value, out StringFunction)
 
 	switch value.(type) {
 	case Tag: out(value.(Tag).Name)
-	case String: Quote(string(value.(String)), out)
+	case String: out(DoubleQuotedString(string(value.(String))))
 	case Bool: out(BoolToString(bool(value.(Bool))))
 	case Int64: out(Int64ToString(value.(Int64)))
 	case Float64: out(Float64ToString(value.(Float64)))

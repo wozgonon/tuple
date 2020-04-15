@@ -359,10 +359,9 @@ func BoolToInt(value Bool) int64 {
 	return 0
 }
 
-func Quote(value string, out func(value string)) {
-	out(DOUBLE_QUOTE)
-	out(value)   // TODO Escape
-	out(DOUBLE_QUOTE)
+func DoubleQuotedString(value string) string {
+	return strconv.Quote(value)
+
 }
 
 func BoolToString(value bool) string {

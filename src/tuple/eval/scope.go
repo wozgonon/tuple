@@ -72,6 +72,7 @@ func (runner * Runner) NewLocalScope() EvalContext {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// TODO need a function scope and a loop scope, assign should never work below function scope
 
 type RunnerLocalScope struct {
 	global * Runner

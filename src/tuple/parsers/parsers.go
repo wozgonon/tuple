@@ -37,7 +37,6 @@ type Style = lexer.Style
 
 var CONS_ATOM = tuple.CONS_ATOM
 var IsAtom = tuple.IsAtom
-var Quote = tuple.Quote
 var Head = tuple.Head
 var PrintTuple = tuple.PrintTuple
 var PrintExpression = tuple.PrintExpression

@@ -3,7 +3,7 @@
 - 
   "abc":
     - "def"
-    - "tab	tab	tab"
+    - "tab\ttab\ttab"
     - NaN
     - Inf
     - 

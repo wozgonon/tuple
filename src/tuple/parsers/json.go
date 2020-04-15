@@ -62,7 +62,7 @@ func NewJSONGrammar() Grammar {
 }
 
 func (printer JSONGrammar) PrintKey(tag Tag, out StringFunction) {
-	tuple.Quote(tag.Name, out)
+	out(tuple.DoubleQuotedString(tag.Name))
 	out(printer.KeyValueSeparator)
 	out(" ")
 }

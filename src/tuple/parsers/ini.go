@@ -15,6 +15,11 @@
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
 package parsers
+import "tuple"
+
+func Quote(value string, out func(value string)) {
+	out(tuple.DoubleQuotedString(value))
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Yaml Grammar

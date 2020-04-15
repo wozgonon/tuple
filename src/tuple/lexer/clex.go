@@ -314,48 +314,40 @@ func ReadUntilEndOfLine(context Context) (string, error) {
 }
 
 func ReadCLanguageString(context Context) (String, error) {
-	token := ""
+	token := "\""
 	for {
 		ch, err := context.ReadRune()
 		switch {
 		case err == io.EOF:
-			Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
-			return String(token), nil
-		case err != nil: return String(""), err
-		case ch == '"': return String(token), nil
-		case ch == '\\':
-			ch, err := context.ReadRune()
-			if err == io.EOF {
-				Error(context,"ERROR missing close quote: '%s'", DOUBLE_QUOTE)
-				return String(token), nil
-			}
-			token = token + string(cLanguageEscapeCharacters(ch))
-		default:
-			// TODO not efficient
+			Error(context,"Missing close quote: '%s'", DOUBLE_QUOTE)
+			return String(""), nil
+		case err != nil:
+			Error(context, "%s", err)
+			return String(""), nil
+		case ch == '"':
 			token = token + string(ch)
+			str, err := strconv.Unquote(token)
+			if err != nil {
+				Error(context, "Got '%s'err= %s", token, err)
+				return String(""), nil
+			}
+			return String(str), nil
+		case ch == '\\':
+			token = token + string(ch)
+			ch, err = context.ReadRune()
+			if err == io.EOF {
+				Error(context,"Missing close quote: '%s'", DOUBLE_QUOTE)
+				return String(""), nil
+			}
+			if err != nil {
+				Error(context, "%s", err)
+				return String(""), nil
+			}
 		}
+		// TODO not efficient
+		token = token + string(ch)
 	}
-}
-
-func cLanguageEscapeCharacters(ch rune) rune {
-	switch ch {
-	case 'n': return NEWLINE
-	case 'r': return '\r'
-	case 't': return '\t'
-	// TODO 
-	default:
-		return ch;
-	}
-}
-
-func IsCompare(ch rune) bool {
-	switch ch {
-		case '=': return true
-		case '!': return true
-		case '<': return true
-		case '>': return true
-		default: return false
-	}
+	
 }
 
 /////////////////////////////////////////////////////////////////////////////

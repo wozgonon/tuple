@@ -77,4 +77,11 @@ func TestConversions(t *testing.T) {
 	if tuple.BoolToString(true) != "true" {
 		t.Errorf("Expected")
 	}
+
+	if tuple.DoubleQuotedString("abc") != "\"abc\"" {
+		t.Errorf("Expected")
+	}
+	if tuple.DoubleQuotedString("a\nb\tc") != "\"a\\nb\\tc\"" {
+		t.Errorf("Expected")
+	}
 }
