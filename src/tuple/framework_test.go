@@ -45,6 +45,36 @@ func TestNthBitOfInt(t *testing.T) {
 	}
 }
 
-
-
-
+func TestConversions(t *testing.T) {
+	if tuple.IntToString(1234) != "1234" {
+		t.Errorf("Expected 1234")
+	}
+	if tuple.FloatToString(123.456) != "123.456" {
+		t.Errorf("Expected")
+	}
+	if tuple.Float64ToString(tuple.Float64(145.002)) != "145.002" {
+		t.Errorf("Expected")
+	}
+	if tuple.Int64ToString(tuple.Int64(1234)) != "1234" {
+		t.Errorf("Expected")
+	}
+	expected := tuple.Tag{"12345"}
+	if tuple.IntToTag(12345) != expected {
+		t.Errorf("Expected")
+	}
+	if tuple.BoolToFloat(true) != 1. {
+		t.Errorf("Expected")
+	}
+	if tuple.BoolToInt(false) != 0 {
+		t.Errorf("Expected")
+	}
+	if tuple.BoolToFloat(false) != 0. {
+		t.Errorf("Expected")
+	}
+	if tuple.BoolToInt(true) != 1 {
+		t.Errorf("Expected")
+	}
+	if tuple.BoolToString(true) != "true" {
+		t.Errorf("Expected")
+	}
+}

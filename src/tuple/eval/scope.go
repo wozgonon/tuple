@@ -36,6 +36,10 @@ func NewRunner(notFound Finder, logger LocationLogger) Runner {
 	return runner
 }
 
+func (scope * Runner) GlobalScope() GlobalScope {
+	return scope
+}
+
 func (runner * Runner) Root() Value {
 	return runner.root
 }
@@ -80,12 +84,12 @@ func (scope * RunnerLocalScope) NewLocalScope() EvalContext {
 	return &newScope
 }
 
-func (scope * RunnerLocalScope) Root() Value {
-	return scope.global.Root()
+func (scope * RunnerLocalScope) GlobalScope() GlobalScope {
+	return scope.global
 }
 
-func (scope * RunnerLocalScope) LocationLogger() LocationLogger {
-	return scope.global.locationLogger
+func (scope * RunnerLocalScope) Root() Value {
+	return scope.global.Root()
 }
 
 func (scope * RunnerLocalScope) Log(level string, format string, args ...interface{}) {
@@ -101,6 +105,3 @@ func (scope * RunnerLocalScope) Add(name string, function interface{}) {
 	scope.symbols.Add(name, function)
 }
 
-func (scope * RunnerLocalScope) AddToRoot(key Tag, value Value) {
-	scope.global.AddToRoot(key, value)
-}

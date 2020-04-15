@@ -36,6 +36,7 @@ func Trace(logger Logger, format string, args ...interface{}) {
 }
 
 func Error(logger Logger, format string, args ...interface{}) {
+	AssertNotNil(logger)
 	logger.Log("ERROR", format, args...)
 }
 

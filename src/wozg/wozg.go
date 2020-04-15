@@ -59,7 +59,7 @@ func main() {
 	}
 
 	grammars := runner.NewGrammars(parsers.NewLispGrammar())
-	runner.AddAllKnownGrammars(&grammars)
+	grammars.AddAllKnownGrammars()
 	// To list all grammars: wozg -eval -command grammars
 	if *listGrammars {
 		grammars.Forall(func (grammar tuple.Grammar) {
@@ -113,7 +113,7 @@ func main() {
 		//
 		//  Run the translators over all the input files.
 		//
-		errors := runner.RunFiles(&grammars, logger, args, pipeline)
+		errors := grammars.RunFiles(logger, args, pipeline)
 
 		//
 		//  Exit with non-zero response code if any errors occurred.

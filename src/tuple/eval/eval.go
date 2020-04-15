@@ -50,9 +50,9 @@ var Trace = tuple.Trace
 //  
 
 type EvalContext interface {
+	Logger
 	LocalScope
-	GlobalScope
-
+	GlobalScope() GlobalScope
 	NewLocalScope() EvalContext
 }
 

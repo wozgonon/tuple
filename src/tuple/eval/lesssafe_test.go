@@ -28,6 +28,6 @@ func TestLessSafe(t *testing.T) {
 
 	logger := tuple.GetLogger(nil, false)
 	symbols := runner.NewSafeEvalContext(logger)
-	eval.AddLessSafeFunctions(symbols, symbols)
+	eval.AddLessSafeFunctions(symbols, symbols.GlobalScope())
 	// TODO
 }

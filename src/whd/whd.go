@@ -39,7 +39,7 @@ func do(w http.ResponseWriter, req *http.Request) {
 		grammarName = grammarNames[0]
 	}
 	grammars := runner.NewGrammars(parsers.NewJSONGrammar())
-	runner.AddAllKnownGrammars(&grammars)
+	grammars.AddAllKnownGrammars()
 	grammar, ok := grammars.FindBySuffix(grammarName)
 	if ok {
 		reader := bufio.NewReader(r) // TODO read from request

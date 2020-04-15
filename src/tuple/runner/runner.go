@@ -17,11 +17,10 @@
 package runner
 
 import "tuple"
-import 	"fmt"
-import 	"bufio"
-import 	"os"
+import "fmt"
+import "bufio"
+import "os"
 import "errors"
-import "path"
 import "flag"
 import "tuple/eval"
 import "tuple/parsers"
@@ -35,6 +34,7 @@ type Int64 = tuple.Int64
 type LocationLogger = tuple.LocationLogger
 
 var NewParserContext = parsers.NewParserContext
+
 const STDIN = "<stdin>"
 const PROMPT = "$ "
 
@@ -53,12 +53,21 @@ func promptOnEOL(context Context) {
 	}
 }
 
+func RunParserOnStdin(logger LocationLogger, inputGrammar Grammar, next Next) (Context, error) {
+	reader := bufio.NewReader(os.Stdin)
+	context := parsers.NewParserContext2(STDIN, reader, logger, promptOnEOL)
+	context.EOL() // prompt
+	err := inputGrammar.Parse(&context, next)
+	return &context, err
+}
+
 /////////////////////////////////////////////////////////////////////////////
 
 func NewSafeEvalContext(logger LocationLogger) eval.EvalContext {
 	ifNotFound := eval.NewErrorIfFunctionNotFound()
 	runner := eval.NewRunner(ifNotFound, logger)
 	eval.AddSafeFunctions(&runner)
+	AddTranslatedSafeFunctions(&runner)
 	return &runner
 }
 
@@ -67,6 +76,18 @@ func NewHarmlessEvalContext(logger LocationLogger) eval.EvalContext {
 	runner := eval.NewRunner(ifNotFound, logger)
 	eval.AddHarmlessFunctions(&runner)
 	return &runner
+}
+
+func AddTranslatedSafeFunctions(runner * eval.Runner) {
+	inputGrammar := parsers.NewShellGrammar()
+	ParseAndEval(runner, inputGrammar, "func count  t { progn (c=0) (for v t { c=c+1 }) c }")
+	ParseAndEval(runner, inputGrammar, `
+func first  t { nth 0 t }
+func second t { nth 1 t }
+func third  t { nth 2 t }`)
+	
+	//func reduce f t { progn c=1 accumulator=first(t) (for v t { accumulator = f(accumulator v))  accumulator}
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -89,57 +110,11 @@ func ParseAndEval(context eval.EvalContext, grammar Grammar, expression string) 
 		result = evaluated
 		return nil
 	}
-	ctx, err := parsers.RunParser(grammar, expression, context.LocationLogger(), pipeline)
+	ctx, err := parsers.RunParser(grammar, expression, context.GlobalScope().LocationLogger(), pipeline)
 	if ctx.Errors() > 0 {
 		return nil, errors.New("Errors during parse")
 	}
 	return result, err
-}
-
-func RunStdin(logger LocationLogger, inputGrammar Grammar, next Next) (Context, error) {
-	reader := bufio.NewReader(os.Stdin)
-	context := parsers.NewParserContext2(STDIN, reader, logger, promptOnEOL)
-	context.EOL() // prompt
-	err := inputGrammar.Parse(&context, next)
-	return &context, err
-}
-
-func RunFile(grammars * Grammars, locationLogger LocationLogger, fileName string, next Next) (Context, error) {
-	suffix := path.Ext(fileName)
-	grammar, ok := grammars.FindBySuffix(suffix)
-	if ! ok {
-		return nil, errors.New("Unsupported file suffix: " + suffix)
-	}
-	file, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-	reader := bufio.NewReader(file)
-	context := NewParserContext(fileName, reader, locationLogger)
-	err = grammar.Parse(&context, next)
-	file.Close()
-	return &context, err
-}
-
-func RunFiles(grammars * Grammars, locationLogger LocationLogger, args []string, next Next) (int64) {
-	errors := int64(0)
-	if len(args) == 0 {
-		 context, err := RunStdin(locationLogger, grammars.Default(), next)
-		if err != nil {
-			tuple.Error(context, "%s", err)
-		}
-		errors += context.Errors()
-	} else {
-		for _, fileName := range args {
-			context, err := RunFile(grammars, locationLogger, fileName, next)
-			if err != nil {
-				tuple.Error(context, "%s", err)
-				break
-			}
-			errors += context.Errors()
-		}
-	}
-	return errors
 }
 
 func PrintString(value string) {

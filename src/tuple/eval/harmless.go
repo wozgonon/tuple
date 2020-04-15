@@ -106,7 +106,8 @@ func AddHarmlessStringFunctions(table LocalScope) {
 func AddHarmlessArrayFunctions(table LocalScope)  {
 
 	table.Add("quote", func(context EvalContext, quoted Quoted) Value {
-		return quoted.Value()
+		// TODO get correct quote
+		return tuple.NewTuple(Tag{"quote"}, quoted.Value())
 	})
 	table.Add("arity", func(context EvalContext, value Value) int64 {
 		return int64(value.Arity())

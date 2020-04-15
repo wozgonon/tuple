@@ -49,32 +49,23 @@ func main () {
 	ifNotFound := eval.NewExecIfNotFound()
 
 	grammars := runner.NewGrammars(parsers.NewShellGrammar())
-	runner.AddAllKnownGrammars(&grammars)
+	grammars.AddAllKnownGrammars()
 	runner1 := eval.NewRunner(ifNotFound, logger)
 
 	eval.AddSafeFunctions(&runner1)
 	runner.AddSafeQueryFunctions(&runner1)
+	runner.AddTranslatedSafeFunctions(&runner1)
 	grammars.AddSafeGrammarFunctions(&runner1)
 
-	//runner.AddSafeGrammarFunctions(&table, &runner1.Grammars)
 	eval.AddLessSafeFunctions(&runner1, &runner1)
 	runner1.Add("|", eval.Pipe)
 	runner1.Add("=", eval.AssignLocal)
 
-	//func reduce f t { progn c=1 accumulator=first(t) (for v t { accumulator = f(accumulator v))  accumulator}
-		
-	inputGrammar := grammars.Default()
-	outputGrammar := inputGrammar
-	runner.ParseAndEval(&runner1, inputGrammar, "func count  t { progn (c=0) (for v t { c=c+1 }) c }")
-	runner.ParseAndEval(&runner1, inputGrammar, "func first  t { nth 0 t }")
-	runner.ParseAndEval(&runner1, inputGrammar, "func second t { nth 1 t }")
-	runner.ParseAndEval(&runner1, inputGrammar, "func third  t { nth 2 t }")
-
-
+	outputGrammar := grammars.Default()
 	pipeline := runner.SimplePipeline (&runner1, !*ast, *queryPattern, outputGrammar, runner.PrintString)
 
 	files := runner.GetRemainingNonFlagOsArgs()
-	errors := runner.RunFiles(&grammars, logger, files, pipeline)
+	errors := grammars.RunFiles(logger, files, pipeline)
 
 	if errors > 0 {
 		os.Exit(1)

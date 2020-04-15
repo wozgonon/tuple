@@ -21,19 +21,11 @@ import 	"strings"
 import "tuple/eval"
 import "tuple/parsers"
 import "errors"
+import "path"
+import "os"
+import "bufio"
+import "fmt"
 
-
-
-func AddAllKnownGrammars(grammars * Grammars) {
-	grammars.Add(parsers.NewLispWithInfixGrammar())
-	grammars.Add(parsers.NewLispGrammar())
-	grammars.Add(parsers.NewInfixExpressionGrammar())
-	grammars.Add(parsers.NewYamlGrammar())
-	grammars.Add(parsers.NewIniGrammar())
-	grammars.Add(parsers.NewPropertyGrammar())
-	grammars.Add(parsers.NewJSONGrammar())
-	grammars.Add(parsers.NewShellGrammar())
-}
 
 // A set of Grammars
 type Grammars struct {
@@ -85,6 +77,66 @@ func (grammars * Grammars) FindBySuffix(suffix string) (Grammar, bool) {
 	return syntax, ok
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+func (grammars * Grammars)  RunFile(locationLogger LocationLogger, fileName string, next Next) (Context, error) {
+	suffix := path.Ext(fileName)
+	grammar, ok := grammars.FindBySuffix(suffix)
+	if ! ok {
+		return nil, errors.New("Unsupported file suffix: " + suffix)
+	}
+	file, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(file)
+	context := NewParserContext(fileName, reader, locationLogger)
+	err = grammar.Parse(&context, next)
+	file.Close()
+	return &context, err
+}
+
+func (grammars * Grammars) RunFiles(locationLogger LocationLogger, args []string, next Next) (int64) {
+	errors := int64(0)
+	if len(args) == 0 {
+		 context, err := RunParserOnStdin(locationLogger, grammars.Default(), next)
+		if err != nil {
+			location := tuple.NewLocation("<stdin>", 0, 0, 0)
+			locationLogger(location, "ERROR", fmt.Sprintf("%s", err))
+			errors += 1
+		}
+		errors += context.Errors()
+	} else {
+		for _, fileName := range args {
+			context, err := grammars.RunFile(locationLogger, fileName, next)
+			if err != nil {
+				location := tuple.NewLocation(fileName, 0, 0, 0)
+				locationLogger(location, "ERROR", fmt.Sprintf("%s", err))
+				errors += 1
+				break
+			}
+			errors += context.Errors()
+		}
+	}
+	return errors
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+func (grammars * Grammars) AddAllKnownGrammars() {
+	grammars.Add(parsers.NewLispWithInfixGrammar())
+	grammars.Add(parsers.NewLispGrammar())
+	grammars.Add(parsers.NewInfixExpressionGrammar())
+	grammars.Add(parsers.NewYamlGrammar())
+	grammars.Add(parsers.NewIniGrammar())
+	grammars.Add(parsers.NewPropertyGrammar())
+	grammars.Add(parsers.NewJSONGrammar())
+	grammars.Add(parsers.NewShellGrammar())
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+
 func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 
 	table.AddToRoot(tuple.Tag{"grammars"}, grammars)
@@ -93,16 +145,12 @@ func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 	//	return table.AllSymbols()
 	//})
 	table.Add("ctx", func (context eval.EvalContext) Value {
-		return context.Root()
+		return context.GlobalScope().Root()
 	})
 
 	// TODO Add to root
 	table.Add("grammars", func (context eval.EvalContext) Value {
-		tuple := tuple.NewTuple()
-		for _,v := range grammars.All {
-			tuple.Append(String(v.FileSuffix()))
-		}
-		return tuple
+		return grammars
 	})
 
 	//table.Add("ast", func (expression string) tuple.Value { return parsers.ParseString(inputGrammar, expression) })
@@ -116,10 +164,9 @@ func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 	table.Add("ast2", func (context eval.EvalContext, grammarFileSuffix string, expression string) (Value, error) {
 		grammar, ok := grammars.FindBySuffix(grammarFileSuffix)
 		if ok {
-			return parsers.ParseString(context.LocationLogger(), grammar, expression)
+			return parsers.ParseString(context.GlobalScope().LocationLogger(), grammar, expression)
 		} else {
-			context.Log("ERROR", "No such grammar '%s'", grammarFileSuffix)
-			return nil, errors.New("No such grammar")  //tuple.EMPTY // TODO eror
+			return nil, errors.New(fmt.Sprintf("No such grammar '%s'", grammarFileSuffix))
 		}
 	})
 
@@ -129,8 +176,7 @@ func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 		if ok {
 			return ParseAndEval(context, grammar, expression)
 		} else {
-			context.Log("ERROR", "No such grammar '%s'", grammarFileSuffix)
-			return tuple.EMPTY, nil // TODO error
+			return nil, errors.New(fmt.Sprintf("No such grammar '%s'", grammarFileSuffix))
 		}
 	})
 }
