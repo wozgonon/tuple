@@ -20,12 +20,33 @@ package eval_test
 import (
 	"testing"
 	"tuple/runner"
+	//"tuple/parsers"
 	"tuple/eval"
+	"os"
 )
 
 func TestLessSafe(t *testing.T) {
 
-	symbols := runner.NewSafeEvalContext(logger)
-	eval.AddLessSafeFunctions(symbols, symbols.GlobalScope())
+	var safeEvalContext = runner.NewSafeEvalContext(logger)
+	eval.AddLessSafeFunctions(safeEvalContext, symbols.GlobalScope())
 	// TODO
+
+/*		test := func (formula string) {
+		val,_ := runner.ParseAndEval(safeEvalContext, grammar, formula)
+		if val != tuple.Bool(true) {
+			t.Errorf("Expected '%s' to be TRUE", formula)
+		}
+	}*/
+
+	//test("eq (join \"-\" (1 2 3)) \"1-2-3\"")
+
+}
+
+func TestLessSafeOs(t *testing.T) {
+
+	os1 := eval.Os{}
+	if os1.Get(0) != Int64(os.Getpid()) {
+		t.Errorf("Expected")
+	}
+	//GetKeyValue
 }
