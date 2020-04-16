@@ -58,7 +58,6 @@ type Next = func(value Value) error
 /////////////////////////////////////////////////////////////////////////////
 
 type Lexer interface {
-	//Printer
 	GetNext(context Context, eol func(), open func(open string), close func(close string), nextTag func(tag Tag), nextLiteral func (literal Value)) error
 }
 

@@ -31,14 +31,13 @@ type Tuple = tuple.Tuple
 type Next = tuple.Next
 type Float64 = tuple.Float64
 type Int64 = tuple.Int64
+type Array = tuple.Array
+type Bool = tuple.Bool
 
 var CONS_ATOM = tuple.CONS_ATOM
 var IsAtom = tuple.IsAtom
 var Head = tuple.Head
-var PrintTuple = tuple.PrintTuple
-var PrintExpression = tuple.PrintExpression
-var PrintExpression1 = tuple.PrintExpression1
-var PrintScalar = tuple.PrintScalar
+
 var NewTuple = tuple.NewTuple
 var Error = tuple.Error
 var Verbose = tuple.Verbose

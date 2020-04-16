@@ -25,12 +25,7 @@ type Float64 = tuple.Float64
 type Int64 = tuple.Int64
 
 var CONS_ATOM = tuple.CONS_ATOM
-var PrintTuple = tuple.PrintTuple
-var PrintExpression = tuple.PrintExpression
-var PrintExpression1 = tuple.PrintExpression1
-var PrintScalar = tuple.PrintScalar
 var NewTuple = tuple.NewTuple
-//var NewScalar = tuple.NewScalar
 var Error = tuple.Error
 var Verbose = tuple.Verbose
 

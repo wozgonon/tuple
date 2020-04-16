@@ -406,7 +406,7 @@ func (printer Style) PrintKey(tag Tag, out StringFunction) {
 }
 
 func (printer Style) PrintScalar(depth string, value Value, out StringFunction) {
-	tuple.PrintScalar(printer, depth, value, out)
+	PrintScalar(printer, depth, value, out)
 }
 
 func (printer Style) PrintScalarPrefix(depth string, out StringFunction) {}

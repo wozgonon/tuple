@@ -14,8 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with WOZG.  If not, see <https://www.gnu.org/licenses/>.
 */
-package tuple
+package parsers
 
+import "tuple"
 import "log"
 import "reflect"
 
@@ -46,16 +47,15 @@ func PrintScalar(printer Printer, depth string, value Value, out StringFunction)
 
 	switch value.(type) {
 	case Tag: out(value.(Tag).Name)
-	case String: out(DoubleQuotedString(string(value.(String))))
-	case Bool: out(BoolToString(bool(value.(Bool))))
-	case Int64: out(Int64ToString(value.(Int64)))
-	case Float64: out(Float64ToString(value.(Float64)))
+	case String: out(tuple.DoubleQuotedString(string(value.(String))))
+	case Bool: out(tuple.BoolToString(bool(value.(Bool))))
+	case Int64: out(tuple.Int64ToString(value.(Int64)))
+	case Float64: out(tuple.Float64ToString(value.(Float64)))
 	default:
 		if value.Arity() == 0 {
 			printer.PrintEmptyTuple(depth, out)
 		} else {
 			log.Printf("ERROR type '%s' not recognised: %s", reflect.TypeOf(value), value);  // TODO return error or prevent from ever happening
-			//log.Printf("ERROR unexpected tuple '%s", value);  // TODO return error or prevent from ever happening
 		}
 	}
 }
@@ -100,7 +100,7 @@ func PrintExpression1(printer Printer, depth string, token Value, out StringFunc
 	}
 	ll := token.Arity()
 
-	if mapp, ok := token.(Map); ok {
+	if mapp, ok := token.(tuple.Map); ok {
 		newDepth := printer.PrintOpenTuple(depth, token, out)
 		printer.PrintSuffix(depth, out)
 
@@ -113,11 +113,9 @@ func PrintExpression1(printer Printer, depth string, token Value, out StringFunc
 				printer.PrintSuffix(depth, out)
 			}
 			printer.PrintIndent(newDepth, out)
-			//printer.PrintHeadTag(k, out)
 			printer.PrintKey(k, out)
 			PrintExpression1(printer, newDepth, value, out)
 			if ! sep {
-				//printer.PrintSuffix(depth, out)
 				sep = true
 			}
 		})
@@ -126,7 +124,7 @@ func PrintExpression1(printer Printer, depth string, token Value, out StringFunc
 		return
 	}
 	
-	if array, ok := token.(Array); ok {
+	if array, ok := token.(tuple.Array); ok {
 		head := array.Get(0)
 		tag, ok := head.(Tag)
 		if ok && ll <= 3 {
