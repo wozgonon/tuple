@@ -93,30 +93,48 @@ func GetLogger(logGrammar Grammar, verbose bool) LocationLogger {
 
 	var logger LocationLogger
 	if logGrammar == nil {
-		logger = func (context Location, level string, message string) {
-			prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': %s", level, context.Line(), context.Column(), context.Depth(), context.SourceName(), message)
-			log.Print(prefix)
-		}
+		logger = NewDefaultLocationLogger()
 	} else {
-		logger = func(context Location, level string, message string) {
-			record := NewTuple()
-			record.Append(String(level))
-			record.Append(Int64(context.Line()))
-			record.Append(Int64(context.Column()))
-			record.Append(Int64(context.Depth()))
-			record.Append(String(context.SourceName()))
-			record.Append(String(message))
-			logGrammar.Print(record, func (value string) { fmt.Print(value) })
-		}
+		logger = NewGrammarLogger(logGrammar)
 	}
+	return NewVerboseFilterLogger(verbose, logger)
+}
 
+func NewGrammarLogger(logGrammar Grammar) LocationLogger {
+	return NewTupleLogger(func (value Value) {
+		logGrammar.Print(value, func (value string) {
+			fmt.Print(value)
+		})})
+}
+
+func NewVerboseFilterLogger(verbose bool, logger LocationLogger) LocationLogger {
 	if verbose {
 		return logger
-	} else {
-		return func (context Location, level string, message string) {
-			if level != "VERBOSE" && level != "TRACE" {
-				logger(context, level, message)
-			}
+	}
+	return func (context Location, level string, message string) {
+		if level != "VERBOSE" && level != "TRACE" {
+			logger(context, level, message)
 		}
+	}
+}
+
+func NewDefaultLocationLogger() LocationLogger {
+	return func (context Location, level string, message string) {
+		prefix := fmt.Sprintf("%s at %d, %d depth=%d in '%s': %s", level, context.Line(), context.Column(), context.Depth(), context.SourceName(), message)
+		log.Print(prefix)
+	}
+}
+
+func NewTupleLogger(next func (value Value)) LocationLogger {
+
+	return func(context Location, level string, message string) {
+		record := NewTuple()  // TODO Map better?
+		record.Append(String(level))
+		record.Append(Int64(context.Line()))
+		record.Append(Int64(context.Column()))
+		record.Append(Int64(context.Depth()))
+		record.Append(String(context.SourceName()))
+		record.Append(String(message))
+		next(record)
 	}
 }

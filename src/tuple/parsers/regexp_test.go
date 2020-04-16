@@ -25,7 +25,6 @@ func TestRegexp(t *testing.T) {
 	bstar := tuple.NewTuple(star, b)
 	aquestion := tuple.NewTuple(question, a)
 
-	logger := tuple.GetLogger(nil, false)
 	test := func (expression string, expected Value) {
 		reader := bufio.NewReader(strings.NewReader(expression))
 		context := parsers.NewParserContext("<eval>", reader, logger)
@@ -53,7 +52,7 @@ func TestRegexp(t *testing.T) {
 
 	test_regexp := func (regexp string, input string, expected bool) {
 		reader := bufio.NewReader(strings.NewReader(regexp))
-		context := parsers.NewParserContext("<eval>", reader, tuple.GetLogger(nil, false))
+		context := parsers.NewParserContext("<eval>", reader, logger)
 		regexpTree := parsers.ParseRegexp(&context)
 
 		reader = bufio.NewReader(strings.NewReader(input))

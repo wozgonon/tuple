@@ -36,7 +36,7 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	logger := tuple.GetLogger(nil, *verbose)
+	logger := tuple.NewVerboseFilterLogger(*verbose, tuple.NewDefaultLocationLogger())
 	runner1 := runner.NewSafeEvalContext(logger)
 	
 	grammars := runner.NewGrammars(parsers.NewInfixExpressionGrammar())

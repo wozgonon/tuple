@@ -21,12 +21,10 @@ import (
 	"testing"
 	"tuple/runner"
 	"tuple/eval"
-	"tuple"
 )
 
 func TestLessSafe(t *testing.T) {
 
-	logger := tuple.GetLogger(nil, false)
 	symbols := runner.NewSafeEvalContext(logger)
 	eval.AddLessSafeFunctions(symbols, symbols.GlobalScope())
 	// TODO

@@ -45,6 +45,12 @@ func TestDeclareFunctions(t *testing.T) {
 
 	test("eq (values (a:2 b:3)) (2 3)")
 	test("eq (arity (keys (a:2 b:3))) 2")
+	test("eq (arity (keys (a:2 b:3))) 2")
+
+	test("eq (list 1 2 3) (list 1 2 3)")
+	test("eq (list) (list)")
+	test("eq (list 1 2 3) (1 2 3)")
+	// TODO test("eq (list) ()")
 	
 	test(`
 func aa a { a*2 }
@@ -66,4 +72,5 @@ aa(2)==4`)
 	// Test assignment to a variable updates the a local variable or a global variable
 	test("progn n=12 { func a b { progn n=b n } } a(234)!=n")
 	test("progn n=12 { func a b { progn set(b n) n  } } a(234)==n")
+	test("progn abcda=2  2==abcda")
 }

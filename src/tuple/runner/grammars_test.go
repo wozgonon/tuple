@@ -14,7 +14,7 @@ import (
 var NewTuple = tuple.NewTuple
 type Int64 = tuple.Int64
 type Tag = tuple.Tag
-var logger = tuple.GetLogger(nil, false)
+var logger = tuple.NewDefaultLocationLogger()
 var safeEvalContext = runner.NewSafeEvalContext(logger)
 
 

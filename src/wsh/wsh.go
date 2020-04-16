@@ -45,7 +45,7 @@ func main () {
 	//
 	//  Set up the translator pipeline.
 	//
-	logger := tuple.GetLogger(nil, *verbose)
+	logger := tuple.NewVerboseFilterLogger(*verbose, tuple.NewDefaultLocationLogger())
 	ifNotFound := eval.NewExecIfNotFound()
 
 	grammars := runner.NewGrammars(parsers.NewShellGrammar())

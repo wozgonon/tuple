@@ -9,7 +9,7 @@ import (
 
 
 var grammar = NewInfixExpressionGrammar()
-var logger = tuple.GetLogger(nil, false)
+var logger = func (context tuple.Location, level string, message string) {}
 var safeEvalContext = runner.NewSafeEvalContext(logger)
 
 

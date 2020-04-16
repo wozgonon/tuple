@@ -52,8 +52,8 @@ func testGetNext(t *testing.T, logger tuple.LocationLogger, expression string, e
 
 func TestLex1(t *testing.T) {
 
-	testLex1(t, GetLogger(nil, false))
-	testLex1(t, GetLogger(parsers.NewLispWithInfixGrammar(), false))
+	testLex1(t, tuple.NewDefaultLocationLogger())
+	testLex1(t, tuple.NewGrammarLogger(parsers.NewLispWithInfixGrammar()))
 }
 
 func testLex1(t *testing.T, logger tuple.LocationLogger) {
@@ -76,7 +76,7 @@ func testLex1(t *testing.T, logger tuple.LocationLogger) {
 
 func TestCLanguageOperators(t *testing.T) {
 
-	logger := GetLogger(parsers.NewLispGrammar(), false)
+	logger := tuple.NewGrammarLogger(parsers.NewLispGrammar())
 	operators := parsers.NewOperators(parsers.LispStyle())
 	parsers.AddStandardCOperators(&operators)
 	operators.Forall(func(operator string) {

@@ -8,9 +8,6 @@ import (
 	"math"
 )
 
-//var logger = tuple.GetLogger(nil, false)
-//var safeEvalContext = runner.NewSafeEvalContext(logger)
-
 func TestEval1(t *testing.T) {
 	var grammar = parsers.NewInfixExpressionGrammar()
 	val,_ := runner.ParseAndEval(safeEvalContext, grammar, "1+1")
