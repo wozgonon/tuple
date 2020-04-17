@@ -40,5 +40,6 @@ func TestDeclareFunctions(t *testing.T) {
 	test("eq 1 (first (1 2 3))")
 	test("eq 2 (second (1 2 3))")
 	test("eq 3 (third (1 2 3))")
+	test(`eq (print (1 2 3 (a:1 b:(abc 2 3 4 (1 () 2 3))))) "(1 2 3 (a:1 b:(abc 2 3 4 (1 () 2 3))))"`)
 	//...
 }

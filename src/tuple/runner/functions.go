@@ -48,23 +48,26 @@ func flatten a {
   }
 }
 
-# TODO
+#  TODO replace concat and join with a yield statement
 func print a {
    if (ismap a) {
+      concat "(" {
         join " " {
      	   forkv k v a {
-               concat k (print v)
+               concat k ":" (print v)
       	   }
-        }
+        }} ")" 
+     
    } {
      if ((arity a) == 0) {
      	a
      } {
+       concat "(" {
         join " " {
      	   for v a {
                print v
       	   }
-        }
+        }} ")" 
      }
   }
 }
