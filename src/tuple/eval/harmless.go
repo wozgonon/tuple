@@ -130,6 +130,11 @@ func AddHarmlessArrayFunctions(table LocalScope)  {
 		return reflect.TypeOf(value).Name()
 	})
 	table.Add("eq", func (context EvalContext, aa Value, bb Value) bool {
+		if aa.Arity() != bb.Arity() {
+			return false
+		}
+		//TODO eq ("a1" b2")   1
+		//TODO eq ("a1" b2")   ("a1" b2") 
 		return reflect.DeepEqual(aa, bb)
 	})
 }

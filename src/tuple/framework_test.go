@@ -11,6 +11,20 @@ import (
 
 var NthBitOfInt = tuple.NthBitOfInt
 
+func TestStructs(t *testing.T) {
+
+	var array tuple.Array = tuple.NewTuple()
+	if _, ok := array.(tuple.Array); ! ok {
+		t.Errorf("Expected array got %s", array)
+	}
+
+	var mapp tuple.Map = tuple.NewTagValueMap()
+	if _, ok := mapp.(tuple.Map); ! ok {
+		t.Errorf("Expected map got %s", mapp)
+	}
+
+}
+
 func TestNthBitOfInt(t *testing.T) {
 
 	if NthBitOfInt(0, 0) {

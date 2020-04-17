@@ -52,8 +52,8 @@ func flatten a {
 func print a {
    if (ismap a) {
         join " " {
-     	   for v a {
-               print v
+     	   forkv k v a {
+               concat k (print v)
       	   }
         }
    } {

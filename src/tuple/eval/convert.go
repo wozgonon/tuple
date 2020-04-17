@@ -34,6 +34,7 @@ var conversions = NewConversions(
 	tuple.BoolToInt,
 	func(value Int64) float64 { return float64(int64(value)) },
 	func(value Float64) int64 { return int64(float64(value)) },
+	func(value tuple.TagValueMap) tuple.Map { return value },
 	fmt.Sprint,  // TODO Inf rather than +If
 	tuple.Int64ToString)
 
@@ -72,13 +73,16 @@ func (conversions Conversions) Convert(evaluated Value, expectedType reflect.Typ
 		case FloatType: return reflectValue.Float(), nil
 		case BoolType: return reflectValue.Bool(), nil
 		case StringType: return reflectValue.String(), nil
-		case TupleType: return reflectValue.Interface().(Tuple), nil
+		case TupleType: return reflectValue.Interface().(Tuple), nil  // TODO is this needed
 		case TagType: return reflectValue.Interface().(Tag), nil
 		case ValueType: return reflectValue.Interface().(Value), nil
+		case MapType: return reflectValue.Interface().(tuple.Map), nil
+		case ArrayType: return reflectValue.Interface().(tuple.Array), nil
 		default:
 		}
 	}
-	return nil, errors.New("No conversion")
+	message := fmt.Sprintf("No conversion '%s', cannot convert '%s' to '%s'", key, evaluated, expectedType)  // TODO Log v location
+	return nil, errors.New(message)
 }
 
 func Convert (context EvalContext, evaluated Value, expectedType reflect.Type) (interface{}, error) {

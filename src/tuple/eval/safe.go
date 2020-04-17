@@ -41,6 +41,9 @@ func toString(context EvalContext, value Value) string {
 	case Int64: return tuple.Int64ToString(val)
 	case Bool: return tuple.BoolToString(bool(val))
 	default: 
+		if value.Arity() == 0 {
+			return "()"
+		}
 		context.Log("ERROR", "cannot convert '%s' to string", value)
 		return "..." // TODO
 	}
@@ -106,7 +109,18 @@ func AddAllocatingTupleFunctions(table LocalScope)  {
 		return result, nil
 	})
 
-	table.Add("list", func(_ EvalContext, values... Value) Value { return tuple.NewTuple(values...) })
+	table.Add("list", func(context EvalContext, values... Value) (Value, error) {
+		// TODO evaluate
+		array := make([]Value, len(values))
+		for k,v := range values {
+			evaluated, err := Eval(context, v)
+			array[k] = evaluated
+			if err != nil {
+				return nil, err
+			}
+		}
+		return tuple.NewTuple(array...), nil
+	})
 	// TODO table.Add("quote", func(value Value) Value { return NewTuple("quote", value) })
 }
 
@@ -207,19 +221,37 @@ func AddControlStatementFunctions(table LocalScope) {
 		newScope.Add(tag.Name, func () Value {
 			return iterator
 		})
-		// TODO Ideally for efficiency allow the method to return a callback iterator rather than collect values into a tuple
-
 		result := tuple.NewFiniteStream(list, func (v Value, next func(v Value) error) error {
-			evaluated, err := Eval(context, v)
-			iterator = evaluated
-			if err != nil {
-				return err
-			}
+			iterator = v
 			value, err := Eval(newScope, code.Value())
 			if err != nil {
 				return err
 			}
 			return next(value)
+		})
+		return result
+	})
+	table.Add("forkv", func(context EvalContext, key Tag, val Tag, mapp tuple.Map, code Quoted) Value {
+		var keyIterator Value = nil
+		var valIterator Value = nil
+		newScope := context.NewLocalScope()
+		newScope.Add(key.Name, func () Value {
+			return keyIterator
+		})
+		newScope.Add(val.Name, func () Value {
+			return valIterator
+		})
+		// TODO Ideally for efficiency allow the method to return a callback iterator rather than collect values into a tuple
+		result := tuple.NewTuple()
+		mapp.ForallKeyValue(func(kk Tag, vv Value) {
+			keyIterator = kk
+			valIterator = vv
+			value, err := Eval(newScope, code.Value())
+			if err != nil {
+				Error(context, "%s", err)
+				return
+			}
+			result.Append(value)
 		})
 		return result
 	})

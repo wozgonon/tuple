@@ -139,7 +139,6 @@ func Call(context EvalContext, head Tag, args []Value) (Value, error) {  // Redu
 				}
 				converted, err := Convert(context, evaluated, expectedType)
 				if err != nil {
-					context.Log("ERROR", "Cannot convert '%s' to '%s'", evaluated, expectedType)  // TODO Log v location
 					return tuple.EMPTY, err
 				}
 				result = converted

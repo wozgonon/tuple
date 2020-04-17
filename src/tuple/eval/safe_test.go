@@ -74,6 +74,8 @@ aa(2)==4`)
 	test("progn n=12 { func a b { progn set(b n) n  } } a(234)==n")
 	test("progn abcda=2  2==abcda")
 
+	test(`progn m=(a:1 b:2) (ismap m)`)
 	test(`eq "1-2-3" (join "-" (for v (1 2 3) { v }))`)
 	test(`eq "1 2" (join " " (for v ( a:1 b:2 ) { v }))`)
+	test(`progn a=(forkv k v (a:1 b:2) { concat k v }) (eq "b2" (nth 1 a))`)
 }
