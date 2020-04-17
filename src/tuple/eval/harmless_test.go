@@ -39,7 +39,7 @@ func randomFloat64() float64 {
 	return rand.Float64()  // TODO perhaps use a normal distribution to be more representative
 }
 
-var logger = tuple.NewDefaultLocationLogger()
+var logger = tuple.NewVerboseFilterLogger(false, tuple.NewDefaultLocationLogger())
 var symbols = runner.NewHarmlessEvalContext(logger)
 
 func TestHarmless(t *testing.T) {

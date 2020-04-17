@@ -78,18 +78,6 @@ func NewHarmlessEvalContext(logger LocationLogger) eval.EvalContext {
 	return &runner
 }
 
-func AddTranslatedSafeFunctions(runner * eval.Runner) {
-	inputGrammar := parsers.NewShellGrammar()
-	ParseAndEval(runner, inputGrammar, "func count  t { progn (c=0) (for v t { c=c+1 }) c }")
-	ParseAndEval(runner, inputGrammar, `
-func first  t { nth 0 t }
-func second t { nth 1 t }
-func third  t { nth 2 t }`)
-	
-	//func reduce f t { progn c=1 accumulator=first(t) (for v t { accumulator = f(accumulator v))  accumulator}
-
-}
-
 /////////////////////////////////////////////////////////////////////////////
 
 func LocationForValue(value Value) tuple.Location {

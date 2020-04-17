@@ -56,13 +56,31 @@ func EvalToStrings(context EvalContext, values []Value) []string {
 	return result
 }
 
+func toStrings(context EvalContext, value Value) []string {
+
+	result := make([]string, value.Arity())
+	kk := 0
+	value.ForallValues(func (val Value) error {
+		str := toString(context, val)
+		result[kk] = str
+		kk += 1
+		return nil
+	})
+	return result
+}
+
 func AddAllocatingStringFunctions(table LocalScope) {
 	// TODO change this to take an array
-	table.Add("join", func (context EvalContext, separator string, tuple Tuple) string { return strings.Join(EvalToStrings(context, tuple.List), separator) })
+	table.Add("join", func (context EvalContext, separator string, value Value) string { return strings.Join(toStrings(context, value), separator) })
 	table.Add("concat", func (context EvalContext, values... Value) string  { return strings.Join(EvalToStrings(context, values), "") })
 }
 
 func AddAllocatingTupleFunctions(table LocalScope)  {
+	
+	//table.Add("yield", func(value Value) (Value, error) {
+	//	fmt.Print("%s", EvalToStrings
+	//	return result, nil
+	//})
 
 	table.Add("keys", func(context EvalContext, value Value) (Value, error) {
 

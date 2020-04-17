@@ -153,6 +153,18 @@ func (grammars * Grammars) AddSafeGrammarFunctions(table * eval.Runner) {
 		return grammars
 	})
 
+	table.Add("read", func (context eval.EvalContext, file String) (Value, error) {
+		result := tuple.NewTuple()
+		_, err := grammars.RunFile(context.GlobalScope().LocationLogger(), string(file), func(in Value) error { result.Append(in); return nil })
+		if err != nil {
+			return result, err
+		}
+		if result.Arity() == 1 {
+			return result.Get(0), nil
+		}
+		return result, nil
+	})
+
 	//table.Add("ast", func (expression string) tuple.Value { return parsers.ParseString(inputGrammar, expression) })
 	//table.Add("expr", func (expression string) tuple.Value { return  runner.ParseAndEval(&table, inputGrammar, expression) })
 

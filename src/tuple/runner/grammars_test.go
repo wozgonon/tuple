@@ -14,7 +14,7 @@ import (
 var NewTuple = tuple.NewTuple
 type Int64 = tuple.Int64
 type Tag = tuple.Tag
-var logger = tuple.NewDefaultLocationLogger()
+var logger = tuple.NewVerboseFilterLogger(false, tuple.NewDefaultLocationLogger())
 var safeEvalContext = runner.NewSafeEvalContext(logger)
 
 
@@ -99,6 +99,7 @@ func TestGrammarsFunctions(t *testing.T) {
 
 	ifNotFound := eval.NewErrorIfFunctionNotFound()
 	evalContext := eval.NewRunner(ifNotFound, logger)
+	eval.AddHarmlessFunctions(&evalContext)
 	eval.AddSafeFunctions(&evalContext)
 	grammars.AddSafeGrammarFunctions(&evalContext)
 	runner.AddTranslatedSafeFunctions(&evalContext)
@@ -127,14 +128,21 @@ func TestGrammarsFunctions(t *testing.T) {
 	if val == tuple.Int64(3) {
 		t.Errorf("Expected 3, got %s", val)
 	}
-	/*
 	p12 := NewTuple(Tag{"+"}, Int64(1), Int64(2))
-	val,_ = runner.ParseAndEval(&evalContext, grammars.Default(), "ast2(\"l\" \"(+ 1 2)\")")
-	if ! reflect.DeepEqual(val, p12) {
+	val,_ = runner.ParseAndEval(&evalContext, grammars.Default(), "(ast2 \"l\" \"(+ 1 2)\")")
+	if false && ! reflect.DeepEqual(val, p12) {  // TODO
 		t.Errorf("Expected '%s', got %s type=%s", p12, val, reflect.TypeOf(val))
-	}*/
+	}
 
-
+	test := func (formula string) {
+		val,err := runner.ParseAndEval(&evalContext, grammars.Default(), formula)
+		if val != tuple.Bool(true) {
+			t.Errorf("Expected '%s' to be TRUE, val=%s err=%s", formula, val, err)
+		}
+	}
+	test(`(== 3  (expr "1+2"))`)
+	test(`(== 5 (arity (read "../../wozg/testdata/test.l")))`)
+	test(`(== 13 (arity (ast2 "l" "( abc \"def\" \"tab\ttab\ttab\" NaN Inf (1-aa) 123 () (+ 1 (*2 4)) .123 456. 123.456 \"世界\")")))`)
 }
 
 	
