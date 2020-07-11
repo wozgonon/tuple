@@ -49,12 +49,12 @@ func flatten a {
 }
 
 #  TODO replace concat and join with a yield statement
-func print a {
+func print_sexp a {
    if (ismap a) {
       concat "(" {
         join " " {
      	   forkv k v a {
-               concat k ":" (print v)
+               concat k "." (print_sexp v)
       	   }
         }} ")" 
      
@@ -65,9 +65,32 @@ func print a {
        concat "(" {
         join " " {
      	   for v a {
-               print v
+               print_sexp v
       	   }
         }} ")" 
+     }
+  }
+}
+
+func print_yaml a indent {
+   if (ismap a) {
+      concat  {
+        join " " {
+     	   forkv k v a {
+               concat indent k ":\n" (print_yaml v (concat indent "  "))
+      	   }
+        }}
+     
+   } {
+     if ((arity a) == 0) {
+     	concat indent "- " a "\n"
+     } {
+       concat  {
+        join " " {
+     	   for v a {
+               print_yaml v (concat indent "  ")
+      	   }
+        }}  
      }
   }
 }

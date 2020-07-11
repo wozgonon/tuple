@@ -17,8 +17,8 @@
 package parsers
 
 import "strings"
-import "fmt"
 import "tuple"
+import "fmt"
 
 var AssertNotNil = tuple.AssertNotNil
 
@@ -58,7 +58,7 @@ func (stack * OperatorGrammar) popOperator() {
 }
 
 // Replace top of value stack with an expression
-func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
+func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) (int, error) {
 
 	values := &(stack.Values.List)
 	lv := stack.Values.Arity()
@@ -108,12 +108,12 @@ func (stack * OperatorGrammar) reduceOperatorExpression(top Tag) int {
 
 	value, err := consFilter(tuple)  // TODO generalize this
 	if err != nil {
-		panic(fmt.Sprintf("TODO handle err: %s", err))
-		// TODO
+		//panic(fmt.Sprintf("TODO handle err: %s", err))
+		return 0, err
 	}
 	AssertNotNil(value)
 	stack.Values.List = append((*values)[:lv-popped], value)
-	return index
+	return index, nil
 }
 
 
@@ -145,7 +145,7 @@ func (stack * OperatorGrammar) OpenBracket(token Tag) {
 	stack.wasOperator = true
 }
 
-func (stack * OperatorGrammar) CloseBracket(token Tag) {
+func (stack * OperatorGrammar) CloseBracket(token Tag) error {
 	Verbose(stack.context,"CLOSE '%s'", token.Name)
 
 	stack.postfix()
@@ -159,11 +159,11 @@ func (stack * OperatorGrammar) CloseBracket(token Tag) {
 			values := stack.Values.List
 			stack.Values.List = append(values, NewTuple())
 			Verbose(stack.context," REDUCE:\t'()'\n")
-			return
+			return nil
 		} else {
 			// TODO this should return an error
 			UnexpectedCloseBracketError(stack.context,token.Name)
-			return
+			return nil
 		}
 	}
 
@@ -175,11 +175,16 @@ func (stack * OperatorGrammar) CloseBracket(token Tag) {
 				Error(stack.context,"Expected close bracket '%s' but found '%s'", top.Name, token.Name)
 			}
 			stack.popOperator()
-			return
+			return nil
 		} else {
-			index -= stack.reduceOperatorExpression(top)
+			reduce, err := stack.reduceOperatorExpression(top)
+			if err != nil {
+				return err
+			}
+			index -= reduce
 		}
 	}
+	return nil
 }
 
 func (stack * OperatorGrammar) postfix() {
@@ -214,7 +219,12 @@ func (stack * OperatorGrammar) EndOfInput(next Next) error {
 				Error(stack.context,"Missing close bracket for '%s'", top.Name)
 				stack.popOperator()
 			} else {
-				index -= stack.reduceOperatorExpression(top)
+				reduce, err := stack.reduceOperatorExpression(top)
+				index -= reduce
+				if err != nil {
+					stack.flush()
+					return err
+				}
 			}
 		}
 		// TODO this is a hack to handle space separated expressions: 1+2 3*4 5
@@ -278,14 +288,22 @@ func (stack * OperatorGrammar) PushOperator(operator Tag) {
 			if operatorIsPrefix {
 				break
 			} else if topIsPrefix {
-				index -= stack.reduceOperatorExpression(top)
+				reduce, err := stack.reduceOperatorExpression(top)
+				index -= reduce
+				if err != nil {
+					panic(fmt.Sprintf("TODO err=%s", err))
+				}
 			} else if stack.operators.IsOpenBracket(top) {
 				break
 			} else if top == operator && stack.operators.IsReduceAllRepeats(operator) {
 				break
 			} else if stack.operators.Precedence(top) >= tagPrecedence {
 				Verbose(stack.context,"* PushOperator - Reduce '%s'", top)
-				index -= stack.reduceOperatorExpression(top)
+				reduce, err := stack.reduceOperatorExpression(top)
+				index -= reduce
+				if err != nil {
+					panic(fmt.Sprintf("TODO err=%s", err))
+				}
 			} else {
 				break
 			}

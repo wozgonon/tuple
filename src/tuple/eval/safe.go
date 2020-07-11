@@ -80,10 +80,10 @@ func AddAllocatingStringFunctions(table LocalScope) {
 
 func AddAllocatingTupleFunctions(table LocalScope)  {
 	
-	//table.Add("yield", func(value Value) (Value, error) {
-	//	fmt.Print("%s", EvalToStrings
-	//	return result, nil
-	//})
+	table.Add("yield", func(context EvalContext, value Value)  {
+		// TODO Fix this to be like a real yield function ala Sather C# Python
+		fmt.Printf("%s", toString(context, value))
+	})
 
 	table.Add("keys", func(context EvalContext, value Value) (Value, error) {
 

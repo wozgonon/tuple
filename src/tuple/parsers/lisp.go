@@ -60,7 +60,10 @@ func parse(context Context, operators Operators, style Style, next Next) error {
 			},
 			func (close string) {
 				flush()
-				operatorGrammar.CloseBracket(Tag{close})
+				err := operatorGrammar.CloseBracket(Tag{close})
+				if err != nil {
+					// TODO handle error
+				}
 			},
 			func (tag Tag) {
 				flush()

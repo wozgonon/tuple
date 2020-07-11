@@ -93,7 +93,10 @@ func (grammar InfixExpressionGrammar) Parse(context Context, next Next) error {
 				operatorGrammar.OpenBracket(Tag{open})
 			},
 			func (close string) {
-				operatorGrammar.CloseBracket(Tag{close})
+				err := operatorGrammar.CloseBracket(Tag{close})
+				if err != nil {
+					// TODO handle error
+				}
 			},
 			func(tag Tag) {
 				err := handleTag(tag, grammar.style, context, &operatorGrammar)
@@ -182,7 +185,10 @@ func (grammar ShellGrammar) Parse(context Context, next Next) error {
 				operatorGrammar.OpenBracket(Tag{open})
 			},
 			func (close string) {
-				operatorGrammar.CloseBracket(Tag{close})
+				err := operatorGrammar.CloseBracket(Tag{close})
+				if err != nil {
+					// TODO handle error
+				}
 			},
 			func(tag Tag) {
 				handleTag(tag, grammar.style, context, &operatorGrammar)

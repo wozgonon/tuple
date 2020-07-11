@@ -30,6 +30,7 @@ func AddHarmlessFunctions(table LocalScope) {
 	AddBooleanAndArithmeticFunctions(table)
 	AddHarmlessStringFunctions(table)
 	AddHarmlessArrayFunctions(table)
+	AddHarmlessFinanceFunctions(table)
 }
 /////////////////////////////////////////////////////////////////////////////
 
@@ -100,6 +101,58 @@ func AddHarmlessStringFunctions(table LocalScope) {
 	table.Add("len", func(value string) int64 { return int64(len(value)) })  // TODO arity
 	table.Add("lower", strings.ToLower)
 	table.Add("upper", strings.ToUpper)
+}
+
+// String functions that do not allocate any memory
+func AddHarmlessFinanceFunctions(table LocalScope) {
+
+    v := func(i float64) float64 { return 1/(1+i) }
+	d := func(i float64) float64 {
+    	 return i/(1+i)
+    }
+    pv := func(i float64, rent_payment tuple.Array) Value {
+        values := make([]Value, rent_payment.Arity())
+        vv := v(i)
+        _ = tuple.ForallKeyValuesInArray(rent_payment, func(index int, value Value) error {
+                ival, iok := value.(Int64)
+                fval, fok := value.(Float64) // TODO use int64 everywhere
+                var val float64
+                if iok {
+                    val = float64(int64(ival))
+                } else if fok  {
+                    val = float64(fval)
+                } else {
+                    // TODO error
+                    val = 1.0
+                }
+                values[index] = Float64(val * vv)
+                vv *= vv
+                return nil
+            })
+            return tuple.NewTuple(values...)
+        }
+	table.Add("pv", pv)
+	table.Add("v", v)
+	table.Add("d", d)
+    // Annuity certain
+
+    // Annuity immediate incur interest immediately and pay at end of period a with a bar
+    table.Add("annuityImmediate", func(i float64, n float64) float64 {
+          	 return (1-math.Pow(v(i), n))/i
+          })
+    // Payments at start of period  a with two dots
+	table.Add("annuityDue", func(i float64, n float64) float64 {
+    	 return (1-math.Pow(v(i), n))/d(i)
+    })
+	table.Add("perpetuity", func(rent_payment float64, i float64) float64 {
+    	 return rent_payment/i
+    })
+	table.Add("amortization", func(rent_payment float64, debt float64, i float64, n float64) float64 {
+        // The amount owed after 'n' payments
+        ri := rent_payment/i
+    	 return ri - math.Pow(1+i, n) * (ri - debt)
+    })
+
 }
 
 // Array functions that do not allocate any memory
