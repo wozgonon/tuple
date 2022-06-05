@@ -18,6 +18,9 @@ For:
 
 To build:
 ```
+$ git clone https://github.com/wozgonon/tuple.git
+$ cd tuple
+$ export GOPATH=`pwd` 
 $ export GOBIN=`pwd`/bin
 $ go env -w GOBIN=`pwd`/bin
 $ make
