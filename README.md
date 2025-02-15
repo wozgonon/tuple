@@ -1,7 +1,7 @@
 ## Tuple
 
-This package provides an operator grammer that you can tweak so that you can
-create simple parsers and Domain Specific Languages (DSL) without having the overhead or learning and using a general purpose parser.
+This package provides an operator grammer that can be tweaked to 
+create simple parsers and Domain Specific Languages (DSL) without having the overhead of writing ones own parser or learning to use a [compiler-compiler](https://en.wikipedia.org/wiki/Compiler-compiler).
 
 The package provides functions for parsing, printing and processing a number of simple Grammars.
 The parsers produce a common [parse tree](https://en.wikipedia.org/wiki/Parse_tree)
@@ -38,12 +38,11 @@ go install src/jml/jml.go
 
 ## Yet another verion of LISP?
 
-No and sort of.   No it is a set of components that one can put together in various ways
-one of which is a LISP like language.
+Not quite, it is a set of components that one can put together in various ways one of which is a LISP like language.
 
 LISP syntax is very simple, the syntax S-Expressions, is very easy to parse and the basic interpretter Eval is very easy to write.
 
-LISP has an interesting property called (Homoiconicity)[https://en.wikipedia.org/wiki/Homoiconicity].
+LISP has an interesting property called [Homoiconicity](https://en.wikipedia.org/wiki/Homoiconicity).
 Whereas a language like C or Java has it's own syntax and might store or communicate data using another syntax such as JSON or XML.
 LISP just uses the say format S-Expressions as the language syntax and for data, which makes interesting things easy.
 
@@ -64,7 +63,7 @@ This package also supports an extension of JSON with expressions.
 
 ## Why would I want a componentized language?
 
-Gives you scope to experiment, if you have an idea for a particular feature you can try it out to see how well it works.
+Gives one scope to experiment, if you have an idea for a particular feature you can try it out to see how well it works.
 If you don't want some language feature, perhaps for reasons of security or misuse, you can leave it out.
 For instance, if you want to enforce a particular style, you can build it in as a component.
 Really the same reasons you would want any software with de-coupled components?
@@ -73,8 +72,7 @@ Really the same reasons you would want any software with de-coupled components?
 ## What lexer support is provided
 
 Currently there is just a hand written lexer that supports C language like operators.
-I would like to finish off the regular expression grammar to provide a 'lex' like program
-then use this as a lexer.
+I would like to finish off the regular expression grammar to provide a 'lex' like program then use this as a lexer.
 
 
 ## What syntax is supported.
@@ -85,7 +83,7 @@ and DLS/C like grammar.   It provides a fair bit of flexibility without being ge
 
 ## Why not just use ANTLR or another grammar generator
 
-With general purpose tools like ANTLR or BISON/YACC one can find it hard to resist the temptation to add more and more special syntax
+With general purpose [compiler-compilers](https://en.wikipedia.org/wiki/Compiler-compiler) like ANTLR or BISON/YACC one can find it hard to resist the temptation to add more and more special syntax
 although this does not help you complete the backend.
 This package provides and operator grammer that is pretty much finished with some flexibility to tweak it.
 So you can focus on the functionality rather than on the syntax.
@@ -100,7 +98,7 @@ we can in principle provide just one set of tools for manipulating them rather t
 ## What is the context/directory
 
 Programs typically have a lot of static data at run time: global variables, meta-data, reflection, environment variables, process information, local filesystem and so on.
-Typically one acceses these through a variety of different functions and APIs and one typically have to manually search the API documentation or google to find the details.
+Typically one accesses these through a variety of functions and APIs which can be awkward to find in the documentation.
 
 This package presents all the static information as a searchable hierarchy like a directory or registry, with a single 'query' command.
 A consequence of this for DevSecOps is that it becomes easy to perform a security review.  The context is essentially the sandbox.
@@ -118,7 +116,5 @@ Currently interpretted, I would like to add a resolver to the evaluator and then
 
 ## What's the story
 
-I took some time out between contracts to study for some Certifications,
-I cycled two hours to a test centre only to find it has just closed due to the Coronavirus shutdown.
-So as a loss two what to do next, I decided to learn some 'Go' by knocking up an operator grammar.
-From there this grew.
+I took some time out between contracts to study for some Certifications when
+I cycled two hours to a test centre, I to find it has just closed due to the Coronavirus shutdown.  So at a loss as to what to do next, I decided to improve my 'Go' by knocking up an operator grammar.  From there this grew.
